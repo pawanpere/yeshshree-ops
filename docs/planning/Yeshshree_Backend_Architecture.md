@@ -96,7 +96,7 @@ Conventions: BIGINT identity PKs; `client_ref UUID UNIQUE` on every user-created
 | `materials` | id, sap_code UQ, description, mat_type (NO CHECK — SAP owns this vocabulary; real export has ERSA, HIBE, ROH1, LEIH, Z-types), mat_group, uom, price, abc, is_active |
 | `boms` | id, parent_material_id FK, alt_bom, is_active · `bom_lines`: id, bom_id FK, component_material_id FK, item_no, qty_per, uom, is_scrap_credit (negative BOM lines in the real export) |
 | `purchase_orders` | id, sap_po_no, item_no, vendor_id FK, material_id FK, ordered_qty, open_qty, rate, uom, due_date, status, UQ(sap_po_no, item_no) |
-| `lines` | id, name, plant, is_active · `line_materials`: line_id FK, material_id FK |
+| `lines` | id, name, plant, shift_pattern JSONB NULL (per-line shift override, §11.18/Q6), is_active · `line_materials`: line_id FK, material_id FK |
 | `production_orders` | id, sap_order_no UQ, line_id FK, material_id FK, status |
 | `customers` | id, sap_code, name, gstin — Bajaj now; table not hardcode |
 
