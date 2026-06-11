@@ -6,6 +6,8 @@ from fastapi import FastAPI, Request
 from sqlalchemy import text
 
 from app.api.auth import router as auth_router
+from app.api.config import router as config_router
+from app.api.master import router as master_router
 from app.core import audit
 from app.core.config import get_settings
 from app.core.db import get_engine
@@ -48,6 +50,8 @@ async def audit_middleware(request: Request, call_next):
 
 
 app.include_router(auth_router)
+app.include_router(master_router)
+app.include_router(config_router)
 
 
 @app.get("/api/v1/system/healthz", tags=["system"])

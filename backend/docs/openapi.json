@@ -244,6 +244,1448 @@
         }
       }
     },
+    "/api/v1/master/materials": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Materials",
+        "operationId": "list_materials_api_v1_master_materials_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "search code/description",
+              "title": "Q"
+            },
+            "description": "search code/description"
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MaterialRead"
+                  },
+                  "title": "Response List Materials Api V1 Master Materials Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Create Material",
+        "description": "Manual master add (\u00a711.15): source='manual'; next SAP import adopts or flags it.",
+        "operationId": "create_material_api_v1_master_materials_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/materials/{material_id}": {
+      "patch": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Update Material",
+        "operationId": "update_material_api_v1_master_materials__material_id__patch",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Material Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MaterialUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MaterialRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/vendors": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Vendors",
+        "operationId": "list_vendors_api_v1_master_vendors_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "name": "active_only",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": true,
+              "title": "Active Only"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VendorRead"
+                  },
+                  "title": "Response List Vendors Api V1 Master Vendors Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Create Vendor",
+        "operationId": "create_vendor_api_v1_master_vendors_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VendorCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/vendors/{vendor_id}": {
+      "patch": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Update Vendor",
+        "description": "credit_limit / qty_limit_mt changes are money-affecting (playbook \u00a77): allowed\nhere for admin/planning but always audited; the re-baseline APPROVAL flow (M3)\nis the governed path for systematic changes.",
+        "operationId": "update_vendor_api_v1_master_vendors__vendor_id__patch",
+        "parameters": [
+          {
+            "name": "vendor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vendor Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VendorUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VendorRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/lines": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Lines",
+        "operationId": "list_lines_api_v1_master_lines_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/LineRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Lines Api V1 Master Lines Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Create Line",
+        "operationId": "create_line_api_v1_master_lines_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/lines/{line_id}": {
+      "patch": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Update Line",
+        "operationId": "update_line_api_v1_master_lines__line_id__patch",
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/lines/{line_id}/materials": {
+      "put": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Put Line Materials",
+        "operationId": "put_line_materials_api_v1_master_lines__line_id__materials_put",
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Line Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LineMaterialsPut"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LineRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/production-orders": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Production Orders",
+        "operationId": "list_production_orders_api_v1_master_production_orders_get",
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ProductionOrderRead"
+                  },
+                  "title": "Response List Production Orders Api V1 Master Production Orders Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Create Production Order",
+        "operationId": "create_production_order_api_v1_master_production_orders_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionOrderCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrderRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/production-orders/{order_id}": {
+      "patch": {
+        "tags": [
+          "master"
+        ],
+        "summary": "Update Production Order",
+        "operationId": "update_production_order_api_v1_master_production_orders__order_id__patch",
+        "parameters": [
+          {
+            "name": "order_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Order Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProductionOrderUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProductionOrderRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/purchase-orders": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Purchase Orders",
+        "operationId": "list_purchase_orders_api_v1_master_purchase_orders_get",
+        "parameters": [
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vendor Id"
+            }
+          },
+          {
+            "name": "material_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Material Id"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "open",
+              "title": "Status"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PurchaseOrderRead"
+                  },
+                  "title": "Response List Purchase Orders Api V1 Master Purchase Orders Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/boms": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Boms",
+        "operationId": "list_boms_api_v1_master_boms_get",
+        "parameters": [
+          {
+            "name": "parent_material_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Parent Material Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BomRead"
+                  },
+                  "title": "Response List Boms Api V1 Master Boms Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/master/customers": {
+      "get": {
+        "tags": [
+          "master"
+        ],
+        "summary": "List Customers",
+        "operationId": "list_customers_api_v1_master_customers_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CustomerRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Customers Api V1 Master Customers Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/reason-codes": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Reason Codes",
+        "operationId": "list_reason_codes_api_v1_config_reason_codes_get",
+        "parameters": [
+          {
+            "name": "kind",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Kind"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ReasonCodeRead"
+                  },
+                  "title": "Response List Reason Codes Api V1 Config Reason Codes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Create Reason Code",
+        "operationId": "create_reason_code_api_v1_config_reason_codes_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCodeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReasonCodeRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/reason-codes/{code_id}": {
+      "patch": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Update Reason Code",
+        "operationId": "update_reason_code_api_v1_config_reason_codes__code_id__patch",
+        "parameters": [
+          {
+            "name": "code_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Code Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonCodeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReasonCodeRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/splits": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Splits",
+        "operationId": "list_splits_api_v1_config_splits_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SplitRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Splits Api V1 Config Splits Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Create Split",
+        "description": "New effective-dated row \u2014 history is never edited (release math pins its split).",
+        "operationId": "create_split_api_v1_config_splits_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SplitCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SplitRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/mills": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Mills",
+        "operationId": "list_mills_api_v1_config_mills_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MillRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Mills Api V1 Config Mills Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Create Mill",
+        "operationId": "create_mill_api_v1_config_mills_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MillUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/mills/{mill_id}": {
+      "patch": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Update Mill",
+        "operationId": "update_mill_api_v1_config_mills__mill_id__patch",
+        "parameters": [
+          {
+            "name": "mill_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Mill Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MillUpsert"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MillRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/tolerances": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Tolerances",
+        "operationId": "list_tolerances_api_v1_config_tolerances_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ToleranceRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Tolerances Api V1 Config Tolerances Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Create Tolerance",
+        "operationId": "create_tolerance_api_v1_config_tolerances_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToleranceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToleranceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/tolerances/{tol_id}": {
+      "patch": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Update Tolerance",
+        "operationId": "update_tolerance_api_v1_config_tolerances__tol_id__patch",
+        "parameters": [
+          {
+            "name": "tol_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Tol Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ToleranceUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ToleranceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/calendar": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Get Calendar",
+        "description": "month = YYYY-MM",
+        "operationId": "get_calendar_api_v1_config_calendar_get",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarDay"
+                  },
+                  "title": "Response Get Calendar Api V1 Config Calendar Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Calendar",
+        "description": "Bulk upsert \u2014 the admin screen saves a whole month at once.",
+        "operationId": "put_calendar_api_v1_config_calendar_put",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CalendarDay"
+                },
+                "title": "Days"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarDay"
+                  },
+                  "title": "Response Put Calendar Api V1 Config Calendar Put"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/settings": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Settings",
+        "operationId": "list_settings_api_v1_config_settings_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/SettingRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Settings Api V1 Config Settings Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/config/settings/{key}": {
+      "put": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Put Setting",
+        "description": "ops_mode lives here \u2014 switching parallel_run \u2192 authoritative is a BUSINESS\ndecision (playbook \u00a77 human checkpoint), the API just records who flipped it.",
+        "operationId": "put_setting_api_v1_config_settings__key__put",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingPut"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettingRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/healthz": {
       "get": {
         "tags": [
@@ -295,6 +1737,175 @@
   },
   "components": {
     "schemas": {
+      "BomLineRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "component_material_id": {
+            "type": "integer",
+            "title": "Component Material Id"
+          },
+          "item_no": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item No"
+          },
+          "qty_per": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty Per"
+          },
+          "uom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom"
+          },
+          "is_scrap_credit": {
+            "type": "boolean",
+            "title": "Is Scrap Credit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "component_material_id",
+          "item_no",
+          "qty_per",
+          "uom",
+          "is_scrap_credit"
+        ],
+        "title": "BomLineRead"
+      },
+      "BomRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "parent_material_id": {
+            "type": "integer",
+            "title": "Parent Material Id"
+          },
+          "alt_bom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alt Bom"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/BomLineRead"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "parent_material_id",
+          "alt_bom",
+          "is_active"
+        ],
+        "title": "BomRead"
+      },
+      "CalendarDay": {
+        "properties": {
+          "cal_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Cal Date"
+          },
+          "is_working": {
+            "type": "boolean",
+            "title": "Is Working"
+          },
+          "shifts": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shifts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "cal_date",
+          "is_working"
+        ],
+        "title": "CalendarDay"
+      },
+      "CustomerRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "sap_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sap Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sap_code",
+          "name",
+          "gstin"
+        ],
+        "title": "CustomerRead"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -307,6 +1918,104 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "LineCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "plant": {
+            "type": "string",
+            "title": "Plant",
+            "default": "1117"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "LineCreate"
+      },
+      "LineMaterialsPut": {
+        "properties": {
+          "material_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Material Ids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_ids"
+        ],
+        "title": "LineMaterialsPut"
+      },
+      "LineRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "plant": {
+            "type": "string",
+            "title": "Plant"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "material_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Material Ids",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "plant",
+          "is_active"
+        ],
+        "title": "LineRead"
+      },
+      "LineUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "LineUpdate"
       },
       "LoginRequest": {
         "properties": {
@@ -349,6 +2058,332 @@
           "refresh_token"
         ],
         "title": "LogoutRequest"
+      },
+      "MaterialCreate": {
+        "properties": {
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "mat_type": {
+            "type": "string",
+            "title": "Mat Type",
+            "default": "ROH"
+          },
+          "mat_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mat Group"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom",
+            "default": "EA"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "abc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abc"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sap_code",
+          "description"
+        ],
+        "title": "MaterialCreate"
+      },
+      "MaterialRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "mat_type": {
+            "type": "string",
+            "title": "Mat Type"
+          },
+          "mat_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mat Group"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "abc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abc"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sap_code",
+          "description",
+          "mat_type",
+          "mat_group",
+          "uom",
+          "price",
+          "abc",
+          "is_active",
+          "source"
+        ],
+        "title": "MaterialRead"
+      },
+      "MaterialUpdate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "mat_group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mat Group"
+          },
+          "uom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom"
+          },
+          "price": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Price"
+          },
+          "abc": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Abc"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "MaterialUpdate"
+      },
+      "MillRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
+          "moq_mt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moq Mt"
+          },
+          "sourcing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "lead_days",
+          "moq_mt",
+          "sourcing"
+        ],
+        "title": "MillRead"
+      },
+      "MillUpsert": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "lead_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Lead Days"
+          },
+          "moq_mt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moq Mt"
+          },
+          "sourcing": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcing"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "MillUpsert"
       },
       "OtpRequestRequest": {
         "properties": {
@@ -430,6 +2465,395 @@
         ],
         "title": "PinSwitchRequest"
       },
+      "ProductionOrderCreate": {
+        "properties": {
+          "sap_order_no": {
+            "type": "string",
+            "title": "Sap Order No"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status",
+            "default": "released"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sap_order_no",
+          "line_id",
+          "material_id"
+        ],
+        "title": "ProductionOrderCreate"
+      },
+      "ProductionOrderRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "sap_order_no": {
+            "type": "string",
+            "title": "Sap Order No"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sap_order_no",
+          "line_id",
+          "material_id",
+          "status"
+        ],
+        "title": "ProductionOrderRead"
+      },
+      "ProductionOrderUpdate": {
+        "properties": {
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "ProductionOrderUpdate"
+      },
+      "PurchaseOrderRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "sap_po_no": {
+            "type": "string",
+            "title": "Sap Po No"
+          },
+          "item_no": {
+            "type": "integer",
+            "title": "Item No"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "ordered_qty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ordered Qty"
+          },
+          "open_qty": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Open Qty"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate"
+          },
+          "uom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom"
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sap_po_no",
+          "item_no",
+          "vendor_id",
+          "material_id",
+          "ordered_qty",
+          "open_qty",
+          "rate",
+          "uom",
+          "status"
+        ],
+        "title": "PurchaseOrderRead"
+      },
+      "ReasonCodeCreate": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label_en": {
+            "type": "string",
+            "title": "Label En"
+          },
+          "label_mr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Mr"
+          },
+          "sort": {
+            "type": "integer",
+            "title": "Sort",
+            "default": 0
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "code",
+          "label_en"
+        ],
+        "title": "ReasonCodeCreate"
+      },
+      "ReasonCodeRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "label_en": {
+            "type": "string",
+            "title": "Label En"
+          },
+          "label_mr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Mr"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "code",
+          "label_en",
+          "label_mr",
+          "sort",
+          "is_active"
+        ],
+        "title": "ReasonCodeRead"
+      },
+      "ReasonCodeUpdate": {
+        "properties": {
+          "label_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label En"
+          },
+          "label_mr": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Mr"
+          },
+          "sort": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sort"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "ReasonCodeUpdate"
+      },
       "RefreshRequest": {
         "properties": {
           "refresh_token": {
@@ -442,6 +2866,114 @@
           "refresh_token"
         ],
         "title": "RefreshRequest"
+      },
+      "SettingPut": {
+        "properties": {
+          "value": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "value"
+        ],
+        "title": "SettingPut"
+      },
+      "SettingRead": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "value": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Value"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "description"
+        ],
+        "title": "SettingRead"
+      },
+      "SplitCreate": {
+        "properties": {
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "yesh_pct": {
+            "type": "integer",
+            "title": "Yesh Pct"
+          },
+          "laxmi_pct": {
+            "type": "integer",
+            "title": "Laxmi Pct"
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective From"
+          }
+        },
+        "type": "object",
+        "required": [
+          "family",
+          "yesh_pct",
+          "laxmi_pct",
+          "effective_from"
+        ],
+        "title": "SplitCreate"
+      },
+      "SplitRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "family": {
+            "type": "string",
+            "title": "Family"
+          },
+          "yesh_pct": {
+            "type": "integer",
+            "title": "Yesh Pct"
+          },
+          "laxmi_pct": {
+            "type": "integer",
+            "title": "Laxmi Pct"
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Effective From"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "family",
+          "yesh_pct",
+          "laxmi_pct",
+          "effective_from"
+        ],
+        "title": "SplitRead"
       },
       "TokenResponse": {
         "properties": {
@@ -488,6 +3020,103 @@
         ],
         "title": "TokenResponse"
       },
+      "ToleranceCreate": {
+        "properties": {
+          "mat_group": {
+            "type": "string",
+            "title": "Mat Group"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "pct_tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Pct Tolerance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mat_group",
+          "uom",
+          "pct_tolerance"
+        ],
+        "title": "ToleranceCreate"
+      },
+      "ToleranceRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "mat_group": {
+            "type": "string",
+            "title": "Mat Group"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "pct_tolerance": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Pct Tolerance"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "mat_group",
+          "uom",
+          "pct_tolerance",
+          "is_active"
+        ],
+        "title": "ToleranceRead"
+      },
+      "ToleranceUpdate": {
+        "properties": {
+          "pct_tolerance": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct Tolerance"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "ToleranceUpdate"
+      },
       "ValidationError": {
         "properties": {
           "loc": {
@@ -527,6 +3156,307 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VendorCreate": {
+        "properties": {
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Limit"
+          },
+          "qty_limit_mt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Limit Mt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sap_code",
+          "name"
+        ],
+        "title": "VendorCreate"
+      },
+      "VendorRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Limit"
+          },
+          "qty_limit_mt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Limit Mt"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "sap_code",
+          "name",
+          "gstin",
+          "phone",
+          "city",
+          "state",
+          "credit_limit",
+          "qty_limit_mt",
+          "is_active",
+          "source"
+        ],
+        "title": "VendorRead"
+      },
+      "VendorUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "gstin": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gstin"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "city": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "City"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Limit"
+          },
+          "qty_limit_mt": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Limit Mt"
+          },
+          "is_active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "title": "VendorUpdate"
       }
     }
   }
