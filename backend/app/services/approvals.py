@@ -200,6 +200,9 @@ def decide(db: Session, user: CurrentUser, approval_id: int, decision: str,
            after={"status": approval.status, "decision": decision,
                   "acting_role": acting_role, "on_behalf_of_user_id": on_behalf_of,
                   "note": note, "handler": handler_result})
+    if approval.status in ("approved", "declined"):  # terminal → close SLA escalations
+        from app.services.escalations import resolve_events
+        resolve_events(db, "approvals", approval.id)
     db.commit()
     db.refresh(approval)
     return approval
@@ -223,6 +226,8 @@ def override(db: Session, user: CurrentUser, approval_id: int, reason: str) -> A
     approval.overridden_by = user.id
     approval.override_reason = reason
     handler_result = _run_handler(db, approval_handlers.APPLY, approval)
+    from app.services.escalations import resolve_events
+    resolve_events(db, "approvals", approval.id)  # override is terminal for SLA chains
     review = create_approval(  # post-facto sign-off by the ORIGINAL roles
         db, approval_type="override_review", ref_type="approvals", ref_id=approval.id,
         payload={"original_approval_id": approval.id, "reason": reason},

@@ -6,7 +6,7 @@ from sqlalchemy import (Boolean, CheckConstraint, Date, ForeignKey, Integer, Tex
                         UniqueConstraint)
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.models.base import Base, Money, Qty, intpk
+from app.models.base import Base, JSONVariant, Money, Qty, intpk
 
 
 class Vendor(Base):
@@ -95,6 +95,9 @@ class Line(Base):
     id: Mapped[intpk]
     name: Mapped[str] = mapped_column(Text)
     plant: Mapped[str] = mapped_column(Text, default="1117", server_default="1117")
+    # §11.18 / Domain_QA Q6: shifts vary by line — per-line override of the
+    # plan_calendar plant default, e.g. {"A": "06:00-14:30", "B": "14:30-23:00"}
+    shift_pattern: Mapped[dict | None] = mapped_column(JSONVariant)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
 
 

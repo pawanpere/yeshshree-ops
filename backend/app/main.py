@@ -81,14 +81,37 @@ app.include_router(exports_router)
 
 @app.get("/api/v1/system/healthz", tags=["system"])
 def healthz() -> dict:
-    """DB reachability + (later) storage + outbox backlog. Architecture §7."""
-    db_ok = True
+    """DB reachability + storage driver + outbox backlog (Architecture §7).
+    degraded when: DB down, storage unwritable, or any outbox row is 'failed'."""
+    db_ok, storage_ok = True, True
+    outbox = {"pending": 0, "batched": 0, "failed": 0}
     try:
         with get_engine().connect() as conn:
             conn.execute(text("SELECT 1"))
+        from sqlalchemy.orm import Session
+        from app.sap_sync.batcher import backlog
+        with Session(get_engine()) as s:
+            outbox = backlog(s)
     except Exception:
         db_ok = False
-    return {"status": "ok" if db_ok else "degraded", "db": db_ok}
+    try:
+        s = get_settings()
+        if s.s3_endpoint:
+            import boto3
+            boto3.client("s3", endpoint_url=s.s3_endpoint,
+                         aws_access_key_id=s.s3_access_key,
+                         aws_secret_access_key=s.s3_secret_key
+                         ).head_bucket(Bucket=s.s3_bucket)
+        else:
+            from pathlib import Path
+            probe = Path("filestore") / ".healthz"
+            probe.parent.mkdir(parents=True, exist_ok=True)
+            probe.write_text("ok")
+    except Exception:
+        storage_ok = False
+    healthy = db_ok and storage_ok and outbox["failed"] == 0
+    return {"status": "ok" if healthy else "degraded", "db": db_ok,
+            "storage": storage_ok, "outbox": outbox}
 
 
 @app.get("/api/v1/system/min-version", tags=["system"])

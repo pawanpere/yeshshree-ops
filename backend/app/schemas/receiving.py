@@ -22,6 +22,8 @@ class GoodsReceiptCreate(BaseModel):
     qc_result: Literal["pass", "fail"]  # 'fail' = full-lot reject (§11.9)
     qc_remarks: str | None = None
     confirm_escalate: bool = False  # operator confirms a hard anomaly → escalate path
+    weighbridge_weight: Decimal | None = None  # §11.18: steel-by-weight evidence
+    weighbridge_slip_photo_id: int | None = None  # files.id of the slip photo/scan
     client_ref: uuid.UUID
 
 
@@ -38,6 +40,8 @@ class GoodsReceiptRead(_Read):
     qc_result: str
     qc_remarks: str | None
     shortage_qty: Decimal
+    weighbridge_weight: Decimal | None
+    weighbridge_slip_photo_id: int | None
     status: str
     posted_by: int
     posted_at: datetime

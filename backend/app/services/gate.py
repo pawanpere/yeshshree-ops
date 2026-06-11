@@ -263,6 +263,8 @@ def link_po(db: Session, user: CurrentUser, entry_id: int, po_id: int) -> GateEn
            after={"po_id": entry.po_id, "material_id": entry.material_id,
                   "qty_expected": str(entry.qty_expected),
                   "match_status": "matched"})
+    from app.services.escalations import resolve_events
+    resolve_events(db, "gate_entries", entry.id)  # closes unmatched_gate_24h chain
     db.commit()
     db.refresh(entry)
     return entry
@@ -275,6 +277,8 @@ def mark_consumable(db: Session, user: CurrentUser, entry_id: int) -> GateEntry:
     record(db, user_id=user.id, entity="gate_entries", entity_id=entry.id,
            action="status_change", before=before,
            after={"match_status": "consumable"})
+    from app.services.escalations import resolve_events
+    resolve_events(db, "gate_entries", entry.id)  # closes unmatched_gate_24h chain
     db.commit()
     db.refresh(entry)
     return entry

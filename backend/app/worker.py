@@ -13,6 +13,7 @@ from app.sap_sync.batcher import process_outbox, recover_stuck
 from app.services.escalations import escalation_scan
 from app.services.notifications import blocker_repeat, digest_bundle
 from app.services.production import shift_auto_close_job
+from app.services.sweeps import photos_pending_sweep
 
 log = structlog.get_logger()
 
@@ -22,6 +23,7 @@ JOBS = [  # (name, fn(db), interval_seconds)
     ("shift_auto_close", lambda db: shift_auto_close_job(db), 300),
     ("blocker_repeat", lambda db: blocker_repeat(db), 900),
     ("digest_bundle", lambda db: digest_bundle(db), 3600),
+    ("photos_pending_sweep", lambda db: photos_pending_sweep(db), 86400),
 ]
 
 

@@ -116,10 +116,17 @@ def post_goods_receipt(db: Session, user: CurrentUser, body) -> GoodsReceipt:
                       expected_qty=expected, received_qty=received,
                       accepted_qty=accepted, rejected_qty=rejected,
                       qc_result=body.qc_result, qc_remarks=body.qc_remarks,
-                      shortage_qty=shortage, status="posted",
+                      shortage_qty=shortage,
+                      weighbridge_weight=body.weighbridge_weight,
+                      weighbridge_slip_photo_id=body.weighbridge_slip_photo_id,
+                      status="posted",
                       client_ref=body.client_ref, posted_by=user.id, posted_at=now)
     db.add(gr)
     db.flush()
+
+    # GR resolves any open gate-entry escalation events (gr_pending_30m / unmatched_24h)
+    from app.services.escalations import resolve_events
+    resolve_events(db, "gate_entries", entry.id)
 
     if hard:  # confirm_escalate=True: register + blocker-notify, then proceed (§5.5)
         for h in hard:
@@ -213,6 +220,9 @@ def resolve_anomaly(db: Session, user: CurrentUser, anomaly_id: int, note: str) 
     record(db, user_id=user.id, entity="anomalies", entity_id=row.id,
            action="status_change", before=before,
            after={"status": "resolved", "note": note})
+    # closes any open hard_block_unanswered escalation chain on this anomaly
+    from app.services.escalations import resolve_events
+    resolve_events(db, "anomalies", row.id)
     db.commit()
     db.refresh(row)
     return row

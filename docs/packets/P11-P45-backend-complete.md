@@ -40,3 +40,14 @@ Bajaj schedule parser final form (sample pending) · SAP postback CSV spec + ack
 (SAP team) · baseline Alembic migration + audit INSERT-only grant (dev machine, human
 checkpoint) · weighbridge_weight + lines.shift_pattern columns (single migration packet) ·
 vendor portal P37 (post-pilot per Domain_QA) · real SMS OTP · FCM push.
+
+## Closeout addendum (items 8–10, 2026-06-12)
+- goods_receipts += weighbridge_weight + weighbridge_slip_photo_id (schema+service+API);
+  lines += shift_pattern JSON — auto-close now honors per-line shifts over the plant default
+  (Domain_QA Q6/Q7 closed). Columns land in the baseline migration (not yet generated).
+- escalations.resolve_events wired at all completion points: GR posted / PO linked /
+  marked consumable (gate chains), approval decided/overridden (SLA chains), anomaly
+  resolved (hard-block chain), agent heartbeat (stale chain).
+- photos_pending_sweep job (24h, notify-once, idempotent) added to the worker.
+- /healthz enriched: db + storage probe (S3 head_bucket / local write) + outbox backlog;
+  degraded on any failed outbox row. Suite: 127/127 verify-lite green.

@@ -471,9 +471,13 @@ def shift_auto_close_job(db: Session, now: dt.datetime | None = None) -> int:
                  .filter(ShiftContext.closed_at.is_(None))
                  .order_by(ShiftContext.id).all())
     for ctx in open_ctxs:
+        # §11.18 / Domain_QA Q6: shifts vary by line — the line's shift_pattern
+        # overrides the plant default from plan_calendar.
+        line = db.get(Line, ctx.line_id)
         cal = db.get(PlanCalendar, ctx.shift_date)
-        end = _shift_end(cal.shifts if cal else None, ctx.shift, ctx.shift_date,
-                         now.tzinfo)
+        shifts = (line.shift_pattern if line and line.shift_pattern
+                  else (cal.shifts if cal else None))
+        end = _shift_end(shifts, ctx.shift, ctx.shift_date, now.tzinfo)
         if end is None or now < end:
             continue
         ctx.closed_at = now

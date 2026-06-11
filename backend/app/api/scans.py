@@ -139,9 +139,13 @@ def agent_heartbeat(body: HeartbeatRequest, db: Session = Depends(get_db),
     if row is None:
         row = StationStatus(device_key=body.device_key, kind="gate_agent")
         db.add(row)
+        db.flush()
     row.last_heartbeat_at = datetime.now(timezone.utc)
     row.agent_version = body.agent_version
     row.detail = detail
+    # a live heartbeat closes any open gate_agent_stale escalation chain
+    from app.services.escalations import resolve_events
+    resolve_events(db, "station_status", row.id)
     db.commit()
     db.refresh(row)
     return row
