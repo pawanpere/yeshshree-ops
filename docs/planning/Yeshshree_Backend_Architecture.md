@@ -93,7 +93,7 @@ Conventions: BIGINT identity PKs; `client_ref UUID UNIQUE` on every user-created
 | Table | Columns |
 |---|---|
 | `vendors` | id, sap_code UQ, name, gstin, phone, city, state, credit_limit, qty_limit_mt, is_active |
-| `materials` | id, sap_code UQ, description, mat_type CHECK(ROH·HALB·FERT), mat_group, uom, price, abc, is_active |
+| `materials` | id, sap_code UQ, description, mat_type (NO CHECK — SAP owns this vocabulary; real export has ERSA, HIBE, ROH1, LEIH, Z-types), mat_group, uom, price, abc, is_active |
 | `boms` | id, parent_material_id FK, alt_bom, is_active · `bom_lines`: id, bom_id FK, component_material_id FK, item_no, qty_per, uom, is_scrap_credit (negative BOM lines in the real export) |
 | `purchase_orders` | id, sap_po_no, item_no, vendor_id FK, material_id FK, ordered_qty, open_qty, rate, uom, due_date, status, UQ(sap_po_no, item_no) |
 | `lines` | id, name, plant, is_active · `line_materials`: line_id FK, material_id FK |
@@ -134,7 +134,7 @@ Conventions: BIGINT identity PKs; `client_ref UUID UNIQUE` on every user-created
 |---|---|
 | `goods_receipts` | id, doc_no (GR-…), gate_entry_id FK, po_id FK NULL, material_id FK, expected_qty, received_qty, accepted_qty, rejected_qty, qc_result CHECK(pass·fail), qc_remarks, shortage_qty, status CHECK(posted·cancelled), client_ref UQ, posted_by, posted_at |
 | `debit_notes` | id, doc_no, goods_receipt_id FK, vendor_id FK, kind CHECK(shortage_5x), base_amount, multiplier, amount, status CHECK(draft·approved·declined·raised), approval_id FK NULL |
-| `stock_ledger` | id, plant, material_id FK, location CHECK(RM·WIP·FG·AT_VENDOR), movement CHECK(GR_IN·ISSUE_OUT·PROD_IN·PROD_CONSUME·DISPATCH_OUT·ADJUST), qty (signed), uom, vendor_id FK NULL, ref_type, ref_id, created_by, created_at — **append-only; the only way stock changes** |
+| `stock_ledger` | id, plant, material_id FK, location CHECK(RM·WIP·FG·AT_VENDOR), movement CHECK(GR_IN·ISSUE_OUT·PROD_IN·PROD_CONSUME·DISPATCH_OUT·ADJUST), qty (signed), uom, vendor_id FK NULL, ref_type, ref_id, created_by NULL (NULL = system-written: reconcile imports, worker corrections — actor lives on the source doc + audit_log), created_at — **append-only; the only way stock changes** |
 | `stock_balances` | VIEW: SUM(qty) by plant, material, location (+ vendor for AT_VENDOR). Materialize only if ever slow |
 | `issues` | id, doc_no (ISS-…), destination CHECK(inhouse·vendor_sale·job_work), line_id FK NULL, vendor_id FK NULL, material_id FK, qty, uom, value, limit_check JSONB (snapshot of the check at decision time), status CHECK(posted·blocked·waiver_pending·cancelled), approval_id FK NULL, client_ref UQ, created_by, created_at |
 
@@ -405,3 +405,7 @@ First confirmation of a shift opens the context, pinning the `line_plans` revisi
 - Full-lot rejection writes zero stock movements; corrections are always reversal + new row via approval, never an edit.
 - Released schedules and superseded plan revisions are never deleted — rollback is a new release.
 - No held confirmation is ever lost: `confirmation_holds.payload` preserves the full submission until PPC resolves or discards.
+
+### 11.18 Domain Q&A deltas (12 Jun 2026 — see repo `docs/planning/Domain_QA.md`)
+
+Confirmed: invoice is SAP-created (app confirm-only, M5 minimal) · production orders stable per part/month · exposure formula = §5.5a as designed · 100% physical count at QC → **GR screen never prefills received qty**. New: gate/GR capture `weighbridge_weight` + weighbridge-slip photo (1 gate, 15–50 trucks/day, slip-printing weighbridge); shifts **vary by line** → `plan_calendar.shifts` is the plant default with per-line override (P29/30). Re-sequenced: vendor portal (M6) moves after M7 — pilot is internal-only. Still blocked: Bajaj schedule sample (parser P11); pilot part list; line list (admin-editable placeholders).
