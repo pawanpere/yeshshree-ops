@@ -5,6 +5,8 @@ import uuid
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 
+from app.api.auth import router as auth_router
+from app.core import audit
 from app.core.config import get_settings
 from app.core.db import get_engine
 
@@ -23,6 +25,29 @@ async def request_id_middleware(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Request-Id"] = request.state.request_id
     return response
+
+
+@app.middleware("http")
+async def audit_middleware(request: Request, call_next):
+    """Invariant 1: every mutating request leaves an audit row — even failed ones.
+    Bodies are never stored (passwords/PINs). Field-level diffs are the services' job
+    via audit.record(). Audit failure must never take the request down with it."""
+    response = await call_next(request)
+    if audit.is_mutating(request.method) and not request.url.path.startswith("/openapi"):
+        try:
+            from app.core.db import get_engine as _ge
+            from sqlalchemy.orm import Session
+            with Session(_ge()) as s:
+                audit.write_request_audit(s, request=request,
+                                          response_status=response.status_code)
+                s.commit()
+        except Exception:
+            import structlog
+            structlog.get_logger().error("audit_write_failed", path=request.url.path)
+    return response
+
+
+app.include_router(auth_router)
 
 
 @app.get("/api/v1/system/healthz", tags=["system"])

@@ -4,13 +4,18 @@ from verify-lite (see Makefile)."""
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
 
 from app.models import Base
 
 
 @pytest.fixture()
 def engine():
-    eng = create_engine("sqlite://")  # in-memory, fresh per test
+    # StaticPool + check_same_thread=False: ONE shared in-memory DB across threads —
+    # TestClient executes requests in a worker thread (classic SQLite-test gotcha).
+    eng = create_engine("sqlite://",
+                        connect_args={"check_same_thread": False},
+                        poolclass=StaticPool)
     Base.metadata.create_all(eng)
     yield eng
     eng.dispose()
