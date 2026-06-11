@@ -32,7 +32,9 @@ class Material(Base):
     """Material master (RM/semi-finished/finished). §4.2 (+§11.15 source)."""
     __tablename__ = "materials"
     __table_args__ = (
-        CheckConstraint("mat_type IN ('ROH','HALB','FERT')", name="mat_type_valid"),
+        # mat_type deliberately UNconstrained: SAP owns this vocabulary (real plant-1117
+        # export contains ERSA, HIBE, ROH1, LEIH, ZCDT, ZSCP, ZCAP…). We never CHECK
+        # vocabularies an external system controls. Found by golden-file test, 2026-06-11.
         CheckConstraint("source IN ('sap_import','manual')", name="source_valid"),
     )
     id: Mapped[intpk]
