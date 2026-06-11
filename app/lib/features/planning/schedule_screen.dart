@@ -315,7 +315,7 @@ class _ScheduleEditorPageState extends State<_ScheduleEditorPage> {
               Row(children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    value: _customerId,
+                    initialValue: _customerId,
                     hint: Text(S.t('Customer', 'ग्राहक')),
                     items: _customers
                         .map((c) => DropdownMenuItem<int>(

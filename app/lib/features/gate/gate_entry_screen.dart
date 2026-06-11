@@ -339,7 +339,7 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           if (_docType == 'other_inward') ...[
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _inwardCategory,
+              initialValue: _inwardCategory,
               isExpanded: true,
               decoration: InputDecoration(
                   labelText: S.t('Inward category', 'आवक प्रकार')),
@@ -433,7 +433,7 @@ class _GateEntryScreenState extends ConsumerState<GateEntryScreen> {
           ],
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
-            value: _po?['id'] as int?,
+            initialValue: _po?['id'] as int?,
             isExpanded: true,
             decoration: InputDecoration(
                 labelText: S.t('Purchase order', 'खरेदी ऑर्डर (PO)'),

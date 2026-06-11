@@ -100,7 +100,7 @@ class _SupervisorHomeScreenState extends ConsumerState<SupervisorHomeScreen> {
                 title: S.t('Could not load lines', 'लाईन्स लोड झाल्या नाहीत'),
                 body: _linesError, kind: 'danger'),
           DropdownButtonFormField<int>(
-            value: _lineId,
+            initialValue: _lineId,
             hint: Text(S.t('Select line', 'लाईन निवडा')),
             items: (_lines ?? [])
                 .map((l) => DropdownMenuItem<int>(

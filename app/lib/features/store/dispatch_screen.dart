@@ -179,7 +179,7 @@ class _DispatchScreenState extends ConsumerState<DispatchScreen> {
         padding: const EdgeInsets.all(12),
         children: [
           DropdownButtonFormField<int>(
-            value: _customerId,
+            initialValue: _customerId,
             isExpanded: true,
             decoration:
                 InputDecoration(labelText: S.t('Customer', 'ग्राहक')),

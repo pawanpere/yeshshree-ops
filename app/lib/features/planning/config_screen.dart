@@ -303,7 +303,7 @@ class _ReasonsTabState extends State<_ReasonsTab> {
               : S.t('Edit reason code', 'कारण कोड बदला')),
           content: Column(mainAxisSize: MainAxisSize.min, children: [
             DropdownButtonFormField<String>(
-              value: kind,
+              initialValue: kind,
               decoration:
                   InputDecoration(labelText: S.t('Kind', 'प्रकार')),
               items: const [

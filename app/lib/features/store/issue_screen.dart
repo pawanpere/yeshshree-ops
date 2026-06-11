@@ -199,7 +199,7 @@ class _IssueScreenState extends ConsumerState<IssueScreen> {
           const SizedBox(height: 12),
           if (_dest == 'inhouse')
             DropdownButtonFormField<int>(
-              value: _lineId,
+              initialValue: _lineId,
               isExpanded: true,
               decoration: InputDecoration(
                   labelText: S.t('Production line', 'उत्पादन लाईन')),

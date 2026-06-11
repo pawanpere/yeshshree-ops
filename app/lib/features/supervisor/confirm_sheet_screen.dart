@@ -257,7 +257,7 @@ class _ConfirmSheetScreenState extends ConsumerState<ConfirmSheetScreen> {
           ]),
           const SizedBox(height: 10),
           DropdownButtonFormField<int>(
-            value: _rejectReasonId,
+            initialValue: _rejectReasonId,
             decoration: InputDecoration(
                 labelText: S.t('Reject reason (required if reject > 0)',
                     'नाकारण्याचे कारण (नाकारले > 0 असल्यास आवश्यक)')),
@@ -286,7 +286,7 @@ class _ConfirmSheetScreenState extends ConsumerState<ConfirmSheetScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: DropdownButtonFormField<int>(
-                value: _downtimeReasonId,
+                initialValue: _downtimeReasonId,
                 decoration:
                     InputDecoration(labelText: S.t('Reason', 'कारण')),
                 items: _downtimeReasons

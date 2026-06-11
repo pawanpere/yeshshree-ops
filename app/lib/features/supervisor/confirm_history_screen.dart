@@ -69,7 +69,7 @@ class _ConfirmHistoryScreenState extends ConsumerState<ConfirmHistoryScreen> {
           Row(children: [
             Expanded(
               child: DropdownButtonFormField<int?>(
-                value: _lineId,
+                initialValue: _lineId,
                 hint: Text(S.t('All lines', 'सर्व लाईन्स')),
                 items: [
                   DropdownMenuItem<int?>(
