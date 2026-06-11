@@ -1,5 +1,9 @@
 # Yeshshree Ops — agent guide
 
+**Debugging or changing existing behavior? Read `docs/ai/SYSTEM_MAP.md` FIRST** —
+domain→file lookup, extension registries, transaction tracing, symptom cookbook,
+status state machines, and the looks-like-a-bug-but-is-a-decision list.
+
 Manufacturing operations app for Yeshshree Press Comps (plant 1117, Tier-1 to Bajaj).
 FastAPI + PostgreSQL backend · Flutter (Android + Web) · gate-agent (Windows watcher).
 Planning docs (read the section your packet quotes, not the whole thing):
