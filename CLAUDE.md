@@ -15,7 +15,11 @@ Planning docs (read the section your packet quotes, not the whole thing):
 - `backend/app/sap_sync/` — outbox batcher, SFTP, ack, reconciliation.
 - `backend/app/core/` — settings, db, security, audit middleware.
 - `backend/tests/` — pytest. Markers: `postgres` (needs real PG), default runs on SQLite.
-- `app/` — Flutter. Generated Dio client only; ARB l10n en + mr.
+- `app/` — Flutter. READ `app/ARCHITECTURE.md` FIRST: the 5 screen rules (S.t bilingual
+  call-sites, ApiException handling, retry-queue for transactional POSTs with client_ref,
+  direct reads, router contract). Current deviations + upgrade paths are in ADR-006
+  (hand-written API calls until openapi-generator runs on the dev machine; S.t instead
+  of ARB; shared_preferences until secure storage).
 - `gate-agent/` — ScanJet folder watcher (P19).
 - `data/` — golden files (real SAP exports + 3 real scanned invoices). NEVER edit.
 - `docs/packets/` — one file per packet: spec, checklist, handoff notes.
