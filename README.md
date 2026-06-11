@@ -11,7 +11,7 @@ dispatch → billing → live dashboards. Pilot: parallel run with SAP + paper.
 |---|---|
 | backend/ (FastAPI + Postgres) | **Functionally complete**: 127 tests, ~90 endpoints, all 8 stages e2e-tested. Pending: baseline migration (dev machine), Bajaj schedule format, SAP CSV/ack spec. |
 | gate-agent/ (ScanJet watcher) | Built (agent.py + heartbeat); .exe packaging on Windows pending |
-| app/ (Flutter Android+Web) | not started (P09) |
+| app/ (Flutter Android+Web) | All 24 internal-pilot screens written (32 Dart files); first compile pending on dev machine (`flutter create . && flutter analyze`) |
 
 ## Quick start (dev machine)
     cp .env.example .env
