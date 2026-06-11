@@ -35,6 +35,14 @@ Status legend: ✅ settled · 🔶 placeholder until plant confirms · ⛔ block
 | 10 | Vendor participation? | ✅ Internal roles first; vendor portal later | **M6 (P37–P39) resequenced after M7.** Pilot = internal users only. Vendor scoping still built into services from day one (cheaper now than retrofitted). |
 | 12 | Timeline + admin? | ✅ 4–6 weeks to floor pilot; Kartik is admin | Aggressive: thin-slice packets only, nothing speculative. Vendor-portal deferral buys the time back. Admin guide in docs/human/ targets Kartik. |
 
+## Production confirmation — clarified scope (13 Jun 2026)
+
+| # | Question | Answer | Build consequence |
+|---|---|---|---|
+| 13 | Is production confirmation in the approved scope? | ✅ **YES — it is the core new module.** Earlier phrasing meant: it's the one flow *not digitized at the floor today*. | M4 (P29–P33) stays exactly as planned. |
+| 14 | What's wrong with today's process? | Confirmations happen **once every ~3 hours** — the confirmer must sit at a PC; there are **no computers on the shop floor**, so output waits in batches. | The app's job: phone-based confirmation at the line, posted as often as the supervisor wants (interim posts). Latency 3 h → minutes. This is the demo's money shot. |
+| 15 | Who is the source of truth for production? | ✅ **SAP.** The app captures at the floor and **uploads to SAP** — app is the capture layer, never a parallel truth. | Outbox postback for CONFIRMATION records is core MVP, not phase-2 polish: P40's CONFIRMATION batch path gets priority, and the SAP team's CSV spec for confirmations (AFRU-style) becomes the most urgent SAP-side input. Reinforces ADR-002/003. |
+
 ## Build-order impact (playbook §4 re-sequence)
 
 M0 ✓ → M1 (P10–P14, parser ⛔ on sample — P11 last) → M2 (P15–P22, + weighbridge fields) →
