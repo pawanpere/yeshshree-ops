@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: yeshshree
+      POSTGRES_PASSWORD: yeshshree
+      POSTGRES_DB: yeshshree
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U yeshshree"]
+      interval: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: yeshshree
+      MINIO_ROOT_PASSWORD: yeshshree123
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+  api:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://yeshshree:yeshshree@postgres:5432/yeshshree
+      S3_ENDPOINT: http://minio:9000
+    ports: ["8000:8000"]
+    volumes: ["./backend:/code"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      minio: {condition: service_started}
+
+  worker:
+    build: ./backend
+    command: python -m app.worker
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://yeshshree:yeshshree@postgres:5432/yeshshree
+      S3_ENDPOINT: http://minio:9000
+    volumes: ["./backend:/code"]
+    depends_on:
+      postgres: {condition: service_healthy}
+
+volumes:
+  pgdata:
+  miniodata:

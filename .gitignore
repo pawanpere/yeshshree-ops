@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+*.egg-info/
+.pytest_cache/
+app/build/
+app/.dart_tool/
+pgdata/
+.DS_Store

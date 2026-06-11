@@ -1,0 +1,42 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: yeshshree
+          POSTGRES_PASSWORD: yeshshree
+          POSTGRES_DB: yeshshree_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U yeshshree" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql+psycopg://yeshshree:yeshshree@localhost:5432/yeshshree_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install -e "backend[dev]"
+      - name: Full test suite (incl. postgres-marked)
+        run: cd backend && python -m pytest -q
+      - name: Migration drift check
+        run: cd backend && alembic upgrade head && alembic check
+      - name: OpenAPI artifact freshness
+        run: make openapi-check
+
+  flutter:
+    runs-on: ubuntu-latest
+    # Becomes blocking from P09 (Flutter scaffold). Until then, skips cleanly.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Skip until app exists
+        run: test -f app/pubspec.yaml || { echo "Flutter app not scaffolded yet (P09) — skipping"; exit 0; }
+      - uses: subosito/flutter-action@v2
+        if: hashFiles('app/pubspec.yaml') != ''
+        with: {channel: stable}
+      - run: cd app && flutter analyze && flutter test
+        if: hashFiles('app/pubspec.yaml') != ''
