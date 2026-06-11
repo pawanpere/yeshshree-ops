@@ -40,7 +40,7 @@ v2 changes: §11 added — every gap from `Yeshshree_Failure_Scenarios.md` §9 t
                                                            outbound postback)
 ```
 
-Two containers from one Docker image: `api` serves HTTP; `worker` runs scheduled jobs (APScheduler): outbox batcher + SFTP upload (5 min), SFTP inbound poll (15 min), anomaly baseline recompute (nightly), notification fan-out. No Celery/Redis — jobs are idempotent and DB-coordinated (`FOR UPDATE SKIP LOCKED`).
+Two containers from one Docker image: `api` serves HTTP; `worker` runs scheduled jobs via a **plain interval loop** (as built — every job is an importable, individually-testable function; no APScheduler/Celery/Redis): outbox batcher + SFTP upload (5 min), escalation scan (5 min), shift auto-close (5 min), blocker repeat (15 min), digest bundle (hourly), photo sweep (daily). Jobs are idempotent and DB-coordinated.
 
 Nothing inbound reaches the plant: the gate-agent and apps push outbound HTTPS only. No VPN, no port-forwarding.
 
@@ -132,7 +132,7 @@ Conventions: BIGINT identity PKs; `client_ref UUID UNIQUE` on every user-created
 
 | Table | Columns |
 |---|---|
-| `goods_receipts` | id, doc_no (GR-…), gate_entry_id FK, po_id FK NULL, material_id FK, expected_qty, received_qty, accepted_qty, rejected_qty, qc_result CHECK(pass·fail), qc_remarks, shortage_qty, status CHECK(posted·cancelled), client_ref UQ, posted_by, posted_at |
+| `goods_receipts` | id, doc_no (GR-…), gate_entry_id FK, po_id FK NULL, material_id FK, expected_qty, received_qty, accepted_qty, rejected_qty, qc_result CHECK(pass·fail), qc_remarks, shortage_qty, weighbridge_weight NULL + weighbridge_slip_photo_id FK files NULL (§11.18), status CHECK(posted·cancelled), client_ref UQ, posted_by, posted_at |
 | `debit_notes` | id, doc_no, goods_receipt_id FK, vendor_id FK, kind CHECK(shortage_5x), base_amount, multiplier, amount, status CHECK(draft·approved·declined·raised), approval_id FK NULL |
 | `stock_ledger` | id, plant, material_id FK, location CHECK(RM·WIP·FG·AT_VENDOR), movement CHECK(GR_IN·ISSUE_OUT·PROD_IN·PROD_CONSUME·DISPATCH_OUT·ADJUST), qty (signed), uom, vendor_id FK NULL, ref_type, ref_id, created_by NULL (NULL = system-written: reconcile imports, worker corrections — actor lives on the source doc + audit_log), created_at — **append-only; the only way stock changes** |
 | `stock_balances` | VIEW: SUM(qty) by plant, material, location (+ vendor for AT_VENDOR). Materialize only if ever slow |
@@ -180,7 +180,7 @@ One DB transaction containing: (1) validate input against current state → (2) 
 
 ### 5.4 SAP outbox state machine
 
-`pending` →(batcher groups by record_type, assigns seq-numbered batch)→ `batched` →(CSV built: header, rows incl. our record IDs, trailer with row-count+checksum; SFTP upload as `*.tmp`, rename)→ `sent` →(ack file from SAP, if provided)→ `acked`, or →(error/timeout)→ retry with exponential backoff; after 5 failures → `failed` + admin notification. Worker claims work with `FOR UPDATE SKIP LOCKED`, so a crashed worker mid-batch resumes cleanly. Recovery from any crash point is at-least-once + SAP-side dedupe on record ID.
+`pending` →(batcher groups by record_type, assigns seq-numbered batch)→ `batched` →(CSV built: header, rows incl. our record IDs, trailer with row-count+checksum; SFTP upload as `*.tmp`, rename)→ `sent` →(ack file from SAP, if provided)→ `acked`, or →(error/timeout)→ rows return to `pending` with an attempts counter and retry on the next 5-min pass (as built — no exponential backoff); after 5 failures → `failed` + admin notification. Worker claims work with `FOR UPDATE SKIP LOCKED`, so a crashed worker mid-batch resumes cleanly. Recovery from any crash point is at-least-once + SAP-side dedupe on record ID.
 
 ### 5.5 Anomaly rules
 
@@ -278,7 +278,7 @@ Each delta maps to a §9 item in `Yeshshree_Failure_Scenarios.md`; milestone in 
 
 ### 11.1 Parallel-run stock policy — `ops_mode` (§9-1, M3)
 
-`app_settings` key `ops_mode`: `{"mode": "parallel_run"}` — CHECK in service: `parallel_run·authoritative`. `services/inventory.py::check_stock()` reads it on every issue/dispatch: in `parallel_run`, insufficient/negative stock returns a **warning** (soft anomaly `stock_insufficient_warned` + posts anyway, `limit_check` snapshot records the warn); in `authoritative` it hard-blocks as designed. Stock reconcile: `import_jobs.kind` += `sap_stock`; importer diffs SAP snapshot vs `stock_balances` per material × location and writes `stock_ledger` `ADJUST` rows (`ref_type='import_job'`, `ref_id`=job) — fully audited, never an UPDATE. Upload via existing `POST /imports/upload?kind=sap_stock`.
+`app_settings` key `ops_mode`: `{"mode": "parallel_run"}` — CHECK in service: `parallel_run·authoritative`. `services/inventory.py::check_stock()` reads it on every issue/dispatch: in `parallel_run`, insufficient/negative stock returns a **warning** (soft anomaly `stock_insufficient_warned` + posts anyway, `limit_check` snapshot records the warn); in `authoritative` it hard-blocks as designed. Stock reconcile: `import_jobs.kind` += `sap_stock`; importer diffs SAP snapshot vs `stock_balances` per material × location and writes `stock_ledger` `ADJUST` rows (`ref_type='import_job'`, `ref_id`=job) — fully audited, never an UPDATE. Upload via `POST /imports/sap-stock` (as built).
 
 ### 11.2 Approval delegates, SLA, emergency override (§9-2, M3)
 
