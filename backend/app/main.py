@@ -5,10 +5,17 @@ import uuid
 from fastapi import FastAPI, Request
 from sqlalchemy import text
 
+from app.api.approvals import router as approvals_router
 from app.api.auth import router as auth_router
 from app.api.config import router as config_router
+from app.api.dashboards import router as dashboards_router
 from app.api.gate import router as gate_router
+from app.api.inventory import router as inventory_router
 from app.api.master import router as master_router
+from app.api.notifications import router as notifications_router
+from app.api.outbound import router as outbound_router
+from app.api.plans import router as plans_router
+from app.api.production import router as production_router
 from app.api.receiving import router as receiving_router
 from app.api.scans import scans_router, system_router
 from app.core import audit
@@ -59,6 +66,17 @@ app.include_router(gate_router)
 app.include_router(scans_router)
 app.include_router(system_router)
 app.include_router(receiving_router)
+app.include_router(plans_router)
+app.include_router(inventory_router)
+app.include_router(approvals_router)
+app.include_router(notifications_router)
+app.include_router(production_router)
+app.include_router(outbound_router)
+app.include_router(dashboards_router)
+
+# Reconciliation/export router registered below import to avoid circulars
+from app.api.exports import router as exports_router  # noqa: E402
+app.include_router(exports_router)
 
 
 @app.get("/api/v1/system/healthz", tags=["system"])

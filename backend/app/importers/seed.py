@@ -206,6 +206,8 @@ def run(reset: bool = False) -> dict:
         stats["lines"] = seed_lines_and_orders(db)
         seed_config(db)
         stats["users"] = seed_users(db)
+        from app.services.escalations import seed_default_escalation_rules
+        seed_default_escalation_rules(db)
         db.commit()
     return stats
 

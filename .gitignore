@@ -9,3 +9,4 @@ app/.dart_tool/
 pgdata/
 .DS_Store
 dev.db
+backend/filestore/

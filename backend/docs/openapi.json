@@ -2653,6 +2653,2452 @@
         }
       }
     },
+    "/api/v1/schedules": {
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Create Schedule",
+        "description": "Manual JSON entry path (provisional until the Bajaj sample \u2014 Domain_QA Q1).",
+        "operationId": "create_schedule_api_v1_schedules_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "List Schedules",
+        "operationId": "list_schedules_api_v1_schedules_get",
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period"
+            }
+          },
+          {
+            "name": "customer_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleRead"
+                  },
+                  "title": "Response List Schedules Api V1 Schedules Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/upload": {
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Upload Schedule",
+        "description": "Provisional-CSV upload \u2192 parser \u2192 draft schedule. Row errors are returned,\nnever raised \u2014 except when NO row parses, which is a 422.",
+        "operationId": "upload_schedule_api_v1_schedules_upload_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_schedule_api_v1_schedules_upload_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleUploadResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{schedule_id}/lines": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Schedule Lines",
+        "operationId": "get_schedule_lines_api_v1_schedules__schedule_id__lines_get",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ScheduleLineRead"
+                  },
+                  "title": "Response Get Schedule Lines Api V1 Schedules  Schedule Id  Lines Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{schedule_id}/diff": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Diff",
+        "operationId": "get_diff_api_v1_schedules__schedule_id__diff_get",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiffRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{schedule_id}/sanity": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Get Sanity",
+        "description": "Recomputed on read \u2014 the planner sees the verdict for the CURRENT config,\nnot a stale snapshot (release stores its own snapshot in schedules.sanity).",
+        "operationId": "get_sanity_api_v1_schedules__schedule_id__sanity_get",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SanityRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{schedule_id}/release": {
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Release Schedule",
+        "operationId": "release_schedule_api_v1_schedules__schedule_id__release_post",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReleaseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/schedules/{schedule_id}/re-release": {
+      "post": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Re Release Schedule",
+        "description": "\u00a711.13 rollback: clone old version as a new one and release it. Never deletes.",
+        "operationId": "re_release_schedule_api_v1_schedules__schedule_id__re_release_post",
+        "parameters": [
+          {
+            "name": "schedule_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Schedule Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReleaseReport"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/line-plans": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Line Plans",
+        "operationId": "line_plans_api_v1_plans_line_plans_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          },
+          {
+            "name": "line_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PlanRow"
+                  },
+                  "title": "Response Line Plans Api V1 Plans Line Plans Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/ppc-view": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Ppc View",
+        "operationId": "ppc_view_api_v1_plans_ppc_view_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PpcLine"
+                  },
+                  "title": "Response Ppc View Api V1 Plans Ppc View Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/plans/supervisor-view": {
+      "get": {
+        "tags": [
+          "plans"
+        ],
+        "summary": "Supervisor View",
+        "operationId": "supervisor_view_api_v1_plans_supervisor_view_get",
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Line Id"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SupervisorRow"
+                  },
+                  "title": "Response Supervisor View Api V1 Plans Supervisor View Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stock/balances": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Stock Balances",
+        "operationId": "stock_balances_api_v1_stock_balances_get",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Material Id"
+            }
+          },
+          {
+            "name": "location",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Location"
+            }
+          },
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vendor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BalanceRead"
+                  },
+                  "title": "Response Stock Balances Api V1 Stock Balances Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stock/days-of-cover/{material_id}": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Stock Days Of Cover",
+        "operationId": "stock_days_of_cover_api_v1_stock_days_of_cover__material_id__get",
+        "parameters": [
+          {
+            "name": "material_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Material Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DaysOfCoverRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/imports/sap-stock": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Import Sap Stock",
+        "description": "SAP stock snapshot \u2192 import_jobs(kind='sap_stock') + ADJUST reconcile (\u00a711.1).",
+        "operationId": "import_sap_stock_api_v1_imports_sap_stock_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_import_sap_stock_api_v1_imports_sap_stock_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SapStockImportResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/issues": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Post Issue",
+        "description": "200 (not 201): a retried client_ref returns the ORIGINAL result (invariant 4).",
+        "operationId": "post_issue_api_v1_issues_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IssueCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "List Issues",
+        "operationId": "list_issues_api_v1_issues_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "vendor_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Vendor Id"
+            }
+          },
+          {
+            "name": "destination",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Destination"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/IssueRead"
+                  },
+                  "title": "Response List Issues Api V1 Issues Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/issues/{issue_id}": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Get Issue",
+        "operationId": "get_issue_api_v1_issues__issue_id__get",
+        "parameters": [
+          {
+            "name": "issue_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Issue Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IssueRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/issues/{issue_id}/correction": {
+      "post": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Request Correction",
+        "operationId": "request_correction_api_v1_issues__issue_id__correction_post",
+        "parameters": [
+          {
+            "name": "issue_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Issue Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__inventory__CorrectionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__inventory__CorrectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vendors/{vendor_id}/exposure": {
+      "get": {
+        "tags": [
+          "inventory"
+        ],
+        "summary": "Vendor Exposure",
+        "operationId": "vendor_exposure_api_v1_vendors__vendor_id__exposure_get",
+        "parameters": [
+          {
+            "name": "vendor_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Vendor Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExposureRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/inbox": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Approvals Inbox",
+        "description": "Open approvals the caller can act on \u2014 own role or active delegation.",
+        "operationId": "approvals_inbox_api_v1_approvals_inbox_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ApprovalRead"
+                  },
+                  "type": "array",
+                  "title": "Response Approvals Inbox Api V1 Approvals Inbox Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/delegations": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Delegations",
+        "operationId": "list_delegations_api_v1_approvals_delegations_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/DelegationRead"
+                  },
+                  "type": "array",
+                  "title": "Response List Delegations Api V1 Approvals Delegations Get"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Create Delegation",
+        "operationId": "create_delegation_api_v1_approvals_delegations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelegationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/delegations/{delegation_id}": {
+      "patch": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Deactivate Delegation",
+        "description": "DELETE-as-deactivate: only {is_active: false} is accepted (never-do: no DELETE).",
+        "operationId": "deactivate_delegation_api_v1_approvals_delegations__delegation_id__patch",
+        "parameters": [
+          {
+            "name": "delegation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Delegation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DelegationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DelegationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals": {
+      "get": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "List Approvals",
+        "operationId": "list_approvals_api_v1_approvals_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ApprovalRead"
+                  },
+                  "title": "Response List Approvals Api V1 Approvals Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/decide": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Decide",
+        "operationId": "decide_api_v1_approvals__approval_id__decide_post",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/approvals/{approval_id}/override": {
+      "post": {
+        "tags": [
+          "approvals"
+        ],
+        "summary": "Override",
+        "description": "\u00a711.2 emergency override \u2014 post-facto override_review is auto-created.",
+        "operationId": "override_api_v1_approvals__approval_id__override_post",
+        "parameters": [
+          {
+            "name": "approval_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Approval Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OverrideRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "List Notifications",
+        "operationId": "list_notifications_api_v1_notifications_get",
+        "parameters": [
+          {
+            "name": "unread",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Unread"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationRead"
+                  },
+                  "title": "Response List Notifications Api V1 Notifications Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark Read",
+        "operationId": "mark_read_api_v1_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Notification Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/{notification_id}/act": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark Acted",
+        "description": "Sets acted_at \u2014 stops blocker repeats for the whole chain on this ref.",
+        "operationId": "mark_acted_api_v1_notifications__notification_id__act_post",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Notification Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirmations": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Post Confirmation",
+        "description": "200 (not 201): a retried client_ref returns the ORIGINAL result (invariant 4).",
+        "operationId": "post_confirmation_api_v1_confirmations_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmationCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "List Confirmations",
+        "description": "History incl. SAP outbox status (pending/batched/sent/\u2026 as sap_sync_status).",
+        "operationId": "list_confirmations_api_v1_confirmations_get",
+        "parameters": [
+          {
+            "name": "line_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Line Id"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ConfirmationRead"
+                  },
+                  "title": "Response List Confirmations Api V1 Confirmations Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirmations/hold": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Hold Confirmation",
+        "description": "\u00a711.11 \u2014 no resolvable order: store the full body, nothing lost, nothing posted.",
+        "operationId": "hold_confirmation_api_v1_confirmations_hold_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirmations/{confirmation_id}/correction": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Request Correction",
+        "operationId": "request_correction_api_v1_confirmations__confirmation_id__correction_post",
+        "parameters": [
+          {
+            "name": "confirmation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Confirmation Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/app__schemas__production__CorrectionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/app__schemas__production__CorrectionRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirmations/holds": {
+      "get": {
+        "tags": [
+          "production"
+        ],
+        "summary": "List Holds",
+        "operationId": "list_holds_api_v1_confirmations_holds_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": "open",
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HoldRead"
+                  },
+                  "title": "Response List Holds Api V1 Confirmations Holds Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/confirmations/holds/{hold_id}/resolve": {
+      "post": {
+        "tags": [
+          "production"
+        ],
+        "summary": "Resolve Hold",
+        "operationId": "resolve_hold_api_v1_confirmations_holds__hold_id__resolve_post",
+        "parameters": [
+          {
+            "name": "hold_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Hold Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HoldResolve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HoldResolveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatches": {
+      "post": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "Create Dispatch",
+        "description": "200 (not 201): a retried client_ref returns the ORIGINAL result (invariant 4).",
+        "operationId": "create_dispatch_api_v1_dispatches_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DispatchCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "List Dispatches",
+        "operationId": "list_dispatches_api_v1_dispatches_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DispatchRead"
+                  },
+                  "title": "Response List Dispatches Api V1 Dispatches Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dispatches/{dispatch_id}": {
+      "get": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "Get Dispatch",
+        "operationId": "get_dispatch_api_v1_dispatches__dispatch_id__get",
+        "parameters": [
+          {
+            "name": "dispatch_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Dispatch Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DispatchRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invoices": {
+      "post": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "Record Invoice",
+        "operationId": "record_invoice_api_v1_invoices_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvoiceCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "List Invoices",
+        "operationId": "list_invoices_api_v1_invoices_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "dispatch_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Dispatch Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/InvoiceRead"
+                  },
+                  "title": "Response List Invoices Api V1 Invoices Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invoices/{invoice_id}/confirm": {
+      "post": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "Confirm Sale",
+        "operationId": "confirm_sale_api_v1_invoices__invoice_id__confirm_post",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/invoices/{invoice_id}": {
+      "get": {
+        "tags": [
+          "outbound"
+        ],
+        "summary": "Get Invoice",
+        "operationId": "get_invoice_api_v1_invoices__invoice_id__get",
+        "parameters": [
+          {
+            "name": "invoice_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Invoice Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvoiceRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/achievement": {
+      "get": {
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Achievement",
+        "description": "Plan vs confirmed per line for a day (default: today).",
+        "operationId": "achievement_api_v1_dashboards_achievement_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AchievementOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/yield": {
+      "get": {
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Yield Dashboard",
+        "description": "Good vs rejected by line/shift + reject reasons + imputed scrap value.",
+        "operationId": "yield_dashboard_api_v1_dashboards_yield_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/YieldOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/sales": {
+      "get": {
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Sales",
+        "description": "Billed today / MTD from confirmed invoices (default month: current).",
+        "operationId": "sales_api_v1_dashboards_sales_get",
+        "parameters": [
+          {
+            "name": "month",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^\\d{4}-\\d{2}$"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboards/overview": {
+      "get": {
+        "tags": [
+          "dashboards"
+        ],
+        "summary": "Overview",
+        "description": "Management one-screen KPIs (default: today).",
+        "operationId": "overview_api_v1_dashboards_overview_get",
+        "parameters": [
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OverviewOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports/reconciliation": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "Reconciliation",
+        "description": "CSV of everything the app captured for that day, from the FROZEN outbox payloads\n(exactly what SAP was/will be told \u2014 not today's mutable state).",
+        "operationId": "reconciliation_api_v1_exports_reconciliation_get",
+        "parameters": [
+          {
+            "name": "on_date",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "title": "On Date"
+            }
+          },
+          {
+            "name": "record_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Record Type"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "text/plain": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/exports/sap-batches": {
+      "get": {
+        "tags": [
+          "exports"
+        ],
+        "summary": "Sap Batches",
+        "operationId": "sap_batches_api_v1_exports_sap_batches_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/healthz": {
       "get": {
         "tags": [
@@ -2704,6 +5150,136 @@
   },
   "components": {
     "schemas": {
+      "AchievementLine": {
+        "properties": {
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "line_name": {
+            "type": "string",
+            "title": "Line Name"
+          },
+          "planned": {
+            "type": "string",
+            "title": "Planned"
+          },
+          "confirmed_good": {
+            "type": "string",
+            "title": "Confirmed Good"
+          },
+          "confirmed_rejected": {
+            "type": "string",
+            "title": "Confirmed Rejected"
+          },
+          "pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct"
+          },
+          "shifts": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/ShiftSplit"
+            },
+            "type": "object",
+            "title": "Shifts"
+          },
+          "downtime_total_min": {
+            "type": "integer",
+            "title": "Downtime Total Min"
+          },
+          "top_downtime_reason": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TopDowntimeReason"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_id",
+          "line_name",
+          "planned",
+          "confirmed_good",
+          "confirmed_rejected",
+          "pct",
+          "shifts",
+          "downtime_total_min",
+          "top_downtime_reason"
+        ],
+        "title": "AchievementLine"
+      },
+      "AchievementOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/AchievementLine"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/AchievementTotals"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "lines",
+          "totals"
+        ],
+        "title": "AchievementOut"
+      },
+      "AchievementTotals": {
+        "properties": {
+          "planned": {
+            "type": "string",
+            "title": "Planned"
+          },
+          "confirmed_good": {
+            "type": "string",
+            "title": "Confirmed Good"
+          },
+          "confirmed_rejected": {
+            "type": "string",
+            "title": "Confirmed Rejected"
+          },
+          "pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "planned",
+          "confirmed_good",
+          "confirmed_rejected",
+          "pct"
+        ],
+        "title": "AchievementTotals"
+      },
       "AnomalyRead": {
         "properties": {
           "id": {
@@ -2822,6 +5398,168 @@
         ],
         "title": "AnomalyResolve"
       },
+      "ApprovalRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "approval_type": {
+            "type": "string",
+            "title": "Approval Type"
+          },
+          "ref_type": {
+            "type": "string",
+            "title": "Ref Type"
+          },
+          "ref_id": {
+            "type": "integer",
+            "title": "Ref Id"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "required_roles": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Required Roles"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "decided_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decided At"
+          },
+          "overridden_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Overridden By"
+          },
+          "override_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Override Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "approval_type",
+          "ref_type",
+          "ref_id",
+          "payload",
+          "required_roles",
+          "status",
+          "created_by",
+          "created_at",
+          "decided_at",
+          "overridden_by",
+          "override_reason"
+        ],
+        "title": "ApprovalRead"
+      },
+      "BalanceRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "location": {
+            "type": "string",
+            "title": "Location"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "location",
+          "qty"
+        ],
+        "title": "BalanceRead"
+      },
+      "BilledBucket": {
+        "properties": {
+          "pcs": {
+            "type": "string",
+            "title": "Pcs"
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pcs",
+          "value"
+        ],
+        "title": "BilledBucket"
+      },
+      "Body_import_sap_stock_api_v1_imports_sap_stock_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_import_sap_stock_api_v1_imports_sap_stock_post"
+      },
       "Body_upload_scan_api_v1_gate_entries_scans_post": {
         "properties": {
           "file": {
@@ -2835,6 +5573,30 @@
           "file"
         ],
         "title": "Body_upload_scan_api_v1_gate_entries_scans_post"
+      },
+      "Body_upload_schedule_api_v1_schedules_upload_post": {
+        "properties": {
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "period",
+          "file"
+        ],
+        "title": "Body_upload_schedule_api_v1_schedules_upload_post"
       },
       "BomLineRead": {
         "properties": {
@@ -2963,6 +5725,336 @@
         ],
         "title": "CalendarDay"
       },
+      "ConfirmationCreate": {
+        "properties": {
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "shift": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "title": "Shift"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "good_qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Good Qty"
+          },
+          "rejected_qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Rejected Qty",
+            "default": "0"
+          },
+          "reject_reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject Reason Id"
+          },
+          "downtime_min": {
+            "type": "integer",
+            "title": "Downtime Min",
+            "default": 0
+          },
+          "downtime_reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downtime Reason Id"
+          },
+          "process_loss": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ProcessLoss"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "interim",
+              "shift_close"
+            ],
+            "title": "Kind",
+            "default": "interim"
+          },
+          "shift_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift Date"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_ref",
+          "line_id",
+          "shift",
+          "material_id",
+          "good_qty"
+        ],
+        "title": "ConfirmationCreate",
+        "description": "POST /confirmations body \u2014 also the frozen payload of a confirmation_hold\n(\u00a711.11), so resolve_hold can re-validate it with this exact model."
+      },
+      "ConfirmationRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "order_id": {
+            "type": "integer",
+            "title": "Order Id"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "shift": {
+            "type": "string",
+            "title": "Shift"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "good_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Good Qty"
+          },
+          "rejected_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rejected Qty"
+          },
+          "reject_reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reject Reason Id"
+          },
+          "downtime_min": {
+            "type": "integer",
+            "title": "Downtime Min"
+          },
+          "downtime_reason_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Downtime Reason Id"
+          },
+          "process_loss": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Process Loss"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "supervisor_id": {
+            "type": "integer",
+            "title": "Supervisor Id"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Posted At"
+          },
+          "shift_context_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Shift Context Id"
+          },
+          "posted_after_close": {
+            "type": "boolean",
+            "title": "Posted After Close"
+          },
+          "sap_sync_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sap Sync Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "order_id",
+          "line_id",
+          "shift",
+          "material_id",
+          "good_qty",
+          "rejected_qty",
+          "reject_reason_id",
+          "downtime_min",
+          "downtime_reason_id",
+          "process_loss",
+          "kind",
+          "status",
+          "client_ref",
+          "supervisor_id",
+          "posted_at",
+          "shift_context_id",
+          "posted_after_close"
+        ],
+        "title": "ConfirmationRead"
+      },
+      "CorrectedFields": {
+        "properties": {
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty"
+          },
+          "destination": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "inhouse",
+                  "vendor_sale",
+                  "job_work"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Destination"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          }
+        },
+        "type": "object",
+        "title": "CorrectedFields"
+      },
       "CustomerRead": {
         "properties": {
           "id": {
@@ -3005,6 +6097,61 @@
         ],
         "title": "CustomerRead"
       },
+      "DaysOfCoverRead": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "days_of_cover": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Days Of Cover"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "days_of_cover"
+        ],
+        "title": "DaysOfCoverRead"
+      },
+      "DecideRequest": {
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "decline",
+              "hold"
+            ],
+            "title": "Decision"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "title": "DecideRequest"
+      },
       "DecodeQrRequest": {
         "properties": {
           "payload": {
@@ -3036,6 +6183,336 @@
           "suggestions"
         ],
         "title": "DecodeQrResponse"
+      },
+      "DelegationCreate": {
+        "properties": {
+          "principal_user_id": {
+            "type": "integer",
+            "title": "Principal User Id"
+          },
+          "delegate_user_id": {
+            "type": "integer",
+            "title": "Delegate User Id"
+          },
+          "approval_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Type"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid To"
+          }
+        },
+        "type": "object",
+        "required": [
+          "principal_user_id",
+          "delegate_user_id",
+          "valid_from",
+          "valid_to"
+        ],
+        "title": "DelegationCreate"
+      },
+      "DelegationRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "principal_user_id": {
+            "type": "integer",
+            "title": "Principal User Id"
+          },
+          "delegate_user_id": {
+            "type": "integer",
+            "title": "Delegate User Id"
+          },
+          "approval_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Type"
+          },
+          "valid_from": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid From"
+          },
+          "valid_to": {
+            "type": "string",
+            "format": "date",
+            "title": "Valid To"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "principal_user_id",
+          "delegate_user_id",
+          "approval_type",
+          "valid_from",
+          "valid_to",
+          "created_by",
+          "is_active"
+        ],
+        "title": "DelegationRead"
+      },
+      "DelegationUpdate": {
+        "properties": {
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_active"
+        ],
+        "title": "DelegationUpdate"
+      },
+      "DiffRead": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "diff": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Diff"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "version",
+          "diff"
+        ],
+        "title": "DiffRead"
+      },
+      "DispatchCreate": {
+        "properties": {
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "vehicle_no": {
+            "type": "string",
+            "title": "Vehicle No"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DispatchLineIn"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "vehicle_no",
+          "lines",
+          "client_ref"
+        ],
+        "title": "DispatchCreate"
+      },
+      "DispatchLineIn": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "qty"
+        ],
+        "title": "DispatchLineIn"
+      },
+      "DispatchLineRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "material_id",
+          "qty"
+        ],
+        "title": "DispatchLineRead"
+      },
+      "DispatchRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "doc_no": {
+            "type": "string",
+            "title": "Doc No"
+          },
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "vehicle_no": {
+            "type": "string",
+            "title": "Vehicle No"
+          },
+          "total_pcs": {
+            "type": "integer",
+            "title": "Total Pcs"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/DispatchLineRead"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          },
+          "stock_warning": {
+            "type": "boolean",
+            "title": "Stock Warning",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "doc_no",
+          "customer_id",
+          "vehicle_no",
+          "total_pcs",
+          "status",
+          "created_by",
+          "created_at"
+        ],
+        "title": "DispatchRead"
+      },
+      "ExposureRead": {
+        "properties": {
+          "vendor_id": {
+            "type": "integer",
+            "title": "Vendor Id"
+          },
+          "credit_exposure": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Credit Exposure"
+          },
+          "qty_mt": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty Mt"
+          },
+          "credit_limit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Limit"
+          },
+          "qty_limit_mt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Limit Mt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "vendor_id",
+          "credit_exposure",
+          "qty_mt",
+          "credit_limit",
+          "qty_limit_mt"
+        ],
+        "title": "ExposureRead"
       },
       "GateAttachInvoice": {
         "properties": {
@@ -3929,6 +7406,564 @@
         ],
         "title": "HeartbeatRequest"
       },
+      "HoldRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "shift_context_id": {
+            "type": "integer",
+            "title": "Shift Context Id"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "resolved_order_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved Order Id"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "line_id",
+          "material_id",
+          "shift_context_id",
+          "payload",
+          "status",
+          "resolved_order_id",
+          "client_ref",
+          "created_by",
+          "created_at"
+        ],
+        "title": "HoldRead"
+      },
+      "HoldResolve": {
+        "properties": {
+          "sap_order_no": {
+            "type": "string",
+            "title": "Sap Order No"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sap_order_no"
+        ],
+        "title": "HoldResolve",
+        "description": "PPC supplies the SAP order; line/material default from the hold itself."
+      },
+      "HoldResolveResult": {
+        "properties": {
+          "hold": {
+            "$ref": "#/components/schemas/HoldRead"
+          },
+          "confirmation": {
+            "$ref": "#/components/schemas/ConfirmationRead"
+          }
+        },
+        "type": "object",
+        "required": [
+          "hold",
+          "confirmation"
+        ],
+        "title": "HoldResolveResult"
+      },
+      "InvoiceCreate": {
+        "properties": {
+          "invoice_no": {
+            "type": "string",
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Invoice Date"
+          },
+          "dispatch_id": {
+            "type": "integer",
+            "title": "Dispatch Id"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          },
+          "eway_bill_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eway Bill No"
+          },
+          "total_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Total Value"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineIn"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "mismatch_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mismatch Reason"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice_no",
+          "invoice_date",
+          "dispatch_id",
+          "total_value",
+          "lines",
+          "client_ref"
+        ],
+        "title": "InvoiceCreate"
+      },
+      "InvoiceLineIn": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Qty"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "qty",
+          "value"
+        ],
+        "title": "InvoiceLineIn"
+      },
+      "InvoiceLineRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "material_id",
+          "qty",
+          "value"
+        ],
+        "title": "InvoiceLineRead"
+      },
+      "InvoiceRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "invoice_no": {
+            "type": "string",
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Invoice Date"
+          },
+          "dispatch_id": {
+            "type": "integer",
+            "title": "Dispatch Id"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          },
+          "eway_bill_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Eway Bill No"
+          },
+          "total_value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Total Value"
+          },
+          "match_status": {
+            "type": "string",
+            "title": "Match Status"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "confirmed_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed By"
+          },
+          "confirmed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confirmed At"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/InvoiceLineRead"
+            },
+            "type": "array",
+            "title": "Lines",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "invoice_no",
+          "invoice_date",
+          "dispatch_id",
+          "irn",
+          "eway_bill_no",
+          "total_value",
+          "match_status",
+          "status",
+          "confirmed_by",
+          "confirmed_at"
+        ],
+        "title": "InvoiceRead"
+      },
+      "IssueCreate": {
+        "properties": {
+          "destination": {
+            "type": "string",
+            "enum": [
+              "inhouse",
+              "vendor_sale",
+              "job_work"
+            ],
+            "title": "Destination"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Qty"
+          },
+          "uom": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Uom"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "destination",
+          "material_id",
+          "qty",
+          "client_ref"
+        ],
+        "title": "IssueCreate"
+      },
+      "IssueRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "doc_no": {
+            "type": "string",
+            "title": "Doc No"
+          },
+          "destination": {
+            "type": "string",
+            "title": "Destination"
+          },
+          "line_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Line Id"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty"
+          },
+          "uom": {
+            "type": "string",
+            "title": "Uom"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Value"
+          },
+          "limit_check": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Limit Check"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "approval_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Approval Id"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "stock_warning": {
+            "type": "boolean",
+            "title": "Stock Warning",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "doc_no",
+          "destination",
+          "line_id",
+          "vendor_id",
+          "material_id",
+          "qty",
+          "uom",
+          "value",
+          "limit_check",
+          "status",
+          "approval_id",
+          "created_by",
+          "created_at"
+        ],
+        "title": "IssueRead"
+      },
       "LineCreate": {
         "properties": {
           "name": {
@@ -4395,6 +8430,151 @@
         ],
         "title": "MillUpsert"
       },
+      "NotificationRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "user_id": {
+            "type": "integer",
+            "title": "User Id"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "ref_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref Type"
+          },
+          "ref_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ref Id"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "tier": {
+            "type": "string",
+            "title": "Tier"
+          },
+          "acted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acted At"
+          },
+          "next_repeat_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Repeat At"
+          },
+          "digest_of": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Digest Of"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "user_id",
+          "title",
+          "body",
+          "kind",
+          "ref_type",
+          "ref_id",
+          "read_at",
+          "created_at",
+          "tier",
+          "acted_at",
+          "next_repeat_at",
+          "digest_of"
+        ],
+        "title": "NotificationRead"
+      },
+      "OpenAnomalies": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "hard": {
+            "type": "integer",
+            "title": "Hard"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "hard"
+        ],
+        "title": "OpenAnomalies"
+      },
       "OtpRequestRequest": {
         "properties": {
           "phone": {
@@ -4450,6 +8630,108 @@
         ],
         "title": "OtpVerifyRequest"
       },
+      "OutboxBacklog": {
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "title": "Pending"
+          },
+          "failed": {
+            "type": "integer",
+            "title": "Failed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "pending",
+          "failed"
+        ],
+        "title": "OutboxBacklog"
+      },
+      "OverrideRequest": {
+        "properties": {
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason"
+        ],
+        "title": "OverrideRequest"
+      },
+      "OverviewOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "achievement_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Achievement Pct"
+          },
+          "billed_today_value": {
+            "type": "string",
+            "title": "Billed Today Value"
+          },
+          "yield_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Pct"
+          },
+          "open_anomalies": {
+            "$ref": "#/components/schemas/OpenAnomalies"
+          },
+          "approvals_pending": {
+            "type": "integer",
+            "title": "Approvals Pending"
+          },
+          "open_override_reviews": {
+            "type": "integer",
+            "title": "Open Override Reviews"
+          },
+          "unmatched_gate_entries": {
+            "type": "integer",
+            "title": "Unmatched Gate Entries"
+          },
+          "outbox_backlog": {
+            "$ref": "#/components/schemas/OutboxBacklog"
+          },
+          "holds_open": {
+            "type": "integer",
+            "title": "Holds Open"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "achievement_pct",
+          "billed_today_value",
+          "yield_pct",
+          "open_anomalies",
+          "approvals_pending",
+          "open_override_reviews",
+          "unmatched_gate_entries",
+          "outbox_backlog",
+          "holds_open"
+        ],
+        "title": "OverviewOut"
+      },
       "PendingScan": {
         "properties": {
           "scan": {
@@ -4492,6 +8774,152 @@
           "pin"
         ],
         "title": "PinSwitchRequest"
+      },
+      "PlanRow": {
+        "properties": {
+          "plan_id": {
+            "type": "integer",
+            "title": "Plan Id"
+          },
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "line_name": {
+            "type": "string",
+            "title": "Line Name"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "planned_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Planned Qty"
+          },
+          "confirmed_good": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confirmed Good"
+          },
+          "confirmed_reject": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confirmed Reject"
+          },
+          "remaining": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_id",
+          "plan_date",
+          "line_id",
+          "line_name",
+          "material_id",
+          "sap_code",
+          "description",
+          "revision",
+          "planned_qty",
+          "confirmed_good",
+          "confirmed_reject",
+          "remaining"
+        ],
+        "title": "PlanRow",
+        "description": "Frozen response shape: confirmed_* are placeholder zeros until the\nproduction packet joins confirmations; remaining = planned \u2212 confirmed_good."
+      },
+      "PpcLine": {
+        "properties": {
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "line_name": {
+            "type": "string",
+            "title": "Line Name"
+          },
+          "plans": {
+            "items": {
+              "$ref": "#/components/schemas/PlanRow"
+            },
+            "type": "array",
+            "title": "Plans"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_id",
+          "line_name",
+          "plans"
+        ],
+        "title": "PpcLine"
+      },
+      "ProcessLoss": {
+        "properties": {
+          "blanking": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Blanking",
+            "default": "0"
+          },
+          "piercing": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Piercing",
+            "default": "0"
+          },
+          "forming": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Forming",
+            "default": "0"
+          }
+        },
+        "type": "object",
+        "title": "ProcessLoss",
+        "description": "\u00a74.7 process_loss JSON \u2014 per-stage loss quantities."
       },
       "ProductionOrderCreate": {
         "properties": {
@@ -4895,6 +9323,240 @@
         ],
         "title": "RefreshRequest"
       },
+      "RejectReason": {
+        "properties": {
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "label_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label En"
+          },
+          "qty": {
+            "type": "string",
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason_code",
+          "label_en",
+          "qty"
+        ],
+        "title": "RejectReason"
+      },
+      "ReleaseReport": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "plans_created": {
+            "type": "integer",
+            "title": "Plans Created"
+          },
+          "calloffs_created": {
+            "type": "integer",
+            "title": "Calloffs Created"
+          },
+          "unmapped": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Unmapped"
+          },
+          "no_vendor": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "No Vendor"
+          },
+          "cloned_from_version": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cloned From Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "version",
+          "plans_created",
+          "calloffs_created",
+          "unmapped",
+          "no_vendor"
+        ],
+        "title": "ReleaseReport"
+      },
+      "ReleaseRequest": {
+        "properties": {
+          "confirm_warnings": {
+            "type": "boolean",
+            "title": "Confirm Warnings",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "ReleaseRequest"
+      },
+      "SalesMaterialRow": {
+        "properties": {
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "today_pcs": {
+            "type": "string",
+            "title": "Today Pcs"
+          },
+          "mtd_pcs": {
+            "type": "string",
+            "title": "Mtd Pcs"
+          },
+          "mtd_value": {
+            "type": "string",
+            "title": "Mtd Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "material_id",
+          "sap_code",
+          "description",
+          "today_pcs",
+          "mtd_pcs",
+          "mtd_value"
+        ],
+        "title": "SalesMaterialRow"
+      },
+      "SalesOut": {
+        "properties": {
+          "month": {
+            "type": "string",
+            "title": "Month"
+          },
+          "billed_today": {
+            "$ref": "#/components/schemas/BilledBucket"
+          },
+          "billed_mtd": {
+            "$ref": "#/components/schemas/BilledBucket"
+          },
+          "materials": {
+            "items": {
+              "$ref": "#/components/schemas/SalesMaterialRow"
+            },
+            "type": "array",
+            "title": "Materials"
+          },
+          "awaiting_invoice": {
+            "type": "integer",
+            "title": "Awaiting Invoice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "month",
+          "billed_today",
+          "billed_mtd",
+          "materials",
+          "awaiting_invoice"
+        ],
+        "title": "SalesOut"
+      },
+      "SanityRead": {
+        "properties": {
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "sanity": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Sanity"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule_id",
+          "version",
+          "sanity"
+        ],
+        "title": "SanityRead"
+      },
+      "SapStockImportResult": {
+        "properties": {
+          "import_job_id": {
+            "type": "integer",
+            "title": "Import Job Id"
+          },
+          "rows_total": {
+            "type": "integer",
+            "title": "Rows Total"
+          },
+          "rows_ok": {
+            "type": "integer",
+            "title": "Rows Ok"
+          },
+          "rows_failed": {
+            "type": "integer",
+            "title": "Rows Failed"
+          },
+          "adjustments": {
+            "type": "integer",
+            "title": "Adjustments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "import_job_id",
+          "rows_total",
+          "rows_ok",
+          "rows_failed",
+          "adjustments"
+        ],
+        "title": "SapStockImportResult"
+      },
       "ScanRead": {
         "properties": {
           "id": {
@@ -5024,6 +9686,256 @@
         "title": "ScanUploadResponse",
         "description": "POST /gate-entries/scans result. `duplicate=true` = these exact bytes were\nalready scanned (Failure Scenarios #3) \u2014 the EXISTING scan is returned."
       },
+      "ScheduleCreate": {
+        "properties": {
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "period": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}$",
+            "title": "Period"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleLineIn"
+            },
+            "type": "array",
+            "title": "Lines"
+          },
+          "source_file_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "period",
+          "lines"
+        ],
+        "title": "ScheduleCreate"
+      },
+      "ScheduleLineIn": {
+        "properties": {
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "sap_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sap Code"
+          },
+          "model_family": {
+            "type": "string",
+            "title": "Model Family"
+          },
+          "bucket_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Bucket Date"
+          },
+          "qty": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_family",
+          "bucket_date",
+          "qty"
+        ],
+        "title": "ScheduleLineIn",
+        "description": "Manual JSON entry path (provisional \u2014 Domain_QA Q1). Identify the part by\nmaterial_id OR sap_code; family drives the Yeshshree/Laxmi split."
+      },
+      "ScheduleLineRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "schedule_id": {
+            "type": "integer",
+            "title": "Schedule Id"
+          },
+          "model_family": {
+            "type": "string",
+            "title": "Model Family"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "bucket_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Bucket Date"
+          },
+          "qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Qty"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "schedule_id",
+          "model_family",
+          "material_id",
+          "bucket_date",
+          "qty"
+        ],
+        "title": "ScheduleLineRead"
+      },
+      "ScheduleRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "customer_id": {
+            "type": "integer",
+            "title": "Customer Id"
+          },
+          "period": {
+            "type": "string",
+            "title": "Period"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "source_file_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source File Id"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "released_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released By"
+          },
+          "released_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Released At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer_id",
+          "period",
+          "version",
+          "status",
+          "source_file_id",
+          "created_by",
+          "released_by",
+          "released_at"
+        ],
+        "title": "ScheduleRead"
+      },
+      "ScheduleUploadResult": {
+        "properties": {
+          "schedule": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ScheduleRead"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rows_ok": {
+            "type": "integer",
+            "title": "Rows Ok"
+          },
+          "row_errors": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Row Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "schedule",
+          "rows_ok",
+          "row_errors"
+        ],
+        "title": "ScheduleUploadResult",
+        "description": "Upload outcome: the created draft (when any row parsed) + EVERY row error."
+      },
       "SettingPut": {
         "properties": {
           "value": {
@@ -5068,6 +9980,24 @@
           "description"
         ],
         "title": "SettingRead"
+      },
+      "ShiftSplit": {
+        "properties": {
+          "good": {
+            "type": "string",
+            "title": "Good"
+          },
+          "rejected": {
+            "type": "string",
+            "title": "Rejected"
+          }
+        },
+        "type": "object",
+        "required": [
+          "good",
+          "rejected"
+        ],
+        "title": "ShiftSplit"
       },
       "SplitCreate": {
         "properties": {
@@ -5203,6 +10133,103 @@
           "detail"
         ],
         "title": "StationStatusRead"
+      },
+      "SupervisorRow": {
+        "properties": {
+          "plan_id": {
+            "type": "integer",
+            "title": "Plan Id"
+          },
+          "plan_date": {
+            "type": "string",
+            "format": "date",
+            "title": "Plan Date"
+          },
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "line_name": {
+            "type": "string",
+            "title": "Line Name"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "sap_code": {
+            "type": "string",
+            "title": "Sap Code"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "revision": {
+            "type": "integer",
+            "title": "Revision"
+          },
+          "planned_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Planned Qty"
+          },
+          "confirmed_good": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confirmed Good"
+          },
+          "confirmed_reject": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Confirmed Reject"
+          },
+          "remaining": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Remaining"
+          },
+          "production_order_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Production Order Id"
+          },
+          "sap_order_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sap Order No"
+          }
+        },
+        "type": "object",
+        "required": [
+          "plan_id",
+          "plan_date",
+          "line_id",
+          "line_name",
+          "material_id",
+          "sap_code",
+          "description",
+          "revision",
+          "planned_qty",
+          "confirmed_good",
+          "confirmed_reject",
+          "remaining",
+          "production_order_id",
+          "sap_order_no"
+        ],
+        "title": "SupervisorRow"
       },
       "TokenResponse": {
         "properties": {
@@ -5345,6 +10372,43 @@
         },
         "type": "object",
         "title": "ToleranceUpdate"
+      },
+      "TopDowntimeReason": {
+        "properties": {
+          "reason_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason Code"
+          },
+          "label_en": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label En"
+          },
+          "minutes": {
+            "type": "integer",
+            "title": "Minutes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "reason_code",
+          "label_en",
+          "minutes"
+        ],
+        "title": "TopDowntimeReason"
       },
       "ValidationError": {
         "properties": {
@@ -5686,6 +10750,260 @@
         },
         "type": "object",
         "title": "VendorUpdate"
+      },
+      "YieldOut": {
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "title": "Date"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/YieldRow"
+            },
+            "type": "array",
+            "title": "Rows"
+          },
+          "reject_reasons": {
+            "items": {
+              "$ref": "#/components/schemas/RejectReason"
+            },
+            "type": "array",
+            "title": "Reject Reasons"
+          },
+          "imputed_scrap_value": {
+            "type": "string",
+            "title": "Imputed Scrap Value"
+          },
+          "overall": {
+            "$ref": "#/components/schemas/YieldOverall"
+          }
+        },
+        "type": "object",
+        "required": [
+          "date",
+          "rows",
+          "reject_reasons",
+          "imputed_scrap_value",
+          "overall"
+        ],
+        "title": "YieldOut"
+      },
+      "YieldOverall": {
+        "properties": {
+          "good": {
+            "type": "string",
+            "title": "Good"
+          },
+          "rejected": {
+            "type": "string",
+            "title": "Rejected"
+          },
+          "yield_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "good",
+          "rejected",
+          "yield_pct"
+        ],
+        "title": "YieldOverall"
+      },
+      "YieldRow": {
+        "properties": {
+          "line_id": {
+            "type": "integer",
+            "title": "Line Id"
+          },
+          "line_name": {
+            "type": "string",
+            "title": "Line Name"
+          },
+          "shift": {
+            "type": "string",
+            "title": "Shift"
+          },
+          "good": {
+            "type": "string",
+            "title": "Good"
+          },
+          "rejected": {
+            "type": "string",
+            "title": "Rejected"
+          },
+          "yield_pct": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yield Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "line_id",
+          "line_name",
+          "shift",
+          "good",
+          "rejected",
+          "yield_pct"
+        ],
+        "title": "YieldRow"
+      },
+      "app__schemas__inventory__CorrectionCreate": {
+        "properties": {
+          "corrected": {
+            "$ref": "#/components/schemas/CorrectedFields"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "corrected",
+          "reason"
+        ],
+        "title": "CorrectionCreate"
+      },
+      "app__schemas__inventory__CorrectionRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "issue_id": {
+            "type": "integer",
+            "title": "Issue Id"
+          },
+          "corrected": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Corrected"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "approval_id": {
+            "type": "integer",
+            "title": "Approval Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "issue_id",
+          "corrected",
+          "reason",
+          "approval_id",
+          "status"
+        ],
+        "title": "CorrectionRead"
+      },
+      "app__schemas__production__CorrectionCreate": {
+        "properties": {
+          "delta_good": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Delta Good"
+          },
+          "delta_reject": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Delta Reject",
+            "default": "0"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "delta_good",
+          "reason"
+        ],
+        "title": "CorrectionCreate"
+      },
+      "app__schemas__production__CorrectionRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "confirmation_id": {
+            "type": "integer",
+            "title": "Confirmation Id"
+          },
+          "delta_good": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Delta Good"
+          },
+          "delta_reject": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Delta Reject"
+          },
+          "reason": {
+            "type": "string",
+            "title": "Reason"
+          },
+          "approval_id": {
+            "type": "integer",
+            "title": "Approval Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "confirmation_id",
+          "delta_good",
+          "delta_reject",
+          "reason",
+          "approval_id",
+          "status"
+        ],
+        "title": "CorrectionRead"
       }
     }
   }
