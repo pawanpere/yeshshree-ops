@@ -1686,6 +1686,973 @@
         }
       }
     },
+    "/api/v1/gate-entries": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Create Gate Entry",
+        "operationId": "create_gate_entry_api_v1_gate_entries_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateEntryCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "List Gate Entries",
+        "operationId": "list_gate_entries_api_v1_gate_entries_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "match_status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Match Status"
+            }
+          },
+          {
+            "name": "date",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GateEntryRead"
+                  },
+                  "title": "Response List Gate Entries Api V1 Gate Entries Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/backfill": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Create Backfill Entry",
+        "operationId": "create_backfill_entry_api_v1_gate_entries_backfill_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateBackfillCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/unmatched": {
+      "get": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Unmatched Folder",
+        "operationId": "unmatched_folder_api_v1_gate_entries_unmatched_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GateEntryRead"
+                  },
+                  "type": "array",
+                  "title": "Response Unmatched Folder Api V1 Gate Entries Unmatched Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/{entry_id}": {
+      "get": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Get Gate Entry",
+        "operationId": "get_gate_entry_api_v1_gate_entries__entry_id__get",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/{entry_id}/complete-backfill": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Complete Backfill",
+        "operationId": "complete_backfill_api_v1_gate_entries__entry_id__complete_backfill_post",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateBackfillComplete"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/{entry_id}/attach-invoice": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Attach Invoice",
+        "operationId": "attach_invoice_api_v1_gate_entries__entry_id__attach_invoice_post",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateAttachInvoice"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/{entry_id}/link-po": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Link Po",
+        "operationId": "link_po_api_v1_gate_entries__entry_id__link_po_post",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GateLinkPo"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/{entry_id}/mark-consumable": {
+      "post": {
+        "tags": [
+          "gate"
+        ],
+        "summary": "Mark Consumable",
+        "operationId": "mark_consumable_api_v1_gate_entries__entry_id__mark_consumable_post",
+        "parameters": [
+          {
+            "name": "entry_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Entry Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GateEntryRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/scans": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "summary": "Upload Scan",
+        "description": "gate-agent (or manual upload) \u2192 store \u2192 decode \u2192 suggestion lookup.\nSource is 'agent' for this multipart path; phones use /decode-qr (no file).",
+        "operationId": "upload_scan_api_v1_gate_entries_scans_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_scan_api_v1_gate_entries_scans_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanUploadResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/scans/pending": {
+      "get": {
+        "tags": [
+          "scans"
+        ],
+        "summary": "Pending Scans",
+        "operationId": "pending_scans_api_v1_gate_entries_scans_pending_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PendingScan"
+                  },
+                  "type": "array",
+                  "title": "Response Pending Scans Api V1 Gate Entries Scans Pending Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/scans/{scan_id}/discard": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "summary": "Discard Scan",
+        "description": "Wrong feed / blank page / test scan. File stays archived; row is auditable.",
+        "operationId": "discard_scan_api_v1_gate_entries_scans__scan_id__discard_post",
+        "parameters": [
+          {
+            "name": "scan_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Scan Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScanRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/gate-entries/decode-qr": {
+      "post": {
+        "tags": [
+          "scans"
+        ],
+        "summary": "Decode Qr",
+        "description": "Phone-camera fallback (\u00a711.4 scanner-offline banner): the app sends the RAW\nQR text it scanned; we parse the same e-invoice JWS. Nothing is stored.",
+        "operationId": "decode_qr_api_v1_gate_entries_decode_qr_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecodeQrRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecodeQrResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/agent-heartbeat": {
+      "post": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Agent Heartbeat",
+        "description": "Upsert by device_key (\u00a711.4). Detail keeps the agent's self-reported state;\nstaleness is computed at read time, never stored.",
+        "operationId": "agent_heartbeat_api_v1_system_agent_heartbeat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HeartbeatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StationStatusRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/station-status": {
+      "get": {
+        "tags": [
+          "system"
+        ],
+        "summary": "Station Status",
+        "description": "Gate screen polls this; stale > 5 min \u2192 'scanner offline' banner (\u00a711.4).",
+        "operationId": "station_status_api_v1_system_station_status_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/StationStatusRead"
+                  },
+                  "type": "array",
+                  "title": "Response Station Status Api V1 System Station Status Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/goods-receipts": {
+      "post": {
+        "tags": [
+          "receiving"
+        ],
+        "summary": "Post Goods Receipt",
+        "description": "200 (not 201): a retried client_ref returns the ORIGINAL result (invariant 4).",
+        "operationId": "post_goods_receipt_api_v1_goods_receipts_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoodsReceiptCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "receiving"
+        ],
+        "summary": "List Goods Receipts",
+        "operationId": "list_goods_receipts_api_v1_goods_receipts_get",
+        "parameters": [
+          {
+            "name": "gate_entry_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Gate Entry Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GoodsReceiptRead"
+                  },
+                  "title": "Response List Goods Receipts Api V1 Goods Receipts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/goods-receipts/{gr_id}": {
+      "get": {
+        "tags": [
+          "receiving"
+        ],
+        "summary": "Get Goods Receipt",
+        "operationId": "get_goods_receipt_api_v1_goods_receipts__gr_id__get",
+        "parameters": [
+          {
+            "name": "gr_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Gr Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GoodsReceiptRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/anomalies": {
+      "get": {
+        "tags": [
+          "receiving"
+        ],
+        "summary": "List Anomalies",
+        "operationId": "list_anomalies_api_v1_anomalies_get",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AnomalyRead"
+                  },
+                  "title": "Response List Anomalies Api V1 Anomalies Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/anomalies/{anomaly_id}/resolve": {
+      "post": {
+        "tags": [
+          "receiving"
+        ],
+        "summary": "Resolve Anomaly",
+        "operationId": "resolve_anomaly_api_v1_anomalies__anomaly_id__resolve_post",
+        "parameters": [
+          {
+            "name": "anomaly_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Anomaly Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnomalyResolve"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyRead"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/system/healthz": {
       "get": {
         "tags": [
@@ -1737,6 +2704,138 @@
   },
   "components": {
     "schemas": {
+      "AnomalyRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "rule_code": {
+            "type": "string",
+            "title": "Rule Code"
+          },
+          "severity": {
+            "type": "string",
+            "title": "Severity"
+          },
+          "ref_type": {
+            "type": "string",
+            "title": "Ref Type"
+          },
+          "ref_id": {
+            "type": "integer",
+            "title": "Ref Id"
+          },
+          "observed": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observed"
+          },
+          "expected": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expected"
+          },
+          "message_en": {
+            "type": "string",
+            "title": "Message En"
+          },
+          "message_mr": {
+            "type": "string",
+            "title": "Message Mr"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "resolved_by": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved By"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolved At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "rule_code",
+          "severity",
+          "ref_type",
+          "ref_id",
+          "observed",
+          "expected",
+          "message_en",
+          "message_mr",
+          "status",
+          "resolved_by",
+          "resolved_at",
+          "created_at"
+        ],
+        "title": "AnomalyRead"
+      },
+      "AnomalyResolve": {
+        "properties": {
+          "note": {
+            "type": "string",
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "note"
+        ],
+        "title": "AnomalyResolve"
+      },
+      "Body_upload_scan_api_v1_gate_entries_scans_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_scan_api_v1_gate_entries_scans_post"
+      },
       "BomLineRead": {
         "properties": {
           "id": {
@@ -1906,6 +3005,882 @@
         ],
         "title": "CustomerRead"
       },
+      "DecodeQrRequest": {
+        "properties": {
+          "payload": {
+            "type": "string",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payload"
+        ],
+        "title": "DecodeQrRequest"
+      },
+      "DecodeQrResponse": {
+        "properties": {
+          "decode_status": {
+            "type": "string",
+            "title": "Decode Status"
+          },
+          "suggestions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "decode_status",
+          "suggestions"
+        ],
+        "title": "DecodeQrResponse"
+      },
+      "GateAttachInvoice": {
+        "properties": {
+          "invoice_no": {
+            "type": "string",
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Date"
+          },
+          "invoice_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Value"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice_no"
+        ],
+        "title": "GateAttachInvoice",
+        "description": "\u00a711.5 invoice-later for challan entries."
+      },
+      "GateBackfillComplete": {
+        "properties": {
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "invoice",
+              "challan",
+              "return_gatepass",
+              "other_inward"
+            ],
+            "title": "Doc Type",
+            "default": "invoice"
+          },
+          "inward_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "po_supply",
+                  "customer_return",
+                  "consumable",
+                  "repair"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inward Category"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Date"
+          },
+          "invoice_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Value"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          },
+          "po_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "qty_expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Expected"
+          },
+          "consignment_no": {
+            "type": "integer",
+            "title": "Consignment No",
+            "default": 1
+          },
+          "consignment_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consignment Total"
+          }
+        },
+        "type": "object",
+        "title": "GateBackfillComplete",
+        "description": "\u00a711.3 completion \u2014 fills the real document data, runs the same PO match."
+      },
+      "GateBackfillCreate": {
+        "properties": {
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "vehicle_no": {
+            "type": "string",
+            "title": "Vehicle No"
+          },
+          "driver_name": {
+            "type": "string",
+            "title": "Driver Name"
+          },
+          "vendor_name_text": {
+            "type": "string",
+            "title": "Vendor Name Text"
+          },
+          "entered_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Entered At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_ref",
+          "vehicle_no",
+          "driver_name",
+          "vendor_name_text"
+        ],
+        "title": "GateBackfillCreate",
+        "description": "\u00a711.3 minimal offline entry \u2014 trucks proceed, paper register continues."
+      },
+      "GateEntryCreate": {
+        "properties": {
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "doc_type": {
+            "type": "string",
+            "enum": [
+              "invoice",
+              "challan",
+              "return_gatepass",
+              "other_inward"
+            ],
+            "title": "Doc Type",
+            "default": "invoice"
+          },
+          "inward_category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "po_supply",
+                  "customer_return",
+                  "consumable",
+                  "repair"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inward Category"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Date"
+          },
+          "invoice_value": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Value"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          },
+          "po_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "qty_expected": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Expected"
+          },
+          "vehicle_no": {
+            "type": "string",
+            "title": "Vehicle No"
+          },
+          "driver_name": {
+            "type": "string",
+            "title": "Driver Name"
+          },
+          "consignment_no": {
+            "type": "integer",
+            "title": "Consignment No",
+            "default": 1
+          },
+          "consignment_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consignment Total"
+          }
+        },
+        "type": "object",
+        "required": [
+          "client_ref",
+          "vehicle_no",
+          "driver_name"
+        ],
+        "title": "GateEntryCreate"
+      },
+      "GateEntryRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "doc_no": {
+            "type": "string",
+            "title": "Doc No"
+          },
+          "plant": {
+            "type": "string",
+            "title": "Plant"
+          },
+          "vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Id"
+          },
+          "invoice_no": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice No"
+          },
+          "invoice_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Date"
+          },
+          "invoice_value": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Value"
+          },
+          "irn": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Irn"
+          },
+          "po_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po Id"
+          },
+          "material_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Material Id"
+          },
+          "qty_expected": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qty Expected"
+          },
+          "vehicle_no": {
+            "type": "string",
+            "title": "Vehicle No"
+          },
+          "driver_name": {
+            "type": "string",
+            "title": "Driver Name"
+          },
+          "vehicle_photo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vehicle Photo Id"
+          },
+          "invoice_photo_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Photo Id"
+          },
+          "match_status": {
+            "type": "string",
+            "title": "Match Status"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "entry_mode": {
+            "type": "string",
+            "title": "Entry Mode"
+          },
+          "backfill_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backfill Status"
+          },
+          "vendor_name_text": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor Name Text"
+          },
+          "doc_type": {
+            "type": "string",
+            "title": "Doc Type"
+          },
+          "inward_category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inward Category"
+          },
+          "consignment_no": {
+            "type": "integer",
+            "title": "Consignment No"
+          },
+          "consignment_total": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Consignment Total"
+          },
+          "photos_pending": {
+            "type": "boolean",
+            "title": "Photos Pending"
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          },
+          "created_by": {
+            "type": "integer",
+            "title": "Created By"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "doc_no",
+          "plant",
+          "vendor_id",
+          "invoice_no",
+          "invoice_date",
+          "invoice_value",
+          "irn",
+          "po_id",
+          "material_id",
+          "qty_expected",
+          "vehicle_no",
+          "driver_name",
+          "vehicle_photo_id",
+          "invoice_photo_id",
+          "match_status",
+          "status",
+          "entry_mode",
+          "backfill_status",
+          "vendor_name_text",
+          "doc_type",
+          "inward_category",
+          "consignment_no",
+          "consignment_total",
+          "photos_pending",
+          "client_ref",
+          "created_by",
+          "created_at"
+        ],
+        "title": "GateEntryRead"
+      },
+      "GateLinkPo": {
+        "properties": {
+          "po_id": {
+            "type": "integer",
+            "title": "Po Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "po_id"
+        ],
+        "title": "GateLinkPo"
+      },
+      "GoodsReceiptCreate": {
+        "properties": {
+          "gate_entry_id": {
+            "type": "integer",
+            "title": "Gate Entry Id"
+          },
+          "received_qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Received Qty"
+          },
+          "rejected_qty": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$"
+              }
+            ],
+            "title": "Rejected Qty",
+            "default": "0"
+          },
+          "qc_result": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail"
+            ],
+            "title": "Qc Result"
+          },
+          "qc_remarks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qc Remarks"
+          },
+          "confirm_escalate": {
+            "type": "boolean",
+            "title": "Confirm Escalate",
+            "default": false
+          },
+          "client_ref": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Client Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gate_entry_id",
+          "received_qty",
+          "qc_result",
+          "client_ref"
+        ],
+        "title": "GoodsReceiptCreate"
+      },
+      "GoodsReceiptRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "doc_no": {
+            "type": "string",
+            "title": "Doc No"
+          },
+          "gate_entry_id": {
+            "type": "integer",
+            "title": "Gate Entry Id"
+          },
+          "po_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Po Id"
+          },
+          "material_id": {
+            "type": "integer",
+            "title": "Material Id"
+          },
+          "expected_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Expected Qty"
+          },
+          "received_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Received Qty"
+          },
+          "accepted_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Accepted Qty"
+          },
+          "rejected_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Rejected Qty"
+          },
+          "qc_result": {
+            "type": "string",
+            "title": "Qc Result"
+          },
+          "qc_remarks": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qc Remarks"
+          },
+          "shortage_qty": {
+            "type": "string",
+            "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+            "title": "Shortage Qty"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "posted_by": {
+            "type": "integer",
+            "title": "Posted By"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Posted At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "doc_no",
+          "gate_entry_id",
+          "po_id",
+          "material_id",
+          "expected_qty",
+          "received_qty",
+          "accepted_qty",
+          "rejected_qty",
+          "qc_result",
+          "qc_remarks",
+          "shortage_qty",
+          "status",
+          "posted_by",
+          "posted_at"
+        ],
+        "title": "GoodsReceiptRead"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1918,6 +3893,41 @@
         },
         "type": "object",
         "title": "HTTPValidationError"
+      },
+      "HeartbeatRequest": {
+        "properties": {
+          "device_key": {
+            "type": "string",
+            "title": "Device Key"
+          },
+          "agent_version": {
+            "type": "string",
+            "title": "Agent Version"
+          },
+          "watch_folder_ok": {
+            "type": "boolean",
+            "title": "Watch Folder Ok"
+          },
+          "last_scan_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Scan At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "device_key",
+          "agent_version",
+          "watch_folder_ok"
+        ],
+        "title": "HeartbeatRequest"
       },
       "LineCreate": {
         "properties": {
@@ -2440,6 +4450,24 @@
         ],
         "title": "OtpVerifyRequest"
       },
+      "PendingScan": {
+        "properties": {
+          "scan": {
+            "$ref": "#/components/schemas/ScanRead"
+          },
+          "suggestions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Suggestions"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scan",
+          "suggestions"
+        ],
+        "title": "PendingScan"
+      },
       "PinSwitchRequest": {
         "properties": {
           "device_key": {
@@ -2867,6 +4895,135 @@
         ],
         "title": "RefreshRequest"
       },
+      "ScanRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "file_id": {
+            "type": "integer",
+            "title": "File Id"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "decode_status": {
+            "type": "string",
+            "title": "Decode Status"
+          },
+          "qr_payload": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qr Payload"
+          },
+          "pdf417_payload": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pdf417 Payload"
+          },
+          "hsn_check": {
+            "type": "string",
+            "title": "Hsn Check"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "gate_entry_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gate Entry Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "file_id",
+          "source",
+          "decode_status",
+          "qr_payload",
+          "pdf417_payload",
+          "hsn_check",
+          "status",
+          "gate_entry_id",
+          "created_at"
+        ],
+        "title": "ScanRead"
+      },
+      "ScanUploadResponse": {
+        "properties": {
+          "scan": {
+            "$ref": "#/components/schemas/ScanRead"
+          },
+          "duplicate": {
+            "type": "boolean",
+            "title": "Duplicate"
+          },
+          "suggestions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Suggestions"
+          },
+          "suggested_vendor_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Vendor Id"
+          },
+          "suggested_po_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Suggested Po Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "scan",
+          "duplicate",
+          "suggestions",
+          "suggested_vendor_id",
+          "suggested_po_id"
+        ],
+        "title": "ScanUploadResponse",
+        "description": "POST /gate-entries/scans result. `duplicate=true` = these exact bytes were\nalready scanned (Failure Scenarios #3) \u2014 the EXISTING scan is returned."
+      },
       "SettingPut": {
         "properties": {
           "value": {
@@ -2974,6 +5131,78 @@
           "effective_from"
         ],
         "title": "SplitRead"
+      },
+      "StationStatusRead": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "device_key": {
+            "type": "string",
+            "title": "Device Key"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "last_heartbeat_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Heartbeat At"
+          },
+          "agent_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Version"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "stale_seconds": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stale Seconds"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "device_key",
+          "kind",
+          "last_heartbeat_at",
+          "agent_version",
+          "detail"
+        ],
+        "title": "StationStatusRead"
       },
       "TokenResponse": {
         "properties": {

@@ -1,0 +1,12 @@
+# gate-agent config (P19). Copy to agent.ini next to agent.py and fill in.
+[agent]
+# Backend base URL (no trailing slash)
+api_url = https://ops.yeshshree.example
+# Service-account JWT for the gate agent (role plant_ops). Rotate via admin.
+token = PASTE-TOKEN-HERE
+# Unique per scanner station; shows up on the gate screen's station-status panel.
+device_key = gate-scanjet-1
+# Folder the ScanJet writes finished scans into. Uploaded files move to .\uploaded\
+watch_dir = C:\scans
+poll_seconds = 2
+heartbeat_seconds = 60
