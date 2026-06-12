@@ -35,6 +35,12 @@ Status legend: ✅ settled · 🔶 placeholder until plant confirms · ⛔ block
 | 10 | Vendor participation? | ✅ Internal roles first; vendor portal later | **M6 (P37–P39) resequenced after M7.** Pilot = internal users only. Vendor scoping still built into services from day one (cheaper now than retrofitted). |
 | 12 | Timeline + admin? | ✅ 4–6 weeks to floor pilot; Kartik is admin | Aggressive: thin-slice packets only, nothing speculative. Vendor-portal deferral buys the time back. Admin guide in docs/human/ targets Kartik. |
 
+## The Yeshshree↔Laxmi 50-50 (decoded from the workbook's formulas, 2026-06-12)
+
+| # | Question | Answer | Build consequence |
+|---|---|---|---|
+| 16 | How is the 50-50 division actually done? | ✅ **50-50 is the OUTCOME at total-vehicle level, not a per-family rule.** The Monthly sheet's right block: header says 'Yesh 50% / Laxmi 50%', but each family carries a hand-tuned % (Petrol 74/26, CNG+LPG 20/80, Diesel 100/0, EV GOGO 0/100, PG-MF-2s 0/100) calibrated so monthly totals land ≈ half each (May: 24,224.68 vs 24,330.32 of 48,555; the planner's '=V11/2' cell is the target). Rounding ±1 irrelevant. | Existing per-family effective-dated splits = correct model (config seeded with the REAL May percentages). NEW: SPLIT_BALANCE release sanity warns when aggregate Yesh share leaves target±band (app_settings 'split_balance', default 50±2) — the app now performs the planner's own balance check. Family groupings (model→family) also decoded from the T-column formulas into normalize_family rules: LPG→CNG bucket, 2-strokes='PG MF 2s', Maxima Z='Re max UG', X-Wide='Max Wider', Maxima C='gc Cabin'. |
+
 ## Production confirmation — clarified scope (13 Jun 2026)
 
 | # | Question | Answer | Build consequence |

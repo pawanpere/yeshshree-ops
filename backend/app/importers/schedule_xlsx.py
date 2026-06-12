@@ -34,14 +34,34 @@ from openpyxl import load_workbook
 WEEK_RANGE = re.compile(r"\((\d{1,2})\s*to\s*(\d{1,2})\)")
 _SCAN_ROWS = 250  # schedule + line-map sheets are well under this
 
-DEFAULT_FAMILY_RULES: list[tuple[str, str]] = [
-    # ordered: first matching substring (upper-cased compare) wins
-    ("EV", "EV GOGO"),
-    ("CNG", "RE CNG"),
-    ("LPG", "RE LPG"),
-    ("DIESEL", "RE Diesel"),
-    ("DSL", "RE Diesel"),
-    ("PET", "RE Petrol"),
+# Family groupings DECODED FROM THE WORKBOOK'S OWN FORMULAS (Monthly sheet, right
+# block, T-column =+Q… sums — 2026-06-12): LPG models roll into the Re CNG bucket;
+# 2-stroke ('2S') models are their own family 'PG MF 2s'; MAX UG / Max Wider / RIKI /
+# Maxima-C(cabin) are separate; EV is family-specific, not one bucket.
+# All rules remain ordered (first match wins) and planner-overridable via
+# app_settings['model_family_map'].
+DEFAULT_FAMILY_RULES: list[tuple[tuple[str, ...], str]] = [
+    # (ALL substrings must match, upper-cased) → family. Order = the workbook's truth:
+    # Q-row sums per family decoded one by one (e.g. Re max UG = MAXIMA Z fuel rows;
+    # 'Wider sc' in RE EV names means wider SCISSOR, not Maxima X Wide).
+    (("2S",), "PG MF 2s"),                          # =Q13+Q16
+    (("MAX UG", "EV"), "Re max UG EV GOGO"),
+    (("MAX UG",), "Re max UG"),
+    (("MAXIMA X WIDE", "WEGO"), "Max Wider EV"),    # =Q29
+    (("MAXIMA X WIDE", "EV"), "Max Wider EV"),
+    (("MAXIMA X WIDE",), "Max Wider"),              # =Q20+Q30+Q31 (all fuels)
+    (("MAXIMA C",), "gc Cabin"),                    # =Q32..Q40
+    (("MAXIMA Z", "EV"), "Re max UG EV GOGO"),      # =Q28
+    (("MAXIMA Z",), "Re max UG"),                   # =Q21..Q26 (all fuels)
+    (("RIKI",), "E RIKI"),                          # =Q41..Q43
+    (("RE EV",), "EV GOGO"),                        # =Q17+Q18 (Wider-scissor WEGOs)
+    (("WEGO",), "Re max UG EV GOGO"),               # =Q27 (WEGO P7009)
+    (("EV",), "EV GOGO"),
+    (("CNG",), "RE CNG"),
+    (("LPG",), "RE CNG"),  # LPG models share the CNG family split (=Q7..Q11)
+    (("DIESEL",), "RE Diesel"),
+    (("DSL",), "RE Diesel"),
+    (("PET",), "RE Petrol"),
 ]
 
 
@@ -50,8 +70,8 @@ def normalize_family(model: str, overrides: dict[str, str] | None = None) -> str
     for sub, family in (overrides or {}).items():
         if sub.upper() in up:
             return family
-    for sub, family in DEFAULT_FAMILY_RULES:
-        if sub in up:
+    for subs, family in DEFAULT_FAMILY_RULES:
+        if all(s in up for s in subs):
             return family
     return model.strip()  # unmatched → raw; SPLIT_MISSING sanity will surface it
 

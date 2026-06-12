@@ -50,16 +50,64 @@ def test_monthly_plan_golden():
 
 
 def test_family_normalization():
+    """Groupings decoded from the workbook's own T-column formulas (the planner's
+    model→family sums) — NOT generic fuel-type guesses."""
     assert normalize_family("RE 4S PETROL") == "RE Petrol"
     assert normalize_family("RE 4S CNG Bi-fuel OBD 2B") == "RE CNG"
     assert normalize_family("RE DIESEL OBD 2B") == "RE Diesel"
+    # LPG models share the CNG family bucket (workbook: T7 sums CNG AND LPG rows)
+    assert normalize_family("RE 4S LPG MF OBD 2B") == "RE CNG"
+    # 2-stroke models are their own family (=Q13+Q16 → 'PG MF 2s')
+    assert normalize_family("RE LPG 2S ES") == "PG MF 2s"
+    assert normalize_family("RE PET 2S NES/ES EXP") == "PG MF 2s"
+    # EV is family-specific — and 'Wider sc(issor)' in RE EV names ≠ Maxima X Wide
     assert normalize_family("RE EV 9.2 Kwh WEGO (Wider sc") == "EV GOGO"
-    assert normalize_family("RE 4S LPG MF OBD 2B") == "RE LPG"
+    assert normalize_family("WEGO P7009") == "Re max UG EV GOGO"          # =Q27
+    assert normalize_family("BAJAJA MAXIMA Z EV WEGO P701") == "Re max UG EV GOGO"
+    assert normalize_family("BAJAJ MAXIMA Z DIESEL OBD 2B") == "Re max UG"  # =Q25
+    assert normalize_family("BAJAJ MAXIMA X WIDE CNG Bi-f") == "Max Wider"  # =Q30
+    assert normalize_family("BAJAJ MAXIMA X WIDE WEGO P90") == "Max Wider EV"
+    assert normalize_family("BAJAJ MAXIMA C PET") == "gc Cabin"             # =Q32
+    assert normalize_family("RIKI P4005 (Base)") == "E RIKI"
     # planner override beats defaults (checked first)
     assert normalize_family("BAJAJ MAXIMA Z CNG Bi-fuel",
                             {"MAXIMA": "Maxima"}) == "Maxima"
     # unmatched keeps raw → SPLIT_MISSING sanity surfaces it later
-    assert normalize_family("RIKI P4005 (Base)") == "RIKI P4005 (Base)"
+    assert normalize_family("SOME FUTURE MODEL 9000") == "SOME FUTURE MODEL 9000"
+
+
+def test_split_balance_sanity(db):
+    """The 50-50 deal control: aggregate Yesh share off target → warn (mirrors the
+    planner's '=V11/2' cell)."""
+    import datetime as dt2
+    from app.core.deps import CurrentUser
+    from app.core.security import hash_password
+    from app.models.config_tables import AppSetting, ModelFamilySplit
+    from app.models.identity import User
+    from app.models.master import Customer
+    from app.services.plans import create_schedule, sanity_checks
+
+    u = User(username="planner3", password_hash=hash_password("x"), full_name="P",
+             role="planning", language="en")
+    cust = Customer(sap_code="5002", name="Bajaj 3")
+    db.add_all([u, cust,
+                AppSetting(key="split_balance",
+                           value={"target_pct": 50, "warn_band_pct": 2}),
+                ModelFamilySplit(family="RE Diesel", yesh_pct=100, laxmi_pct=0,
+                                 effective_from=dt2.date(2026, 5, 1))])
+    db.commit()
+    user = CurrentUser(id=u.id, username="planner3", role="planning", station=None,
+                       vendor_id=None, device_key=None)
+    # 100% Diesel-only schedule → Yesh share 100% → way off the 50±2 band
+    sched = create_schedule(db, user, customer_id=cust.id, period="2026-05",
+                            lines=[{"model_family": "RE Diesel",
+                                    "bucket_date": "2026-05-02", "qty": "1000"}])
+    result = sanity_checks(db, sched)
+    codes = {c["code"] for c in result["checks"]}
+    assert "SPLIT_BALANCE" in codes
+    balance = next(c for c in result["checks"] if c["code"] == "SPLIT_BALANCE")
+    assert balance["severity"] == "warn"
+    assert balance["details"]["yesh_share_pct"] == "100.00"
 
 
 def test_line_map_golden():

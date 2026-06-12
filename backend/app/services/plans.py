@@ -198,6 +198,36 @@ def sanity_checks(db: Session, schedule: Schedule) -> dict:
                            "details": {"family": family,
                                        "first_bucket_date": first_date.isoformat(),
                                        "config_link": "/config/splits"}})
+
+    # SPLIT_BALANCE (decoded from the real workbook 2026-06-12): the Yeshshree↔Laxmi
+    # deal is ~50-50 of TOTAL vehicles, achieved by hand-tuned per-family percentages
+    # (the planner's own '=V11/2' target cell). Mirror that control here: warn when
+    # the aggregate Yesh share drifts off target. Opt-in via app_settings
+    # 'split_balance' {"target_pct": 50, "warn_band_pct": 2} — absent ⇒ check skipped.
+    from app.models.config_tables import AppSetting
+    balance_cfg = db.get(AppSetting, "split_balance")
+    if balance_cfg and balance_cfg.value:
+        target = Decimal(str(balance_cfg.value.get("target_pct", 50)))
+        band = Decimal(str(balance_cfg.value.get("warn_band_pct", 2)))
+        total = yesh = Decimal("0")
+        for ln in db.query(ScheduleLine).filter_by(schedule_id=schedule.id):
+            pct = _split_pct(db, ln.model_family, ln.bucket_date)
+            if pct is None:
+                continue  # SPLIT_MISSING already raised above
+            total += ln.qty
+            yesh += ln.qty * pct / Decimal("100")
+        if total > 0:
+            share = (yesh / total * Decimal("100")).quantize(Decimal("0.01"))
+            if abs(share - target) > band:
+                checks.append({
+                    "code": "SPLIT_BALANCE", "severity": "warn",
+                    "message_en": f"Yeshshree's aggregate share is {share}% — outside "
+                                  f"{target}±{band}% of the 50-50 deal. Tune family "
+                                  f"splits in Config → Splits if unintended.",
+                    "message_mr": f"येशश्रीचा एकूण वाटा {share}% आहे — "
+                                  f"{target}±{band}% च्या बाहेर",
+                    "details": {"yesh_share_pct": str(share), "target_pct": str(target),
+                                "band_pct": str(band), "total_vehicles": _q(total)}})
     return {"checks": checks, "checked_at": dt.datetime.now(dt.timezone.utc).isoformat()}
 
 

@@ -31,12 +31,19 @@ DOWNTIME_REASONS = [
     ("BREAKDOWN", "Breakdown", "बिघाड"),
 ]
 
-SPLITS = [  # family, yesh_pct, laxmi_pct — app map config screen, effective 01 Jun 2026
+# family, yesh_pct, laxmi_pct — REAL May-2026 workbook formulas (decoded 2026-06-12):
+# per-family percentages hand-tuned so TOTAL vehicles split ~50-50 between
+# Yeshshree and Laxmi (the deal); LPG models live inside the RE CNG family.
+SPLITS = [
     ("RE Petrol", 74, 26),
     ("RE CNG", 20, 80),
     ("RE Diesel", 100, 0),
     ("EV GOGO", 0, 100),
+    ("PG MF 2s", 0, 100),
 ]
+
+# Aggregate-balance control mirrored from the planner's '=V11/2' target cell.
+SPLIT_BALANCE = {"target_pct": 50, "warn_band_pct": 2}
 
 MILLS = [  # name, lead_days, moq_mt, sourcing
     ("JSW", 14, 25, "multi"),
@@ -50,6 +57,7 @@ TOLERANCES = [  # mat_group, uom, pct — steel by weight (Failure Scenarios #11
 
 APP_SETTINGS = {
     "ops_mode": {"mode": "parallel_run"},
+    "split_balance": SPLIT_BALANCE,
     "anomaly_thresholds": {"hard_qty_multiple": 5, "soft_deviation_pct": 20,
                            "rejection_spike_factor": 2.0},
     "debit_note": {"multiplier": 5},
