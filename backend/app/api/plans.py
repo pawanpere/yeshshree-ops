@@ -55,6 +55,43 @@ def upload_schedule(customer_id: int = Form(...), period: str = Form(...),
     return {"schedule": schedule, "rows_ok": len(rows), "row_errors": errors}
 
 
+@router.post("/schedules/upload-xlsx", status_code=201)
+def upload_schedule_xlsx(customer_id: int = Form(...), period: str = Form(...),
+                         file: UploadFile = File(...), db: Session = Depends(get_db),
+                         user: CurrentUser = Depends(write_guard)):
+    """THE REAL Bajaj format ('3 Wh Production Plan' workbook — golden sample in
+    data/). Vehicle-model rows × week buckets → VEHICLE-level schedule lines
+    (material_id NULL); release explodes them via model_part_factors (Domain_QA Q1).
+    Family overrides come from app_settings['model_family_map']. Response carries
+    parse errors, skipped models, and the workbook's material→line sheet for admin
+    review — applying that mapping to lines/line_materials stays a human action."""
+    from app.importers.schedule_xlsx import parse_line_map, parse_monthly_plan
+    from app.models.config_tables import AppSetting
+
+    content = file.file.read()
+    overrides_row = db.get(AppSetting, "model_family_map")
+    overrides = overrides_row.value if overrides_row else None
+    rows, errors = parse_monthly_plan(content, period, family_overrides=overrides)
+    if not rows:
+        raise _error("XLSX_NO_ROWS", "No schedule rows found in the workbook",
+                     "वर्कबुकमध्ये वेळापत्रक ओळी सापडल्या नाहीत", 422,
+                     {"errors": errors})
+    stored = save_file(db, content=content, filename=file.filename or "schedule.xlsx",
+                       kind="import", mime=file.content_type, uploaded_by=user.id)
+    lines = [{"model_family": r["family"], "bucket_date": b["bucket_date"],
+              "qty": b["qty"]}
+             for r in rows for b in r["buckets"]]
+    schedule = svc.create_schedule(db, user, customer_id=customer_id, period=period,
+                                   lines=lines, source_file_id=stored.id)
+    return {
+        "schedule_id": schedule.id, "version": schedule.version,
+        "models_parsed": len(rows), "lines_created": len(lines),
+        "families": sorted({r["family"] for r in rows}),
+        "parse_errors": errors,
+        "line_map_preview": parse_line_map(content)[:80],
+    }
+
+
 @router.get("/schedules", response_model=list[s.ScheduleRead])
 def list_schedules(period: str | None = None, customer_id: int | None = None,
                    db: Session = Depends(get_db),

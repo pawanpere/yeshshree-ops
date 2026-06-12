@@ -14,7 +14,7 @@ Deep dives: `docs/planning/Yeshshree_Backend_Architecture.md` (§4 schema, §5 m
 | Auth/JWT/PIN/OTP | services/auth.py, core/security.py, core/deps.py | api/auth.py | identity.py | test_auth.py | features/auth/* |
 | Audit | core/audit.py (middleware + record()) | — | system.py:AuditLog | test_audit.py | — |
 | Master/config CRUD | services/master.py (apply_update whitelist) | api/master.py, api/config.py | master.py, config_tables.py | test_master_config.py | planning/config_screen |
-| Schedules/plans | services/plans.py (+importers/schedule_csv.py PROVISIONAL) | api/plans.py | planning.py | test_plans.py | planning/schedule_screen |
+| Schedules/plans | services/plans.py + importers/schedule_xlsx.py (REAL Bajaj format; CSV fallback) | api/plans.py (upload-xlsx) | planning.py, config_tables:ModelPartFactor | test_plans.py, test_schedule_xlsx.py (golden) | planning/schedule_screen |
 | Gate entries | services/gate.py | api/gate.py | gate.py | test_gate.py | gate/* |
 | Scan decode | services/scan_decode.py (zxing/pypdfium2) | api/scans.py (also heartbeat) | gate.py:GateScan, system.py:StationStatus | test_scans.py (golden: 3 real PDFs in data/) | gate/scans_pending |
 | Goods receipt | services/receiving.py | api/receiving.py | inventory.py | test_receiving.py | qc/gr_form |

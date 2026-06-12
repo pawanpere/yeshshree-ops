@@ -3,7 +3,7 @@ from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, Integer,
+from sqlalchemy import (BigInteger, Boolean, CheckConstraint, Date, DateTime, ForeignKey, Integer,
                         Numeric, SmallInteger, Text, UniqueConstraint, func)
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -83,4 +83,20 @@ class MaterialGroupTolerance(Base):
     mat_group: Mapped[str] = mapped_column(Text)
     uom: Mapped[str] = mapped_column(Text)
     pct_tolerance: Mapped[Decimal] = mapped_column(Numeric(5, 2))
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
+
+
+class ModelPartFactor(Base):
+    """Parts-per-vehicle cascade config (Domain_QA Q1, real schedule sample 2026-06-12):
+    Bajaj schedules VEHICLES per model family; Yeshshree plans PARTS. qty_per_vehicle
+    converts (e.g. rear mudguard = 2/vehicle — verified: 48,555 vehicles × 2 = 97,110
+    in the sample workbook). Planner-maintained via /config/part-factors."""
+    __tablename__ = "model_part_factors"
+    __table_args__ = (
+        UniqueConstraint("family", "material_id"),
+    )
+    id: Mapped[intpk]
+    family: Mapped[str] = mapped_column(Text)
+    material_id: Mapped[int] = mapped_column(ForeignKey("materials.id"))
+    qty_per_vehicle: Mapped[Decimal] = mapped_column(Qty)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")

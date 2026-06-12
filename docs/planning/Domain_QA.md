@@ -7,7 +7,7 @@ Status legend: ✅ settled · 🔶 placeholder until plant confirms · ⛔ block
 
 | # | Question | Answer | Build consequence |
 |---|---|---|---|
-| 1 | How does Bajaj's schedule map to part numbers? | ⛔ Unknown — real sample file will show | Schedule parser (P11) stays blocked on the sample; mock format continues; cascade math written against an interface so family-level vs part-level slots in either way. **Kartik: drop the sample in the folder — this is the oldest open item.** |
+| 1 | How does Bajaj's schedule map to part numbers? | ✅ ANSWERED 2026-06-12 (sample in data/) | VEHICLE-model level × 4 week-buckets ('(2 to 9)' headers), Bajaj lines D/E, Dom/Export, 'Monthly Req in 3WH plant' = our qty (0 ⇒ made in 4WH plant, skipped+reported). Cascade = model_part_factors (parts per vehicle; sample proves rear mudguard = 2: 48,555×2=97,110). Parser: importers/schedule_xlsx.py + POST /schedules/upload-xlsx. Factors are planner config (/config/part-factors) — **filling them per pilot part is now a pilot-setup task.** |
 | 3 | Do SAP production orders exist usably? | ✅ Stable order per part/month | Simple line+part→order mapping table, refreshed monthly. PPC hold queue (§11.11) stays as the safety net for gaps. |
 
 ## Money / documents
@@ -22,7 +22,7 @@ Status legend: ✅ settled · 🔶 placeholder until plant confirms · ⛔ block
 
 | # | Question | Answer | Build consequence |
 |---|---|---|---|
-| 5 | Are the 4 app-map lines real? | 🔶 Plant will confirm | Seeded 4 stay as placeholders; lines are admin-CRUD so renaming/adding is config, not code. |
+| 5 | Are the 4 app-map lines real? | ✅ Real line names found in the schedule workbook's material→line sheet (parse_line_map): CRADEL, DASH BOARD, ENG BKT, FRONT MUDGAURD, REAR MUDGAURD, SUPPORT TOP, MAXIMA HD, MAX UG NEW (+EV), RE STYLING, Re Side Door… | upload-xlsx returns the mapping for admin review; applying it to lines/line_materials is a human action (plant 1115-style codes in sample — confirm which plant's workbook the pilot uses). |
 | 6 | Shift pattern? | ✅ **Varies by line** | Design change: shifts become per-line — `plan_calendar.shifts` holds the plant default, lines get an optional `shift_pattern` override (implemented in P29/P30). Shift CHECK stays A·B until plant says otherwise. Auto-close fires per line. |
 | 7 | Gate setup? | ✅ 1 gate, 15–50 trucks/day, weighbridge prints a slip | Real volume → gate UX speed matters (scan pipeline earns its keep). Add to gate/GR flow: `weighbridge_weight` field + weighbridge-slip photo (P16/P20). Steel tolerance checks use weighbridge weight vs invoice weight. |
 | 11 | How is received qty established? | ✅ 100% count/weigh of everything | GR screen does **NOT** prefill received qty — prefill invites rubber-stamping. Fast numeric entry instead. (P20/P22.) |

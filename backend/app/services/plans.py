@@ -271,27 +271,49 @@ def _generate_plans(db: Session, schedule: Schedule) -> dict:
     unmapped: list[dict] = []
     no_vendor: list[dict] = []
 
-    # 1. split math + line mapping, aggregated per (line, material, date)
+    # 1. split math + line mapping, aggregated per (line, material, date).
+    #    Schedule lines come in two shapes:
+    #    - PART-level (material_id set): direct.
+    #    - VEHICLE-level (material_id NULL — the real Bajaj format): exploded via
+    #      model_part_factors (parts per vehicle, Domain_QA Q1). No factors → unmapped.
+    from app.models.config_tables import ModelPartFactor
     planned: dict[tuple[int, int, dt.date], Decimal] = {}
     for ln in db.query(ScheduleLine).filter_by(schedule_id=schedule.id):
         pct = _split_pct(db, ln.model_family, ln.bucket_date)
         if pct is None:  # unreachable after sanity hard-stop; belt and braces
             raise _error("SPLIT_MISSING", f"No split for {ln.model_family}",
                          "विभागणी सापडली नाही", 422, {"family": ln.model_family})
-        yesh_qty = (ln.qty * pct / Decimal("100")).quantize(QTY)
-        mapping = (db.query(LineMaterial)
-                   .filter_by(material_id=ln.material_id)
-                   .order_by(LineMaterial.line_id).first()) if ln.material_id else None
-        if mapping is None:
-            mat = db.get(Material, ln.material_id) if ln.material_id else None
-            unmapped.append({"material_id": ln.material_id,
-                             "sap_code": mat.sap_code if mat else None,
-                             "model_family": ln.model_family,
-                             "bucket_date": ln.bucket_date.isoformat(),
-                             "qty": _q(ln.qty)})
-            continue
-        key = (mapping.line_id, ln.material_id, ln.bucket_date)
-        planned[key] = planned.get(key, Decimal("0")) + yesh_qty
+
+        if ln.material_id is not None:
+            part_quantities = [(ln.material_id, ln.qty)]
+        else:
+            factors = (db.query(ModelPartFactor)
+                       .filter_by(family=ln.model_family, is_active=True)
+                       .order_by(ModelPartFactor.material_id).all())
+            if not factors:
+                unmapped.append({"material_id": None, "sap_code": None,
+                                 "model_family": ln.model_family,
+                                 "bucket_date": ln.bucket_date.isoformat(),
+                                 "qty": _q(ln.qty), "reason": "no_part_factor"})
+                continue
+            part_quantities = [(f.material_id, ln.qty * f.qty_per_vehicle)
+                               for f in factors]
+
+        for material_id, raw_qty in part_quantities:
+            yesh_qty = (raw_qty * pct / Decimal("100")).quantize(QTY)
+            mapping = (db.query(LineMaterial)
+                       .filter_by(material_id=material_id)
+                       .order_by(LineMaterial.line_id).first())
+            if mapping is None:
+                mat = db.get(Material, material_id)
+                unmapped.append({"material_id": material_id,
+                                 "sap_code": mat.sap_code if mat else None,
+                                 "model_family": ln.model_family,
+                                 "bucket_date": ln.bucket_date.isoformat(),
+                                 "qty": _q(raw_qty), "reason": "no_line_mapping"})
+                continue
+            key = (mapping.line_id, material_id, ln.bucket_date)
+            planned[key] = planned.get(key, Decimal("0")) + yesh_qty
 
     # 2. line_plans with per-(date,line) revision sequence
     revisions: dict[tuple[dt.date, int], int] = {}

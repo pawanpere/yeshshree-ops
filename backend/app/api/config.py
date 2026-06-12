@@ -12,7 +12,8 @@ from app.core.audit import record
 from app.core.db import get_db
 from app.core.deps import CurrentUser, require
 from app.models.config_tables import (AppSetting, MaterialGroupTolerance, Mill,
-                                      ModelFamilySplit, PlanCalendar, ReasonCode)
+                                      ModelFamilySplit, ModelPartFactor, PlanCalendar,
+                                      ReasonCode)
 from app.services.master import apply_update, create_with_audit, get_or_404
 
 router = APIRouter(prefix="/api/v1/config", tags=["config"])
@@ -187,6 +188,53 @@ def update_tolerance(tol_id: int, body: ToleranceUpdate, db: Session = Depends(g
     obj = get_or_404(db, MaterialGroupTolerance, tol_id, "tolerance")
     apply_update(db, obj, body.model_dump(exclude_unset=True), user,
                  "material_group_tolerances", allowed={"pct_tolerance", "is_active"})
+    return obj
+
+
+# --- model part factors (Domain_QA Q1: vehicles → parts cascade) ---
+class PartFactorRead(_Read):
+    id: int
+    family: str
+    material_id: int
+    qty_per_vehicle: Decimal
+    is_active: bool
+
+
+class PartFactorCreate(BaseModel):
+    family: str
+    material_id: int
+    qty_per_vehicle: Decimal
+
+
+class PartFactorUpdate(BaseModel):
+    qty_per_vehicle: Decimal | None = None
+    is_active: bool | None = None
+
+
+@router.get("/part-factors", response_model=list[PartFactorRead])
+def list_part_factors(family: str | None = None, db: Session = Depends(get_db),
+                      _: CurrentUser = Depends(read_guard)):
+    q = db.query(ModelPartFactor)
+    if family:
+        q = q.filter_by(family=family)
+    return q.order_by(ModelPartFactor.family, ModelPartFactor.material_id).all()
+
+
+@router.post("/part-factors", response_model=PartFactorRead, status_code=201)
+def create_part_factor(body: PartFactorCreate, db: Session = Depends(get_db),
+                       user: CurrentUser = Depends(write_guard)):
+    """Money-adjacent config (drives every plan qty) — audited like all config."""
+    return create_with_audit(db, ModelPartFactor(**body.model_dump()), user,
+                             "model_part_factors")
+
+
+@router.patch("/part-factors/{factor_id}", response_model=PartFactorRead)
+def update_part_factor(factor_id: int, body: PartFactorUpdate,
+                       db: Session = Depends(get_db),
+                       user: CurrentUser = Depends(write_guard)):
+    obj = get_or_404(db, ModelPartFactor, factor_id, "part factor")
+    apply_update(db, obj, body.model_dump(exclude_unset=True), user,
+                 "model_part_factors", allowed={"qty_per_vehicle", "is_active"})
     return obj
 
 
