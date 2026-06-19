@@ -190,7 +190,6 @@ class _Ui2ProfileScreenState extends State<Ui2ProfileScreen> {
             ),
           ),
         ),
-        BottomTabs2(active: 4, onTap: nav.tab),
       ],
     );
   }

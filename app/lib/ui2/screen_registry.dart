@@ -1,6 +1,7 @@
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 
 import 'nav.dart';
+import 'screens/coming_soon_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/cockpit_screen.dart';
@@ -83,6 +84,49 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.vStock => Ui2VStockScreen(nav: nav),
     ScreenId.vLogin => Ui2VLoginScreen(nav: nav),
     ScreenId.vOtp => Ui2VOtpScreen(nav: nav),
+    // ---- Later-phase role screens (placeholdered in Phase 0) ----
+    ScreenId.qualityWorklist => ComingSoonScreen(
+        nav: nav, titleEn: 'Quality worklist', titleMr: 'गुणवत्ता कार्यसूची',
+        phase: 'Phase 3', icon: Icons.fact_check_outlined),
+    ScreenId.productionHolds => ComingSoonScreen(
+        nav: nav, titleEn: 'Parked holds', titleMr: 'पार्क केलेले होल्ड',
+        phase: 'Phase 6', icon: Icons.pause_circle_outline),
+    ScreenId.storeStock => ComingSoonScreen(
+        nav: nav, titleEn: 'Stock browse', titleMr: 'स्टॉक पहा',
+        phase: 'Phase 6', icon: Icons.inventory_2_outlined),
+    ScreenId.planToday => ComingSoonScreen(
+        nav: nav, titleEn: "Today's plan", titleMr: 'आजची योजना',
+        phase: 'Phase 6', icon: Icons.event_note_outlined),
+    ScreenId.planHolds => ComingSoonScreen(
+        nav: nav, titleEn: 'Resolve holds', titleMr: 'होल्ड सोडवा',
+        phase: 'Phase 6', icon: Icons.pause_circle_outline),
+    ScreenId.mgmtDashboards => ComingSoonScreen(
+        nav: nav, titleEn: 'Dashboards', titleMr: 'डॅशबोर्ड',
+        phase: 'Phase 6', icon: Icons.dashboard_outlined),
+    ScreenId.mgmtApprovals => ComingSoonScreen(
+        nav: nav, titleEn: 'Approvals inbox', titleMr: 'मंजुरी इनबॉक्स',
+        phase: 'Phase 6', icon: Icons.approval_outlined),
+    ScreenId.mgmtAnomalies => ComingSoonScreen(
+        nav: nav, titleEn: 'Anomaly register', titleMr: 'विसंगती नोंदवही',
+        phase: 'Phase 6', icon: Icons.report_outlined),
+    ScreenId.adminUsers => ComingSoonScreen(
+        nav: nav, titleEn: 'Users', titleMr: 'वापरकर्ते',
+        phase: 'Phase 5', icon: Icons.people_outline),
+    ScreenId.adminDevices => ComingSoonScreen(
+        nav: nav, titleEn: 'Devices', titleMr: 'उपकरणे',
+        phase: 'Phase 5', icon: Icons.devices_outlined),
+    ScreenId.adminMaster => ComingSoonScreen(
+        nav: nav, titleEn: 'Master data', titleMr: 'मास्टर डेटा',
+        phase: 'Phase 6', icon: Icons.storage_outlined),
+    ScreenId.adminSettings => ComingSoonScreen(
+        nav: nav, titleEn: 'Settings', titleMr: 'सेटिंग्ज',
+        phase: 'Phase 6', icon: Icons.settings_outlined),
+    ScreenId.vOrders => ComingSoonScreen(
+        nav: nav, titleEn: 'Orders & call-offs', titleMr: 'ऑर्डर व कॉल-ऑफ',
+        phase: 'Phase 6', icon: Icons.receipt_long_outlined),
+    ScreenId.vFinance => ComingSoonScreen(
+        nav: nav, titleEn: 'Financial position', titleMr: 'आर्थिक स्थिती',
+        phase: 'Phase 6', icon: Icons.payments_outlined),
     };
 
 /// A catalog entry for the dev jump-nav and URL deep-linking.

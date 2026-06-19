@@ -140,7 +140,7 @@ class _Ui2ConfirmQueuedScreenState extends State<Ui2ConfirmQueuedScreen> {
                   const SizedBox(height: 26),
                   PrimaryButton2(
                     label: S.t('Open sync queue', 'सिंक रांग उघडा'),
-                    onTap: () => nav.tab(2),
+                    onTap: () => nav.home(),
                   ),
                   const SizedBox(height: 10),
                   OutlineButton2(

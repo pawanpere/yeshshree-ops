@@ -54,7 +54,6 @@ class StubScreen extends StatelessWidget {
             ),
           ),
         ),
-        if (tab != null) BottomTabs2(active: tab!, onTap: nav.tab),
       ],
     );
   }

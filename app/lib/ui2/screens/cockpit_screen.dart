@@ -70,7 +70,6 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
             children: _tab == 0 ? _now() : _team(),
           ),
         ),
-        BottomTabs2(active: 1, onTap: nav.tab),
       ],
     );
   }

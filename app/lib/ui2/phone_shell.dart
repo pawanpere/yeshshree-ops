@@ -1,32 +1,48 @@
 import 'package:flutter/material.dart';
 
 import 'nav.dart';
+import 'roles.dart';
 import 'screen_registry.dart';
 import 'widgets/correction_sheet.dart';
+import 'widgets/icons2.dart';
+import 'widgets/role_tab_bar.dart';
 
-/// The running phone app: a 5-tab shell with a per-tab navigation stack and an
-/// in-frame modal-sheet layer. Implements [PhoneNav] so any screen can drive
-/// navigation without knowing about the others.
+/// The legacy 5-tab set, used when no role tabs are supplied (e.g. the
+/// render-stress test, which pumps PhoneShell directly).
+const _legacyTabs = <RoleTab>[
+  RoleTab(ScreenId.home, I2.home, 'Home', 'मुख्य'),
+  RoleTab(ScreenId.tasks, I2.tasks, 'Tasks', 'कामे'),
+  RoleTab(ScreenId.sync, I2.sync, 'Sync', 'सिंक'),
+  RoleTab(ScreenId.notifications, I2.alerts, 'Alerts', 'सूचना'),
+  RoleTab(ScreenId.profile, I2.me, 'Me', 'मी'),
+];
+
+/// The running phone app: a bottom-tab shell with a per-tab navigation stack and
+/// an in-frame modal/overlay layer. The shell OWNS the tab bar (driven by the
+/// role's [tabs]) — screens are pure content. Implements [PhoneNav] so any
+/// screen can drive navigation without knowing about the others.
 class PhoneShell extends StatefulWidget {
-  const PhoneShell({super.key, this.initial, this.initialSheet});
+  const PhoneShell({
+    super.key,
+    this.initial,
+    this.initialSheet,
+    this.tabs = _legacyTabs,
+  });
 
-  /// Screen to land on (deep-link / dev jump-nav). Tab roots select their tab;
-  /// anything else is pushed on top of the Home tab.
+  /// Screen to land on (deep-link / dev jump-nav). A tab root selects its tab;
+  /// anything else is pushed on top of the first (home) tab.
   final ScreenId? initial;
   final SheetId? initialSheet;
+
+  /// The role's navigation tabs (first = home). Defaults to the legacy set.
+  final List<RoleTab> tabs;
 
   @override
   State<PhoneShell> createState() => _PhoneShellState();
 }
 
 class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
-  static const _roots = [
-    ScreenId.home,
-    ScreenId.tasks,
-    ScreenId.sync,
-    ScreenId.notifications,
-    ScreenId.profile,
-  ];
+  late final List<ScreenId> _roots = [for (final t in widget.tabs) t.id];
 
   late List<List<ScreenId>> _stacks;
   int _tab = 0;
@@ -46,9 +62,9 @@ class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
       if (ti >= 0) {
         _tab = ti;
       } else {
-        // Sit drill-downs on top of Home so the back chevron has somewhere to go.
+        // Sit drill-downs on top of the home tab so back has somewhere to go.
         _tab = 0;
-        _stacks[0] = [ScreenId.home, init];
+        _stacks[0] = [_roots[0], init];
       }
     }
   }
@@ -69,9 +85,11 @@ class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
 
   @override
   void tab(int index) => setState(() {
-        _tab = index;
-        _stacks[index] = [_roots[index]];
+        final i = index.clamp(0, _roots.length - 1);
+        _tab = i;
+        _stacks[i] = [_roots[i]];
         _sheet = null;
+        _overlay = null;
       });
 
   @override
@@ -91,9 +109,17 @@ class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
 
   @override
   Widget build(BuildContext context) {
+    // Tab bar shows only on a tab-root screen; drill-downs/flows are full-screen.
+    final showTabBar = _roots.contains(_stack.last);
     return Stack(
       children: [
-        Positioned.fill(child: buildScreen(_stack.last, this)),
+        Column(
+          children: [
+            Expanded(child: buildScreen(_stack.last, this)),
+            if (showTabBar)
+              RoleTabBar(tabs: widget.tabs, activeIndex: _tab, onTap: tab),
+          ],
+        ),
         if (_sheet != null) ...[
           Positioned.fill(
             child: GestureDetector(

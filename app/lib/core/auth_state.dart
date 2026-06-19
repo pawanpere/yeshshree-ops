@@ -1,6 +1,7 @@
 /// Session state: tokens, role/station, language. Persisted in shared_preferences
 /// (tokens are short-lived + the refresh token is opaque & rotated server-side; move
 /// to flutter_secure_storage when platform setup lands — noted in packet record).
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
@@ -45,6 +46,13 @@ class Session {
 class AuthNotifier extends Notifier<Session> {
   static const _key = 'session_v1';
 
+  final Completer<void> _restoreDone = Completer<void>();
+
+  /// Completes once the persisted session has been read (or found absent /
+  /// corrupt). UI can await this to avoid flashing the login screen for a user
+  /// who already has a stored session.
+  Future<void> get whenRestored => _restoreDone.future;
+
   @override
   Session build() {
     Api.wire();
@@ -56,11 +64,21 @@ class AuthNotifier extends Notifier<Session> {
   }
 
   Future<void> _restore() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_key);
-    if (raw != null) {
-      state = Session.fromJson(jsonDecode(raw) as Map<String, dynamic>);
-      S.lang.value = state.language;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_key);
+      if (raw != null) {
+        state = Session.fromJson(jsonDecode(raw) as Map<String, dynamic>);
+        S.lang.value = state.language;
+      }
+    } catch (_) {
+      // Corrupt persisted session — drop it and start clean rather than crash.
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove(_key);
+      } catch (_) {}
+    } finally {
+      if (!_restoreDone.isCompleted) _restoreDone.complete();
     }
   }
 
@@ -89,6 +107,20 @@ class AuthNotifier extends Notifier<Session> {
       'username': username, 'password': password, 'device_key': state.deviceKey,
     });
     _applyTokens(r.data as Map<String, dynamic>, username: username);
+  }
+
+  /// Dev/QA only: a local fake session so the ui2 pilot can be previewed
+  /// (role flow + shells) without a backend — used by the `?role=` deep-link.
+  /// Reads fall back to demo data; this is never part of the real login path.
+  void devSignIn() {
+    state = const Session(
+      accessToken: 'demo',
+      refreshToken: 'demo',
+      role: 'admin',
+      fullName: 'Demo Admin',
+      username: 'admin',
+      deviceKey: 'gate-kiosk-1',
+    );
   }
 
   Future<void> pinSwitch(String username, String pin) async {

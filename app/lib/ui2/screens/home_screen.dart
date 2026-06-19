@@ -127,7 +127,6 @@ class Ui2HomeScreen extends StatelessWidget {
             ),
           ),
         ),
-        BottomTabs2(active: 0, onTap: nav.tab),
       ],
     );
   }

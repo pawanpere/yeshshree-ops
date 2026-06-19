@@ -139,7 +139,6 @@ class _Ui2TasksScreenState extends State<Ui2TasksScreen> {
                   ],
                 ),
         ),
-        BottomTabs2(active: 1, onTap: nav.tab),
       ],
     );
   }

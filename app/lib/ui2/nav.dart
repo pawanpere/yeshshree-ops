@@ -4,7 +4,24 @@ import 'package:flutter/widgets.dart';
 /// import each other — they call [PhoneNav] with a [ScreenId], and the registry
 /// (screen_registry.dart) maps the id to a widget. This lets every screen be
 /// built in isolation.
-enum ScreenId { home, tasks, cockpit, sync, notifications, profile, signin, confirmForm, confirmSyncing, confirmSynced, confirmQueued, issueForm, issueOverlimit, issueWaiting, issueApproved, issueDone, gateArrivals, gateScan, gateScanned, gateMatch, gateQc, gateGrn, gateReceived, dispatchList, dispatchDetail, gatePass, saleForm, saleDone, issueHistory, confHistory, unmatched, offlineGate, offlineGateSaved, forceUpdate, vHome, vAlert, vStock, vLogin, vOtp }
+enum ScreenId {
+  home, tasks, cockpit, sync, notifications, profile, signin,
+  confirmForm, confirmSyncing, confirmSynced, confirmQueued,
+  issueForm, issueOverlimit, issueWaiting, issueApproved, issueDone,
+  gateArrivals, gateScan, gateScanned, gateMatch, gateQc, gateGrn, gateReceived,
+  dispatchList, dispatchDetail, gatePass, saleForm, saleDone,
+  issueHistory, confHistory, unmatched, offlineGate, offlineGateSaved,
+  forceUpdate, vHome, vAlert, vStock, vLogin, vOtp,
+  // ---- Role-screens built in later phases. Placeholdered in Phase 0 so the
+  // role→screens map is complete now; each is implemented in the phase noted.
+  qualityWorklist, // P3
+  productionHolds, // P6 (confirmations/holds)
+  storeStock, // P6 (stock browse)
+  planToday, planHolds, // P6 (planning)
+  mgmtDashboards, mgmtApprovals, mgmtAnomalies, // P6 (management)
+  adminUsers, adminDevices, adminMaster, adminSettings, // P5/P6 (admin)
+  vOrders, vFinance, // P6 (vendor orders + financials)
+}
 
 /// Modal bottom sheets that float over the current screen, inside the frame.
 enum SheetId { correction }

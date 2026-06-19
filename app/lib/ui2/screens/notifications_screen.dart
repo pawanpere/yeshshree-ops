@@ -148,7 +148,6 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
                       children: cards,
                     ),
         ),
-        BottomTabs2(active: 3, onTap: nav.tab),
       ],
     );
   }

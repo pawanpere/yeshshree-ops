@@ -153,7 +153,7 @@ class _Ui2OfflineGateSavedScreenState extends State<Ui2OfflineGateSavedScreen> {
                   const SizedBox(height: 24),
                   PrimaryButton2(
                     label: S.t('Open sync queue', 'सिंक रांग उघडा'),
-                    onTap: () => nav.tab(2),
+                    onTap: () => nav.home(),
                   ),
                   const SizedBox(height: 10),
                   OutlineButton2(

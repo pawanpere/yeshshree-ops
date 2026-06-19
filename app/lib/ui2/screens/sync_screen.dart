@@ -164,7 +164,6 @@ class _Ui2SyncScreenState extends ConsumerState<Ui2SyncScreen> {
             ],
           ),
         ),
-        BottomTabs2(active: 2, onTap: nav.tab),
       ],
     );
   }
