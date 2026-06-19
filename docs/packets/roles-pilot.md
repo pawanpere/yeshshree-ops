@@ -56,7 +56,21 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
     Phase 2) and `saleForm` (out of scope) — both allow-listed with a shrink-this-list
     TODO; the other 37 are clean. The report's RenderFlex overflows were already fixed
     in the earlier layout-hardening pass. Tests: 13/13; web build OK.
-- **Phase 2** — remove in-app camera scan; gate inbox fed by the scanner-watcher.
+- **Phase 2 — remove in-app camera scan. ✅ DONE.** Deleted the two in-app camera
+  screens (`gateScan` viewfinder + `gateScanned` read-back) and their ids / registry
+  entries. The app no longer captures with the phone camera — the gate inbox
+  (`gate_arrivals` ← `/gate-entries?status=open`) is fed by the ScanJet scanner-watcher
+  (which posts entries to the backend). Tapping a matched arrival now opens the
+  match-order flow (`gateMatch` → send to quality); the footer notes scans arrive
+  automatically and offers a manual "Add a gate entry" (`offlineGate`). Removed the now
+  non-existent `gateScanned` from the stress-test allow-list, so the test got stricter
+  for free. Verified: analyze clean, tests 13/13, web build OK; adversarial multi-lens
+  review (reachability / UX-flow / bilingual / spec) found + fixed 3 issues: the manual
+  "Add a gate entry" path (`offlineGate`) was framed offline-only ("queued / when back
+  online") though it's now used online too — reworded to neutral copy and made the saved
+  screen **outcome-aware** (posted-live vs queued-offline via `res.queued`); renumbered
+  the gate step counter (was 1/6→4/6 after deleting steps 2–3) to a contiguous 1–4/4;
+  refreshed the stale `gate_arrivals` "(tap to scan)" docstring.
 - **Phase 3** — quality worklist (`/gate-entries?status=open&match_status=matched`).
 - **Phase 4** — inbound RM vs components (new component category, migration); GR routes
   by type; job-work-return inward category.

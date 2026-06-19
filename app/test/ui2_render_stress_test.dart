@@ -97,9 +97,9 @@ Future<List<String>> _collectRenderErrors(
 /// regression. The infinite-height assertion is suppressed for these (overflow is
 /// still enforced). Keep this list shrinking — remove an entry the moment its
 /// screen is fixed or deleted (see app/FRONTEND_STRESS_TEST_REPORT.md):
-///   - gateScanned: the in-app camera-scan screen, DELETED in Phase 2.
-///   - saleForm:    billing screen, explicitly out of scope for the roles pilot.
-const _deferredInfiniteHeight = {'gateScanned', 'saleForm'};
+///   - saleForm: billing screen, explicitly out of scope for the roles pilot.
+/// (gateScanned was the in-app camera-scan screen — DELETED in Phase 2.)
+const _deferredInfiniteHeight = {'saleForm'};
 
 void main() {
   group('ui2 render stress', () {

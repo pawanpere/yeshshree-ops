@@ -139,7 +139,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
         ScreenHeader2(
           title: S.t('GOODS RECEIPT', 'माल पावती'),
           onBack: nav.pop,
-          trailing: Text('6/6', style: F.mono(12, color: Y2.muted)),
+          trailing: Text('4/4', style: F.mono(12, color: Y2.muted)),
         ),
         Expanded(
           child: SingleChildScrollView(

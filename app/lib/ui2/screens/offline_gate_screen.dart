@@ -75,6 +75,10 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
       label: '${S.t('Gate entry', 'गेट नोंद')} $veh',
     );
     if (res.ok) Ui2Flow.set('gate.entryId', res.data?['id']);
+    // Tell the saved screen the real outcome: posted live vs queued offline. The
+    // manual-entry path is used online too, so the confirmation must not always
+    // claim "queued / when you're back online".
+    Ui2Flow.set('offlineGate.queued', res.queued);
     if (!mounted) return;
     nav.replace(ScreenId.offlineGateSaved);
   }
@@ -87,7 +91,7 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
         const StatusBar2(),
         // Header: back chevron + title.
         ScreenHeader2(
-          title: S.t('GATE ENTRY — OFFLINE', 'गेट एन्ट्री — ऑफलाइन'),
+          title: S.t('ADD GATE ENTRY', 'गेट नोंद जोडा'),
           onBack: nav.pop,
         ),
         Expanded(
@@ -96,7 +100,8 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // No-network notice.
+                // Quick manual-entry notice (walk-in / no-scan arrival). Works
+                // online or offline — the entry syncs automatically either way.
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
                   decoration: BoxDecoration(
@@ -120,13 +125,13 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                                S.t('No network — quick entry',
-                                    'नेटवर्क नाही — झटपट नोंद'),
+                                S.t('Quick gate entry',
+                                    'झटपट गेट नोंद'),
                                 style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
                             Text(
                                 S.t(
-                                    'Let the truck through now. Type what you can; it matches to an order on sync.',
-                                    'ट्रक आता आत येऊ द्या. जे शक्य आहे ते टाइप करा; सिंकवर ते ऑर्डरशी जुळेल.'),
+                                    'For a walk-in or no-scan arrival. Let the truck through now; type what you can and it matches to an order automatically.',
+                                    'वॉक-इन किंवा स्कॅन नसलेल्या आवकसाठी. ट्रक आता आत येऊ द्या; जे शक्य आहे ते टाइप करा आणि ते आपोआप ऑर्डरशी जुळते.'),
                                 style: F.hind(12, color: Y2.body, height: 1.35)),
                           ],
                         ),
@@ -234,7 +239,7 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
             border: Border(top: BorderSide(color: Y2.line)),
           ),
           child: PrimaryButton2(
-            label: S.t('Let in & save (queued)', 'आत घ्या आणि जतन करा (रांगेत)'),
+            label: S.t('Let in & save', 'आत घ्या आणि जतन करा'),
             busy: _busy,
             enabled: canSave,
             onTap: _save,

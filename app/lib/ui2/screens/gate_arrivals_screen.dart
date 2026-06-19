@@ -9,11 +9,13 @@ import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/polish2.dart';
 
-/// Gate — Arrivals — prototype screen [11]. List of pre-advised vehicles at the
-/// gate (tap to scan) plus an unknown/no-pre-advice entry, with scan + quick
-/// offline gate-entry actions in the footer. Rows are loaded from
-/// [Data.gateArrivals]; falls back to clearly-marked DEMO data when the backend
-/// is unreachable or the table is empty.
+/// Gate — Arrivals — prototype screen [11]. The gate inbox: open gate entries the
+/// gate scanner-watcher posted to the backend (plus unknown/no-pre-advice ones).
+/// Tapping a known arrival reviews & matches it to a PO ([ScreenId.gateMatch]); an
+/// unknown one opens the unmatched folder. The footer offers only a manual "Add a
+/// gate entry" (walk-ins / no-scan) — the app no longer captures with the camera.
+/// Rows are loaded from [Data.gateArrivals]; falls back to clearly-marked DEMO data
+/// when the backend is unreachable or the table is empty.
 class Ui2GateArrivalsScreen extends StatefulWidget {
   const Ui2GateArrivalsScreen({super.key, required this.nav});
   final PhoneNav nav;
@@ -60,7 +62,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
           title: S.t('GATE — ARRIVALS', 'गेट — आवक'),
           onBack: nav.pop,
           demo: loaded?.demo ?? false,
-          trailing: Text('1/6', style: F.mono(12, color: Y2.muted)),
+          trailing: Text('1/4', style: F.mono(12, color: Y2.muted)),
         ),
         Expanded(
           child: loaded == null
@@ -70,8 +72,8 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                       icon: I2.truck,
                       title: S.t('No vehicles waiting', 'प्रतीक्षेत वाहन नाही'),
                       subtitle: S.t(
-                          'Scan a challan or add a quick gate entry to begin.',
-                          'सुरू करण्यासाठी चलन स्कॅन करा किंवा जलद गेट नोंद जोडा.'),
+                          'Scanned challans from the gate scanner appear here. Add one manually if needed.',
+                          'गेट स्कॅनरमधील स्कॅन केलेली चलने इथे दिसतात. आवश्यक असल्यास स्वतः जोडा.'),
                     )
                   : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
@@ -100,14 +102,27 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              PrimaryButton2(
-                label: S.t('Scan a vehicle / challan', 'वाहन / चलन स्कॅन करा'),
-                onTap: () => nav.go(ScreenId.gateScan),
+              // Scanning happens at the gate scanner (the ScanJet folder-watcher
+              // posts entries to the backend); the app no longer captures with the
+              // camera — the operator works the inbox the scanner feeds, and adds a
+              // manual entry only for walk-ins / no-scan arrivals.
+              Row(
+                children: [
+                  const Icon(Icons.document_scanner_outlined,
+                      size: 15, color: Y2.muted),
+                  const SizedBox(width: 7),
+                  Expanded(
+                    child: Text(
+                      S.t('Scanned challans appear here automatically.',
+                          'स्कॅन केलेली चलने इथे आपोआप दिसतात.'),
+                      style: F.hind(11, color: Y2.muted),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 9),
-              OutlineButton2(
-                label: S.t('No network? Quick gate entry',
-                    'नेटवर्क नाही? जलद गेट नोंद'),
+              const SizedBox(height: 10),
+              PrimaryButton2(
+                label: S.t('Add a gate entry', 'गेट नोंद जोडा'),
                 onTap: () => nav.go(ScreenId.offlineGate),
               ),
             ],
@@ -126,8 +141,8 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
       return _vehicle(
         plate: S.t('Unknown vehicle', 'अज्ञात वाहन'),
         plateStyle: F.hind(14, w: FontWeight.w600, color: Y2.ink),
-        sub: S.t('no pre-advice · scan to identify',
-            'पूर्वसूचना नाही · ओळखण्यासाठी स्कॅन करा'),
+        sub: S.t('no pre-advice · tap to identify',
+            'पूर्वसूचना नाही · ओळखण्यासाठी टॅप करा'),
         badge: const Glyph(GlyphShape.triangle, Y2.orange, size: 12),
         onTap: () => nav.go(ScreenId.unmatched),
       );
@@ -148,7 +163,9 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
               ],
             )
           : null,
-      onTap: () => nav.go(ScreenId.gateScan),
+      // The arrival came in from the gate scanner; tapping reviews & matches it
+      // to a PO (then on to quality). No in-app camera capture any more.
+      onTap: () => nav.go(ScreenId.gateMatch),
     );
   }
 

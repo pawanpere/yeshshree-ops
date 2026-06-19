@@ -8,7 +8,7 @@ enum ScreenId {
   home, tasks, cockpit, sync, notifications, profile, signin,
   confirmForm, confirmSyncing, confirmSynced, confirmQueued,
   issueForm, issueOverlimit, issueWaiting, issueApproved, issueDone,
-  gateArrivals, gateScan, gateScanned, gateMatch, gateQc, gateGrn, gateReceived,
+  gateArrivals, gateMatch, gateQc, gateGrn, gateReceived,
   dispatchList, dispatchDetail, gatePass, saleForm, saleDone,
   issueHistory, confHistory, unmatched, offlineGate, offlineGateSaved,
   forceUpdate, vHome, vAlert, vStock, vLogin, vOtp,

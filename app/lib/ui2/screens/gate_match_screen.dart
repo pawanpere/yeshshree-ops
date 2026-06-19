@@ -105,7 +105,7 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
         ScreenHeader2(
           title: S.t('MATCH ORDER', 'ऑर्डर जुळवा'),
           onBack: nav.pop,
-          trailing: Text('4/6', style: F.mono(12, color: Y2.muted)),
+          trailing: Text('2/4', style: F.mono(12, color: Y2.muted)),
         ),
         Expanded(
           child: SingleChildScrollView(

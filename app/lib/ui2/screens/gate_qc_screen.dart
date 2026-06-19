@@ -57,7 +57,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
         ScreenHeader2(
           title: S.t('INWARD QC', 'आवक QC'),
           onBack: nav.pop,
-          trailing: Text('5/6', style: F.mono(12, color: Y2.muted)),
+          trailing: Text('3/4', style: F.mono(12, color: Y2.muted)),
         ),
         // ---- Body ----
         Expanded(
