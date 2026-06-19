@@ -54,6 +54,19 @@ String _shortError(Object error) {
   return text.split('\n').first;
 }
 
+/// A genuine, layout-time failure worth failing the suite over: a RenderFlex
+/// overflow, or a vertical-axis unbounded/infinite-height constraint error (the
+/// "hard" failures the stress-test report called out, e.g. a scroll view or a
+/// flexible child handed unbounded height).
+bool _isLayoutFailure(String e) {
+  if (e.contains('overflowed')) return true;
+  final l = e.toLowerCase();
+  return l.contains('unbounded height') ||
+      l.contains('infinite height') ||
+      l.contains('incoming height constraints are unbounded') ||
+      l.contains('vertical viewport was given unbounded height');
+}
+
 Future<List<String>> _collectRenderErrors(
   WidgetTester tester,
   Future<void> Function() body,
@@ -72,14 +85,21 @@ Future<List<String>> _collectRenderErrors(
   } finally {
     FlutterError.onError = previous;
   }
-  // This suite guards against layout OVERFLOW. Several screens run indefinite
-  // animations (skeleton shimmer, sync spinner) and async reads; under bounded
-  // pumps these can momentarily trip transient "RenderBox was not laid out" /
-  // semantics / infinite-height assertions that are harness timing artifacts,
-  // not real layout bugs (the screens render fine in the app). Keep only genuine
-  // RenderFlex overflows — the thing this test exists to catch.
-  return errors.where((e) => e.contains('overflowed')).toSet().toList();
+  // This suite guards against layout failures that throw during layout: RenderFlex
+  // OVERFLOW and UNBOUNDED/INFINITE-HEIGHT constraint errors (a scrollable or a
+  // flex child given unbounded vertical space — the hard failures the stress-test
+  // report flagged). "RenderBox was not laid out" alone is a downstream symptom that
+  // can fire transiently under bounded pumps, so it is NOT counted on its own.
+  return errors.where(_isLayoutFailure).toSet().toList();
 }
+
+/// Screens with a KNOWN unbounded-height failure that is deferred, not a
+/// regression. The infinite-height assertion is suppressed for these (overflow is
+/// still enforced). Keep this list shrinking — remove an entry the moment its
+/// screen is fixed or deleted (see app/FRONTEND_STRESS_TEST_REPORT.md):
+///   - gateScanned: the in-app camera-scan screen, DELETED in Phase 2.
+///   - saleForm:    billing screen, explicitly out of scope for the roles pilot.
+const _deferredInfiniteHeight = {'gateScanned', 'saleForm'};
 
 void main() {
   group('ui2 render stress', () {
@@ -89,7 +109,7 @@ void main() {
         final failures = <String>[];
 
         for (final entry in kScreens) {
-          final errors = await _collectRenderErrors(tester, () async {
+          var errors = await _collectRenderErrors(tester, () async {
             await _pumpAt(
               tester,
               const Size(390, 844),
@@ -101,6 +121,12 @@ void main() {
               ),
             );
           });
+
+          // Deferred screens: still fail on overflow, but tolerate their known
+          // infinite-height bug until the screen is fixed/removed.
+          if (_deferredInfiniteHeight.contains(entry.id.name)) {
+            errors = errors.where((e) => e.contains('overflowed')).toList();
+          }
 
           if (errors.isNotEmpty) {
             failures.add('${entry.id.name}: ${errors.join(' | ')}');

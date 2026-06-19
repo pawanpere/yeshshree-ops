@@ -49,7 +49,13 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
     read-only stepper counts in confirm (good/reject/downtime), issue, and over-limit
     issue. gate-QC and GRN already used numeric TextFields; gate-match only displays the
     PO qty; saleForm skipped. 5 widget tests (`ui2_qty_field_test.dart`).
-  - **1c remaining overflow fixes + extend the stress test (fail on infinite-height).**
+  - **1c layout + stress test. ✅ DONE.** The render stress test now also fails on
+    UNBOUNDED/INFINITE-HEIGHT layout errors (a flex child or scroll view given
+    unbounded vertical space), not just RenderFlex overflow. Sweeping all 39 screens
+    in en+mr surfaced exactly the two the report flagged — `gateScanned` (deleted in
+    Phase 2) and `saleForm` (out of scope) — both allow-listed with a shrink-this-list
+    TODO; the other 37 are clean. The report's RenderFlex overflows were already fixed
+    in the earlier layout-hardening pass. Tests: 13/13; web build OK.
 - **Phase 2** — remove in-app camera scan; gate inbox fed by the scanner-watcher.
 - **Phase 3** — quality worklist (`/gate-entries?status=open&match_status=matched`).
 - **Phase 4** — inbound RM vs components (new component category, migration); GR routes
