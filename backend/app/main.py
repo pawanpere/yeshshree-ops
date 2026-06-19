@@ -3,6 +3,7 @@ all business logic lives in app/services/ (CLAUDE.md invariants)."""
 import uuid
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
 from app.api.approvals import router as approvals_router
@@ -57,6 +58,23 @@ async def audit_middleware(request: Request, call_next):
             import structlog
             structlog.get_logger().error("audit_write_failed", path=request.url.path)
     return response
+
+
+# CORS — added last so it is the OUTERMOST layer (it must answer preflight OPTIONS
+# before auth/audit run). Only the Flutter WEB build is cross-origin; a real Android
+# build uses native HTTP and never triggers CORS. Explicit prod origins come from
+# CORS_ORIGINS; cors_allow_localhost reflects any localhost:<port> for dev/preview.
+_cors = get_settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[o.strip() for o in _cors.cors_origins.split(",") if o.strip()],
+    allow_origin_regex=(r"https?://(localhost|127\.0\.0\.1)(:\d+)?"
+                        if _cors.cors_allow_localhost else None),
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+    expose_headers=["X-Request-Id"],
+)
 
 
 app.include_router(auth_router)

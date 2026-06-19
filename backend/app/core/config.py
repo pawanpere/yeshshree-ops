@@ -19,6 +19,13 @@ class Settings(BaseSettings):
 
     ops_mode: str = "parallel_run"  # parallel_run | authoritative (mirrored in app_settings)
 
+    # CORS — only the Flutter WEB build needs this (a real Android build uses native
+    # HTTP, so CORS never applies on device). cors_origins = explicit production
+    # origins (comma-separated); cors_allow_localhost reflects any
+    # http(s)://localhost:<port> so dev/preview web builds reach the API.
+    cors_origins: str = ""
+    cors_allow_localhost: bool = True
+
     app_min_version: str = "0.1.0"
     app_latest_version: str = "0.1.0"
     apk_url: str = ""
