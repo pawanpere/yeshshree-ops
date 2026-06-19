@@ -60,28 +60,34 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
     if (_posting) return;
     setState(() => _posting = true);
 
-    // Step 1 — create the gate entry for this inbound vehicle.
-    final gateRes = await Data.submit(
-      ref,
-      '/gate-entries',
-      <String, dynamic>{
-        'doc_type': 'invoice',
-        'vehicle_no': 'MH12 AB 4421',
-        'driver_name': 'Ravi',
-        // invoice gate entries require a vendor + invoice (GATE_INVOICE_REQUIRED)
-        'vendor_id': 1,
-        'invoice_no': 'INV-${Data.newRef().substring(0, 6).toUpperCase()}',
-        'invoice_date': '2026-06-19',
-        'invoice_value': '50000',
-      },
-      label: S.t('Gate entry', 'गेट नोंद'),
-    );
-    if (!mounted) return;
-    if (gateRes.failed) {
-      setState(() => _posting = false);
-      _errorSnack(gateRes.error?.message ??
-          S.t('Could not create gate entry', 'गेट नोंद करता आली नाही'));
-      return;
+    // Step 1 — resolve the gate entry to receipt. Prefer the REAL entry the
+    // quality operator picked from the worklist (gate.entryId); only self-create
+    // one in the standalone/demo flow where no entry was carried.
+    int? gateEntryId = Ui2Flow.get<int>('gate.entryId');
+    if (gateEntryId == null) {
+      final gateRes = await Data.submit(
+        ref,
+        '/gate-entries',
+        <String, dynamic>{
+          'doc_type': 'invoice',
+          'vehicle_no': 'MH12 AB 4421',
+          'driver_name': 'Ravi',
+          // invoice gate entries require a vendor + invoice (GATE_INVOICE_REQUIRED)
+          'vendor_id': 1,
+          'invoice_no': 'INV-${Data.newRef().substring(0, 6).toUpperCase()}',
+          'invoice_date': '2026-06-19',
+          'invoice_value': '50000',
+        },
+        label: S.t('Gate entry', 'गेट नोंद'),
+      );
+      if (!mounted) return;
+      if (gateRes.failed) {
+        setState(() => _posting = false);
+        _errorSnack(gateRes.error?.message ??
+            S.t('Could not create gate entry', 'गेट नोंद करता आली नाही'));
+        return;
+      }
+      gateEntryId = gateRes.data?['id'] as int?;
     }
 
     // Step 2 — post the goods receipt referencing the gate entry.
@@ -89,7 +95,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
       ref,
       '/goods-receipts',
       <String, dynamic>{
-        'gate_entry_id': gateRes.data?['id'],
+        'gate_entry_id': gateEntryId,
         'received_qty': _receivedQty,
         'rejected_qty': '0',
         'qc_result': Ui2Flow.get<String>('gate.qcResult') ?? 'pass',
@@ -105,6 +111,11 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
       return;
     }
 
+    // The entry has now been received — clear the carried context so it can't be
+    // receipted again (the Quality tabs are independent roots; a stale entryId
+    // would otherwise let a re-entry post a duplicate goods-receipt).
+    Ui2Flow.set('gate.entryId', null);
+    Ui2Flow.set('gate.vehicle', null);
     // Stash for the result screen (real doc id when posted, queued marker else).
     Ui2Flow.set('gate.grnDoc',
         grnRes.data?['grn_no'] ?? grnRes.data?['doc_no'] ?? grnRes.data?['id']);
@@ -129,6 +140,13 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
           ),
         ),
       );
+
+  /// A value carried in from the quality worklist / gate-match hand-off, or a
+  /// fallback when the receipt screen is reached cold (dev jump-nav / demo flow).
+  String _ctx(String key, String fallback) {
+    final v = Ui2Flow.get<String>(key);
+    return (v != null && v.isNotEmpty) ? v : fallback;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -159,13 +177,25 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                     children: [
                       _summaryRow(
                           S.t('PO', 'PO'),
-                          Text('${Ui2Flow.get<String>('gate.po') ?? '77-2291'}',
+                          Text(Ui2Flow.get<String>('gate.po') ?? '—',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: F.mono(13,
                                   w: FontWeight.w700, color: Y2.ink))),
                       const SizedBox(height: 6),
                       _summaryRow(
+                          S.t('Supplier', 'पुरवठादार'),
+                          Text(_ctx('gate.supplier', '—'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: F.hind(13,
+                                  w: FontWeight.w700, color: Y2.ink))),
+                      const SizedBox(height: 6),
+                      _summaryRow(
                           S.t('Material', 'माल'),
-                          Text('CR coil 2.5mm',
+                          Text(_ctx('gate.material', 'CR coil 2.5mm'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: F.hind(13,
                                   w: FontWeight.w700, color: Y2.ink))),
                       const SizedBox(height: 6),

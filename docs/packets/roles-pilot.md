@@ -71,7 +71,23 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
   screen **outcome-aware** (posted-live vs queued-offline via `res.queued`); renumbered
   the gate step counter (was 1/6→4/6 after deleting steps 2–3) to a contiguous 1–4/4;
   refreshed the stale `gate_arrivals` "(tap to scan)" docstring.
-- **Phase 3** — quality worklist (`/gate-entries?status=open&match_status=matched`).
+- **Phase 3 — quality worklist. ✅ DONE.** New `quality_worklist_screen` (replaces the
+  ComingSoon placeholder, registered + in `kScreens`): the quality role's inward-QC queue,
+  fed by `GET /gate-entries?status=open&match_status=matched` via `Data.qualityWorklist()`
+  (normalised + material-name enriched, null-safe for sparse live rows, DEMO fallback).
+  Tapping a card carries the entry into the QC→GRN flow: a LIVE entry's real `gate.entryId`
+  is set so `gate_grn` receipts THAT entry (it now prefers a carried id and only
+  self-creates otherwise); a demo row / the gate-match path clears it so the GRN
+  self-creates. `gate_qc` gained an entry-context subtitle. Adversarial 4-lens review
+  found + fixed 3 issues from the new context-carry: (HIGH) a stale `gate.entryId` could
+  let the Quality role double-receipt an already-received entry (the role's tabs are
+  independent roots and the global `Ui2Flow` bag persisted) → `PhoneShell.tab()` now
+  clears ephemeral flow on any tab switch, and `gate_grn` clears the entry id after a
+  successful receipt (regression test added); (HIGH) the GRN summary was hardcoded
+  ("CR coil 2.5mm" / fake PO) and ignored the picked entry → now shows the carried
+  material + supplier and an honest PO; (MED) the QC subtitle was stale on a cold tab
+  open → fixed by the same tab-clear. Verified: live endpoint returns 1 matched row
+  through CORS, analyze clean, tests 14/14, web build OK.
 - **Phase 4** — inbound RM vs components (new component category, migration); GR routes
   by type; job-work-return inward category.
 - **Phase 5** — users & devices (backend + admin office UI).

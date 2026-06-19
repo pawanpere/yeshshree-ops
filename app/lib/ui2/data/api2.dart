@@ -152,6 +152,30 @@ class Data {
   static Future<Loaded<List<Json>>> approvalsInbox() =>
       _list('/approvals/inbox', demo: demoApprovals, demoIfEmpty: true);
 
+  /// Quality worklist: gate entries that passed the gate and are MATCHED to a PO,
+  /// waiting for inward QC (status=open & match_status=matched). Live rows are
+  /// normalised + enriched with the material description for the worklist cards.
+  static Future<Loaded<List<Json>>> qualityWorklist() async {
+    final res = await _list('/gate-entries',
+        query: {'status': 'open', 'match_status': 'matched'},
+        demo: demoQualityWorklist, demoIfEmpty: true);
+    if (res.demo) return res;
+    final mats = await materials();
+    final byId = {for (final m in mats.data) m['id']: m['description']};
+    return Loaded([
+      for (final e in res.data)
+        {
+          'id': e['id'],
+          'vehicle': e['vehicle_no'],
+          'supplier': e['vendor_name_text'] ?? '—',
+          'invoice': e['invoice_no'] ?? e['doc_no'],
+          'material': byId[e['material_id']] ??
+              (e['material_id'] != null ? 'Material #${e['material_id']}' : '—'),
+          'qty_expected': e['qty_expected'],
+        },
+    ]);
+  }
+
   static Future<Loaded<List<Json>>> dispatches() =>
       _list('/dispatches', query: {'status': 'open'},
           demo: demoDispatches, demoIfEmpty: true);
@@ -249,6 +273,13 @@ class Data {
      'sap_code': '1402010035', 'description': 'Front fork 4521', 'revision': 1,
      'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6',
      'remaining': '68', 'sap_order_no': '100482'},
+  ];
+  // Matched gate entries awaiting inward QC (the quality worklist cards).
+  static const demoQualityWorklist = <Json>[
+    {'id': 11, 'vehicle': 'MH12 AB 4421', 'supplier': 'Sandhar Steel',
+     'invoice': 'INV-3131079408', 'material': 'CR coil 2.5mm', 'qty_expected': '4000'},
+    {'id': 12, 'vehicle': 'MH14 CD 9032', 'supplier': 'Bharat Forge',
+     'invoice': 'INV-7740221', 'material': 'CR coil 3.0mm', 'qty_expected': '2800'},
   ];
   // Mirrors ApprovalRead; payload carries a bilingual summary for the card.
   static const demoApprovals = <Json>[

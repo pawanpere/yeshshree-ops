@@ -20,6 +20,7 @@ import 'screens/issue_approved_screen.dart';
 import 'screens/issue_done_screen.dart';
 import 'screens/gate_arrivals_screen.dart';
 import 'screens/gate_match_screen.dart';
+import 'screens/quality_worklist_screen.dart';
 import 'screens/gate_qc_screen.dart';
 import 'screens/gate_grn_screen.dart';
 import 'screens/gate_received_screen.dart';
@@ -81,9 +82,7 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.vLogin => Ui2VLoginScreen(nav: nav),
     ScreenId.vOtp => Ui2VOtpScreen(nav: nav),
     // ---- Later-phase role screens (placeholdered in Phase 0) ----
-    ScreenId.qualityWorklist => ComingSoonScreen(
-        nav: nav, titleEn: 'Quality worklist', titleMr: 'गुणवत्ता कार्यसूची',
-        phase: 'Phase 3', icon: Icons.fact_check_outlined),
+    ScreenId.qualityWorklist => Ui2QualityWorklistScreen(nav: nav),
     ScreenId.productionHolds => ComingSoonScreen(
         nav: nav, titleEn: 'Parked holds', titleMr: 'पार्क केलेले होल्ड',
         phase: 'Phase 6', icon: Icons.pause_circle_outline),
@@ -152,6 +151,7 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.issueApproved, 'Issue approved', 'store', null),
   ScreenEntry(ScreenId.issueDone, 'Issue done', 'store', null),
   ScreenEntry(ScreenId.gateArrivals, 'Gate arrivals', 'gate', null),
+  ScreenEntry(ScreenId.qualityWorklist, 'Quality worklist', 'gate', null),
   ScreenEntry(ScreenId.gateMatch, 'Gate match', 'gate', null),
   ScreenEntry(ScreenId.gateQc, 'Gate QC', 'gate', null),
   ScreenEntry(ScreenId.gateGrn, 'Gate GRN', 'gate', null),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'data/flow.dart';
 import 'nav.dart';
 import 'roles.dart';
 import 'screen_registry.dart';
@@ -90,6 +91,11 @@ class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
         _stacks[i] = [_roots[i]];
         _sheet = null;
         _overlay = null;
+        // A tab is an independent task root: switching (or re-tapping) one ends the
+        // current flow, so reset ephemeral cross-screen flow state. Without this the
+        // process-global Ui2Flow bag leaks context between tabs — e.g. a consumed
+        // gate.entryId would let the Receipt tab re-receipt an already-received entry.
+        Ui2Flow.clear('');
       });
 
   @override

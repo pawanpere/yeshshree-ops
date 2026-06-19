@@ -48,14 +48,27 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
     nav.replace(ScreenId.gateGrn);
   }
 
+  /// The entry being QC'd, carried in from the quality worklist (or the gate
+  /// match step). Shown under the title so the QC isn't context-free. Null when
+  /// the screen is opened cold (dev jump-nav) — no subtitle then.
+  String? _entryContext() {
+    final parts = <String>[];
+    for (final key in const ['gate.vehicle', 'gate.supplier']) {
+      final v = Ui2Flow.get<String>(key);
+      if (v != null && v.isNotEmpty) parts.add(v);
+    }
+    return parts.isEmpty ? null : parts.join(' · ');
+  }
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         const StatusBar2(),
-        // ---- Header: back + title + step counter ----
+        // ---- Header: back + title (entry context) + step counter ----
         ScreenHeader2(
           title: S.t('INWARD QC', 'आवक QC'),
+          subtitle: _entryContext(),
           onBack: nav.pop,
           trailing: Text('3/4', style: F.mono(12, color: Y2.muted)),
         ),
