@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/strings.dart';
+import '../data/api2.dart';
 import '../nav.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
@@ -24,7 +25,73 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
   // Short demo yield trend (last ~6 readings) for the sparkline under yield.
   static const _yieldTrend = <double>[92, 94, 93, 95, 96, 96];
 
+  // ---- live state -----------------------------------------------------------
+  bool _loading = true; // first-frame guard; show skeleton until first load
+  bool _demo = false; // supervisor-view came from DEMO fallback
+  String _lineName = 'Line A'; // header line name (loaded from /master/lines)
+
+  // Aggregated plan numbers (parsed from the string-valued supervisorView rows).
+  double _planned = 0;
+  double _good = 0;
+  double _reject = 0;
+  double _remaining = 0;
+
+  // Open approvals that drive the red banner.
+  List<Json> _approvals = const [];
+
   PhoneNav get nav => widget.nav;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    // 1) Lines → pick the first line's id (fallback 1) and name.
+    final lines = await Data.lines();
+    if (!mounted) return;
+    final first = lines.data.isNotEmpty ? lines.data.first : const <String, dynamic>{};
+    final lineId = (first['id'] is int) ? first['id'] as int : 1;
+    final lineName = '${first['name'] ?? 'Line A'}';
+
+    // 2) Supervisor view + approvals — concurrently.
+    final results = await Future.wait([
+      Data.supervisorView(lineId: lineId),
+      Data.approvalsInbox(),
+    ]);
+    if (!mounted) return;
+    final sv = results[0];
+    final inbox = results[1];
+
+    // 3) Aggregate the (string-valued) supervisor rows.
+    double planned = 0, good = 0, reject = 0, remaining = 0;
+    for (final row in sv.data) {
+      final p = double.tryParse('${row['planned_qty']}') ?? 0;
+      final g = double.tryParse('${row['confirmed_good']}') ?? 0;
+      final r = double.tryParse('${row['confirmed_reject']}') ?? 0;
+      final rem = double.tryParse('${row['remaining']}') ?? (p - g);
+      planned += p;
+      good += g;
+      reject += r;
+      remaining += rem;
+    }
+
+    setState(() {
+      _lineName = lineName;
+      _planned = planned;
+      _good = good;
+      _reject = reject;
+      _remaining = remaining;
+      _demo = sv.demo;
+      _approvals = inbox.data;
+      _loading = false;
+    });
+  }
+
+  int get _pct => _planned > 0 ? (_good / _planned * 100).round() : 0;
+  int get _yieldPct =>
+      (_good + _reject) > 0 ? (_good / (_good + _reject) * 100).round() : 0;
 
   @override
   Widget build(BuildContext context) {
@@ -42,12 +109,26 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Flexible(
-                    child: Text(S.t('LINE A · COCKPIT', 'लाइन A · कॉकपिट'),
-                        style: F.khand(19, ls: 0.3, color: Y2.ink),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        softWrap: false),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text(
+                              S.t('${_lineName.toUpperCase()} · COCKPIT',
+                                  '$_lineName · कॉकपिट'),
+                              style: F.khand(19, ls: 0.3, color: Y2.ink),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              softWrap: false),
+                        ),
+                        if (_demo) ...[
+                          const SizedBox(width: 8),
+                          const DemoChip(),
+                        ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 8),
                   Pill2(
                       text: S.t('RUNNING', 'सुरू'),
                       fg: Y2.green,
@@ -65,10 +146,12 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
           ),
         ),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
-            children: _tab == 0 ? _now() : _team(),
-          ),
+          child: (_tab == 0 && _loading)
+              ? const SkeletonRows(count: 4)
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+                  children: _tab == 0 ? _now() : _team(),
+                ),
         ),
       ],
     );
@@ -109,17 +192,20 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
                       style: F.hind(11,
                           w: FontWeight.w600, ls: 0.5, color: Y2.muted)),
                   // Count-up ticker on the plan position so the cockpit reads live.
-                  Ticker2(132,
-                      style: F.mono(14, color: Y2.navy), suffix: '/200'),
+                  Ticker2(_good.round(),
+                      style: F.mono(14, color: Y2.navy),
+                      suffix: '/${_planned.round()}'),
                 ],
               ),
               const SizedBox(height: 7),
-              // Animated fill (0 → 66%) on mount.
-              const AnimatedBar2(fraction: 0.66),
+              // Animated fill (0 → good/planned) on mount.
+              AnimatedBar2(
+                  fraction:
+                      _planned > 0 ? (_good / _planned).clamp(0.0, 1.0) : 0.0),
               const SizedBox(height: 8),
               Text(
-                  S.t('On pace · 66% at 4:10 pm · projected 198/200',
-                      'वेळेत · 4:10 ला 66% · अंदाज 198/200'),
+                  S.t('$_pct% done · ${_remaining.round()} remaining',
+                      '$_pct% पूर्ण · ${_remaining.round()} शिल्लक'),
                   style: F.hind(12, color: Y2.body)),
             ],
           ),
@@ -132,53 +218,13 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
               Expanded(child: _yieldStat()),
               const SizedBox(width: 11),
               Expanded(
-                  child: _bigStat('22', null,
-                      const Glyph(GlyphShape.triangle, Y2.orange, size: 11),
-                      S.t('downtime min', 'डाउनटाइम मि'))),
+                  child: _bigStat(_reject.round().toString(), null,
+                      const Glyph(GlyphShape.triangle, Y2.red, size: 11),
+                      S.t('rejects', 'नापास'))),
             ],
           ),
         ),
-        const SizedBox(height: 11),
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () => nav.go(ScreenId.notifications),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: Y2.redTint,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Y2.redLine),
-            ),
-            child: Row(
-              children: [
-                const Glyph(GlyphShape.diamond, Y2.red, size: 11),
-                const SizedBox(width: 9),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(S.t('1 approval waiting', '1 मंजुरी प्रतीक्षेत'),
-                          style:
-                              F.hind(14, w: FontWeight.w600, color: Y2.navy)),
-                      Text('Sunita · +250 kg CR coil',
-                          style: F.hind(11, color: Y2.muted)),
-                    ],
-                  ),
-                ),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(S.t('Act', 'कृती'),
-                        style:
-                            F.hind(13, w: FontWeight.w600, color: Y2.red)),
-                    const SizedBox(width: 3),
-                    const Icon(I2.arrowForward, size: 16, color: Y2.red),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+        ..._approvalBanner(),
         const SizedBox(height: 11),
         Pressable2(
           onTap: () => nav.go(ScreenId.confirmForm),
@@ -203,6 +249,69 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
         ),
       ];
 
+  // Approval banner — driven by approvalsInbox. Renders nothing when the inbox
+  // is empty; otherwise a tappable red card with the open-approval count and the
+  // first approval's who + bilingual summary.
+  List<Widget> _approvalBanner() {
+    if (_approvals.isEmpty) return const [];
+    final n = _approvals.length;
+    final first = _approvals.first;
+    final payload = (first['payload'] is Map)
+        ? Json.from(first['payload'] as Map)
+        : const <String, dynamic>{};
+    final who = '${payload['who'] ?? ''}';
+    final summary = S.t(
+        '${payload['summary_en'] ?? ''}', '${payload['summary_mr'] ?? ''}');
+    final subtitle =
+        who.isEmpty ? summary : (summary.isEmpty ? who : '$who · $summary');
+    return [
+      const SizedBox(height: 11),
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => nav.go(ScreenId.notifications),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+          decoration: BoxDecoration(
+            color: Y2.redTint,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Y2.redLine),
+          ),
+          child: Row(
+            children: [
+              const Glyph(GlyphShape.diamond, Y2.red, size: 11),
+              const SizedBox(width: 9),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                        S.t('$n approval${n == 1 ? '' : 's'} waiting',
+                            '$n मंजुरी प्रतीक्षेत'),
+                        style: F.hind(14, w: FontWeight.w600, color: Y2.navy)),
+                    Text(subtitle,
+                        style: F.hind(11, color: Y2.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(S.t('Act', 'कृती'),
+                      style: F.hind(13, w: FontWeight.w600, color: Y2.red)),
+                  const SizedBox(width: 3),
+                  const Icon(I2.arrowForward, size: 16, color: Y2.red),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
   // Yield tile — count-up number with a trend sparkline, a delta-vs-target chip
   // and a target caption so 96% has meaning (Phase C data-viz).
   Widget _yieldStat() => Container(
@@ -222,7 +331,7 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  Ticker2(96,
+                  Ticker2(_yieldPct,
                       style: F.mono(34, height: 0.8, color: Y2.navy),
                       suffix: ''),
                   Padding(
@@ -308,7 +417,7 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
               child: Row(mainAxisSize: MainAxisSize.min, children: [
                 const Glyph(GlyphShape.triangle, Y2.orange, size: 9),
                 const SizedBox(width: 4),
-                Text(S.t('4 min vs avg', 'सरासरीपेक्षा 4 मि'),
+                Text(S.t('vs plan', 'प्लॅनच्या तुलनेत'),
                     style: F.hind(10, w: FontWeight.w600, color: Y2.orange)),
               ]),
             ),

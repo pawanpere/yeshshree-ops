@@ -26,6 +26,11 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
   int _tab = 0; // 0 = Unread, 1 = All
 
   Loaded<List<Json>>? _data;
+  Loaded<List<Json>>? _approvals;
+
+  // First actionable (open) approval from the inbox, or null when empty.
+  Json? get _approval =>
+      (_approvals?.data.isNotEmpty ?? false) ? _approvals!.data.first : null;
 
   // Approval card local state: null = pending, otherwise 'approve' | 'decline'.
   String? _approvalDecision;
@@ -43,18 +48,23 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
 
   Future<void> _load() async {
     final res = await Data.notifications();
+    final approvals = await Data.approvalsInbox();
     if (!mounted) return;
-    setState(() => _data = res);
+    setState(() {
+      _data = res;
+      _approvals = approvals;
+    });
   }
 
   Future<void> _decide(String decision) async {
-    if (_approvalBusy || _approvalDecision != null) return;
+    final approval = _approval;
+    if (_approvalBusy || _approvalDecision != null || approval == null) return;
     setState(() {
       _approvalBusy = true;
       _pendingDecision = decision;
     });
-    final res =
-        await Data.mutate('/approvals/1/decide', {'decision': decision});
+    final res = await Data.mutate(
+        '/approvals/${approval['id']}/decide', {'decision': decision});
     if (!mounted) return;
     if (res.failed) {
       setState(() {
@@ -72,8 +82,7 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
     HapticFeedback.mediumImpact();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Text(decision == 'approve'
-          ? S.t('Approved +250 kg for Sunita',
-              'सुनितासाठी +250 kg मंजूर केले')
+          ? S.t('Approved', 'मंजूर केले')
           : S.t('Declined the request', 'विनंती नाकारली')),
       behavior: SnackBarBehavior.floating,
     ));
@@ -91,14 +100,16 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
     final rows = _data?.data ?? const <Json>[];
     var n = rows.where((r) => r['unread'] == true).length;
     if (rows.isEmpty) n = 3; // matches the prototype's default
-    if (_approvalDecision != null && n > 0) n -= 1;
+    // The pending approval card counts as unread until resolved — but only
+    // when there actually is one in the inbox.
+    if (_approval != null && _approvalDecision != null && n > 0) n -= 1;
     return n;
   }
 
   @override
   Widget build(BuildContext context) {
-    final loading = _data == null;
-    final demo = _data?.demo ?? false;
+    final loading = _data == null || _approvals == null;
+    final demo = (_data?.demo ?? false) || (_approvals?.demo ?? false);
     final cards = loading ? const <Widget>[] : _cards();
     return Column(
       children: [
@@ -154,16 +165,19 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
 
   List<Widget> _cards() {
     final cards = <Widget>[];
-    // The approval card shows while pending; when resolved it shows a compact
-    // resolved chip, and is hidden entirely in the Unread filter.
-    if (_approvalDecision == null) {
-      cards
-        ..add(_permissionCard())
-        ..add(const SizedBox(height: 9));
-    } else if (_tab == 1) {
-      cards
-        ..add(_resolvedCard())
-        ..add(const SizedBox(height: 9));
+    // The approval card shows while there is a real open approval and it is
+    // pending; when resolved it shows a compact resolved chip (hidden in the
+    // Unread filter). With no approval in the inbox, neither card renders.
+    if (_approval != null) {
+      if (_approvalDecision == null) {
+        cards
+          ..add(_permissionCard())
+          ..add(const SizedBox(height: 9));
+      } else if (_tab == 1) {
+        cards
+          ..add(_resolvedCard())
+          ..add(const SizedBox(height: 9));
+      }
     }
 
     // Line-B alert is unread; schedule alert is read. The Unread filter drops
@@ -243,7 +257,13 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
         ),
       );
 
-  Widget _permissionCard() => Container(
+  Widget _permissionCard() {
+    final payload = (_approval?['payload'] as Json?) ?? const <String, dynamic>{};
+    final who = (payload['who'] as String?) ?? '';
+    final summaryEn = (payload['summary_en'] as String?) ?? '';
+    final summaryMr = (payload['summary_mr'] as String?) ?? '';
+    final detail = '$who · ${S.t(summaryEn, summaryMr)}';
+    return Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: Y2.redTint,
@@ -269,10 +289,7 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
                           S.t('Permission needed — extra issue',
                               'परवानगी हवी — अतिरिक्त इश्यू'),
                           style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
-                      Text(
-                          S.t("Sunita asks for +250 kg CR coil over today's limit",
-                              'सुनिता आजच्या मर्यादेपेक्षा +250 kg CR coil मागत आहे'),
-                          style: F.hind(12, color: Y2.body)),
+                      Text(detail, style: F.hind(12, color: Y2.body)),
                       const SizedBox(height: 10),
                       Row(children: [
                         _action(S.t('Allow', 'मंजूर'), Y2.accent, Colors.white,
@@ -294,6 +311,7 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
           ],
         ),
       );
+  }
 
   Widget _action(String label, Color bg, Color fg, Color? borderColor,
           String decision) =>

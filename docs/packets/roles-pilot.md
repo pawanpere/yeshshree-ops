@@ -33,10 +33,19 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
   couldn't reach the API cross-origin (silent demo fallback; Android is unaffected —
   native HTTP). Added `CORSMiddleware` (explicit `CORS_ORIGINS` + any `localhost:<port>`
   via `CORS_ALLOW_LOCALHOST`, default on for dev). +3 tests (`test_cors.py`).
-- **Phase 1 — wiring + typed fields + layout. NEXT.** 1a fix wrong calls (cockpit →
-  `/plans/supervisor-view` line_id+date; gate arrivals → unmatched/`?status=open` not
-  `pending`; conf history `date=today`; approvals real id; saleForm SKIP). 1b every qty
-  field typed-editable. 1c remaining overflow fixes + extend the stress test.
+- **Phase 1 — wiring + typed fields + layout. IN PROGRESS.**
+  - **1a wiring. ✅ DONE.** The cockpit and confirmation-history screens were 100%
+    hardcoded mockups (no backend call at all); both are now data-driven. Cockpit ←
+    `/plans/supervisor-view?line_id=&date=today` (aggregates planned/good/reject →
+    shift-plan card, yield, rejects tile) + `/approvals/inbox` (the waiting-approval
+    banner). Conf history ← `/confirmations?date=today` (enriched with material names).
+    Gate arrivals ← `/gate-entries?status=open` (was the invalid `status=pending`),
+    live rows normalised to the screen's shape. Notifications approval card now uses
+    the REAL approval id from `/approvals/inbox` (was hardcoded `/approvals/1/decide`).
+    saleForm left untouched (skip, per decision). All reads keep the DEMO fallback.
+    Verified: all four endpoints 200 through CORS; analyze clean; tests 8/8.
+  - **1b every qty field typed-editable. NEXT.**
+  - **1c remaining overflow fixes + extend the stress test (fail on infinite-height).**
 - **Phase 2** — remove in-app camera scan; gate inbox fed by the scanner-watcher.
 - **Phase 3** — quality worklist (`/gate-entries?status=open&match_status=matched`).
 - **Phase 4** — inbound RM vs components (new component category, migration); GR routes
