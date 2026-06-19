@@ -5,8 +5,10 @@ import 'core/router.dart';
 import 'core/strings.dart';
 import 'core/theme.dart';
 import 'features/demo/demo_mode_app.dart';
+import 'ui2/ui2_demo_app.dart';
 
 const _demoMode = bool.fromEnvironment('DEMO_MODE');
+const _ui2Mode = bool.fromEnvironment('UI2_MODE');
 
 void main() {
   runApp(const ProviderScope(child: YeshshreeApp()));
@@ -22,6 +24,9 @@ class YeshshreeApp extends ConsumerWidget {
     return ValueListenableBuilder<String>(
       valueListenable: S.lang,
       builder: (context, _, __) {
+        if (_ui2Mode) {
+          return const Ui2DemoApp();
+        }
         if (_demoMode) {
           return MaterialApp(
             title: 'Yeshshree Ops Demo',

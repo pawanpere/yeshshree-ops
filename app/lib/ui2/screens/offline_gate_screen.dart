@@ -1,0 +1,293 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/strings.dart';
+import '../data/api2.dart';
+import '../data/flow.dart';
+import '../nav.dart';
+import '../tokens.dart';
+import '../widgets/frame.dart';
+import '../widgets/polish2.dart';
+
+/// Gate entry — offline quick-entry — prototype screen [35]. No-network branch:
+/// free-text vehicle/driver/vendor captured into real fields, stashed into the
+/// flow, and queued via Data.submit (failure ignored for the offline demo) —
+/// then the saved confirmation screen.
+class Ui2OfflineGateScreen extends ConsumerStatefulWidget {
+  const Ui2OfflineGateScreen({super.key, required this.nav});
+  final PhoneNav nav;
+
+  @override
+  ConsumerState<Ui2OfflineGateScreen> createState() =>
+      _Ui2OfflineGateScreenState();
+}
+
+class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
+  PhoneNav get nav => widget.nav;
+
+  final _vehicle = TextEditingController();
+  final _driver = TextEditingController();
+  final _vendor = TextEditingController();
+
+  late final String _gateTime; // real current time, captured at screen open.
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _gateTime =
+        '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
+    // Re-enable the CTA the moment the vehicle field becomes non-empty.
+    _vehicle.addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _vehicle.dispose();
+    _driver.dispose();
+    _vendor.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_busy) return;
+    final veh = _vehicle.text.trim();
+    if (veh.isEmpty) return;
+    setState(() => _busy = true);
+    HapticFeedback.lightImpact();
+    final vendor = _vendor.text.trim();
+    // Carry values into the saved screen.
+    Ui2Flow.set('offlineGate.vehicle', veh);
+    Ui2Flow.set('offlineGate.vendor', vendor);
+    Ui2Flow.set('offlineGate.gateTime', _gateTime);
+    // Queue the gate-in. Offline / failure is expected here — ignore it; the
+    // entry is captured locally and matched on sync.
+    final res = await Data.submit(
+      ref,
+      '/gate-entries',
+      <String, dynamic>{
+        'doc_type': 'invoice',
+        'vehicle_no': veh,
+        'driver_name': _driver.text.trim(),
+      },
+      label: '${S.t('Gate entry', 'गेट नोंद')} $veh',
+    );
+    if (res.ok) Ui2Flow.set('gate.entryId', res.data?['id']);
+    if (!mounted) return;
+    nav.replace(ScreenId.offlineGateSaved);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final canSave = _vehicle.text.trim().isNotEmpty;
+    return Column(
+      children: [
+        const StatusBar2(),
+        // Header: back chevron + title.
+        ScreenHeader2(
+          title: S.t('GATE ENTRY — OFFLINE', 'गेट एन्ट्री — ऑफलाइन'),
+          onBack: nav.pop,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // No-network notice.
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: const Color(0x12C2410C), // rgba(194,65,12,0.07)
+                    border: Border.all(color: const Color(0xFFF0B89A)),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(top: 5),
+                        decoration: const BoxDecoration(
+                            color: Y2.orange, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: 9),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                S.t('No network — quick entry',
+                                    'नेटवर्क नाही — झटपट नोंद'),
+                                style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+                            Text(
+                                S.t(
+                                    'Let the truck through now. Type what you can; it matches to an order on sync.',
+                                    'ट्रक आता आत येऊ द्या. जे शक्य आहे ते टाइप करा; सिंकवर ते ऑर्डरशी जुळेल.'),
+                                style: F.hind(12, color: Y2.body, height: 1.35)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 11),
+                // Vehicle number field (real TextField).
+                _field(
+                  S.t('Vehicle number', 'वाहन क्रमांक'),
+                  Icons.local_shipping_outlined,
+                  TextField(
+                    controller: _vehicle,
+                    textCapitalization: TextCapitalization.characters,
+                    style: F.mono(18, color: Y2.ink),
+                    cursorColor: Y2.accent,
+                    decoration: _inputDeco('MH __ __ ____',
+                        F.mono(18, color: Y2.muted)),
+                  ),
+                ),
+                const SizedBox(height: 11),
+                // Driver name field (real TextField).
+                _field(
+                  S.t('Driver name', 'चालकाचे नाव'),
+                  Icons.person_outline_rounded,
+                  TextField(
+                    controller: _driver,
+                    textCapitalization: TextCapitalization.words,
+                    style: F.hind(15, color: Y2.ink),
+                    cursorColor: Y2.accent,
+                    decoration: _inputDeco(S.t('Type name…', 'नाव टाइप करा…'),
+                        F.hind(15, color: Y2.muted)),
+                  ),
+                ),
+                const SizedBox(height: 11),
+                // Vendor field (real free-text TextField).
+                _field(
+                  S.t('Vendor (free text)', 'विक्रेता (मुक्त मजकूर)'),
+                  Icons.store_outlined,
+                  TextField(
+                    controller: _vendor,
+                    textCapitalization: TextCapitalization.words,
+                    style: F.hind(15, color: Y2.ink),
+                    cursorColor: Y2.accent,
+                    decoration: _inputDeco(
+                        S.t('e.g. Sandhar Steel', 'उदा. Sandhar Steel'),
+                        F.hind(15, color: Y2.muted)),
+                  ),
+                ),
+                const SizedBox(height: 11),
+                // Gate time row — real current time.
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF6F8FB),
+                    border: Border.all(color: Y2.line),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(S.t('Gate time (now)', 'गेट वेळ (आता)'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            softWrap: false,
+                            style: F.hind(13, color: Y2.body)),
+                      ),
+                      const SizedBox(width: 8),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Y2.lineSoft,
+                              borderRadius: BorderRadius.circular(5),
+                            ),
+                            child: Text(S.t('auto', 'स्वयं'),
+                                style: F.hind(9,
+                                    w: FontWeight.w600,
+                                    ls: 0.3,
+                                    color: Y2.muted)),
+                          ),
+                          const SizedBox(width: 7),
+                          Text(_gateTime,
+                              style: F.mono(13,
+                                  w: FontWeight.w700, color: Y2.ink)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        // Footer CTA.
+        Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+          decoration: const BoxDecoration(
+            color: Color(0xFFF6F8FB),
+            border: Border(top: BorderSide(color: Y2.line)),
+          ),
+          child: PrimaryButton2(
+            label: S.t('Let in & save (queued)', 'आत घ्या आणि जतन करा (रांगेत)'),
+            busy: _busy,
+            enabled: canSave,
+            onTap: _save,
+          ),
+        ),
+      ],
+    );
+  }
+
+  InputDecoration _inputDeco(String hint, TextStyle hintStyle) =>
+      InputDecoration(
+        isDense: true,
+        contentPadding: const EdgeInsets.only(bottom: 3),
+        hintText: hint,
+        hintStyle: hintStyle,
+        enabledBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Y2.line, width: 1),
+        ),
+        focusedBorder: const UnderlineInputBorder(
+          borderSide: BorderSide(color: Y2.accent, width: 1.5),
+        ),
+      );
+
+  Widget _field(String label, IconData icon, Widget value) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: Y2.card,
+          border: Border.all(color: Y2.line),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(top: 2),
+              child: Icon(icon, size: 18, color: Y2.muted),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false,
+                      style: F.hind(11, w: FontWeight.w400, color: Y2.muted)),
+                  const SizedBox(height: 2),
+                  value,
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+}

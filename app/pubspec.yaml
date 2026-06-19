@@ -24,3 +24,30 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  fonts:
+    - family: Khand
+      fonts:
+        - asset: assets/fonts/Khand-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Khand-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Khand-Bold.ttf
+          weight: 700
+    - family: Hind
+      fonts:
+        - asset: assets/fonts/Hind-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Hind-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Hind-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Hind-Bold.ttf
+          weight: 700
+    - family: JetBrains Mono
+      fonts:
+        - asset: assets/fonts/JetBrainsMono-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/JetBrainsMono-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/JetBrainsMono-Bold.ttf
+          weight: 700
