@@ -44,7 +44,11 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
     the REAL approval id from `/approvals/inbox` (was hardcoded `/approvals/1/decide`).
     saleForm left untouched (skip, per decision). All reads keep the DEMO fallback.
     Verified: all four endpoints 200 through CORS; analyze clean; tests 8/8.
-  - **1b every qty field typed-editable. NEXT.**
+  - **1b every qty field typed-editable. ✅ DONE.** New shared `QtyField2` widget (a
+    numeric, keyboard-editable field that keeps the +/- steppers working) replaces the
+    read-only stepper counts in confirm (good/reject/downtime), issue, and over-limit
+    issue. gate-QC and GRN already used numeric TextFields; gate-match only displays the
+    PO qty; saleForm skipped. 5 widget tests (`ui2_qty_field_test.dart`).
   - **1c remaining overflow fixes + extend the stress test (fail on infinite-height).**
 - **Phase 2** — remove in-app camera scan; gate inbox fed by the scanner-watcher.
 - **Phase 3** — quality worklist (`/gate-entries?status=open&match_status=matched`).

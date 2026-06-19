@@ -10,6 +10,7 @@ import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/qty_field2.dart';
 
 /// Record output — confirmation form. Prototype screen [02]. Operator logs
 /// good/reject counts with working stepper controls, picks a reject reason
@@ -194,7 +195,13 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                               border: _d2, color: Y2.ink),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _bigCount('$_good', Y2.ink, 50),
+                            child: QtyField2(
+                              value: _good,
+                              onChanged: (v) =>
+                                  setState(() => _good = v.toInt()),
+                              color: Y2.ink,
+                              fontSize: 50,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           _stepBtn('+', 50, () => _addGood(1),
@@ -258,8 +265,20 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                               border: _d2, color: Y2.ink, font: 26),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: _bigCount('$_reject',
-                                _reject > 0 ? Y2.red : Y2.ink, 42),
+                            child: QtyField2(
+                              value: _reject,
+                              // Typing reject to 0 clears the reason, same as the
+                              // stepper path (_addReject).
+                              onChanged: (v) => setState(() {
+                                _reject = v.toInt();
+                                if (_reject == 0) {
+                                  _reasonId = null;
+                                  _reasonLabel = null;
+                                }
+                              }),
+                              color: _reject > 0 ? Y2.red : Y2.ink,
+                              fontSize: 42,
+                            ),
                           ),
                           const SizedBox(width: 12),
                           _stepBtn('+', 46, () => _addReject(1),
@@ -369,16 +388,6 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
   }
 
   // A count that cross-fades when it changes, so +10 feels distinct from +1.
-  Widget _bigCount(String value, Color color, double size) => AnimatedSwitcher(
-        duration: const Duration(milliseconds: 180),
-        transitionBuilder: (child, anim) =>
-            FadeTransition(opacity: anim, child: child),
-        child: Text(value,
-            key: ValueKey(value),
-            textAlign: TextAlign.center,
-            style: F.mono(size, height: 0.8, color: color)),
-      );
-
   Widget _stepBtn(String glyph, double dim, VoidCallback onTap,
           {required Color border,
           required Color color,
@@ -438,18 +447,13 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
               children: [
                 _miniStep('−', () => _addDowntime(-5)),
                 Expanded(
-                  child: Text.rich(
-                    TextSpan(
-                      style: F.mono(18, color: Y2.navy),
-                      children: [
-                        TextSpan(text: '$_downtime'),
-                        TextSpan(
-                            text: S.t(' min', ' मि'),
-                            style: F.hind(12,
-                                w: FontWeight.w400, color: Y2.muted)),
-                      ],
-                    ),
-                    textAlign: TextAlign.center,
+                  child: QtyField2(
+                    value: _downtime,
+                    onChanged: (v) => setState(() => _downtime = v.toInt()),
+                    color: Y2.navy,
+                    fontSize: 18,
+                    max: 999,
+                    suffix: S.t(' min', ' मि'),
                   ),
                 ),
                 _miniStep('+', () => _addDowntime(5)),

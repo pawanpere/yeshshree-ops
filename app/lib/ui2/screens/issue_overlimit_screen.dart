@@ -9,6 +9,7 @@ import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/qty_field2.dart';
 
 /// Issue material — over-limit state — prototype screen [07]. Same form chrome
 /// as the issue screen, but the quantity exceeds today's allowed limit, so the
@@ -233,23 +234,12 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
                           _stepBtn(Icons.remove, false, () => _step(-10)),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: Center(
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 180),
-                                transitionBuilder: (child, anim) =>
-                                    FadeTransition(
-                                  opacity: anim,
-                                  child:
-                                      ScaleTransition(scale: anim, child: child),
-                                ),
-                                child: Text('$_qty',
-                                    key: ValueKey<int>(_qty),
-                                    style: F.mono(46,
-                                        height: 0.8,
-                                        color: _qty > _limit
-                                            ? Y2.orange
-                                            : Y2.ink)),
-                              ),
+                            child: QtyField2(
+                              value: _qty,
+                              onChanged: (v) =>
+                                  setState(() => _qty = v.toInt()),
+                              color: _qty > _limit ? Y2.orange : Y2.ink,
+                              fontSize: 46,
                             ),
                           ),
                           const SizedBox(width: 12),

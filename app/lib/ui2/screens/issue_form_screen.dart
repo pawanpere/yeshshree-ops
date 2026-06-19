@@ -11,6 +11,7 @@ import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/qty_field2.dart';
 
 /// Store — Issue material form — prototype screen [06]. Operator picks the
 /// material + destination line, steps the quantity, then submits a real
@@ -284,19 +285,12 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
                               accent: false, onTap: () => _step(-10)),
                           const SizedBox(width: 12),
                           Expanded(
-                            child: AnimatedSwitcher(
-                              duration: const Duration(milliseconds: 180),
-                              transitionBuilder: (child, anim) => FadeTransition(
-                                opacity: anim,
-                                child: ScaleTransition(scale: anim, child: child),
-                              ),
-                              child: Text('$_qty',
-                                  key: ValueKey<int>(_qty),
-                                  textAlign: TextAlign.center,
-                                  style: F.mono(46,
-                                      height: 0.8,
-                                      color:
-                                          _qty > _limit ? Y2.orange : Y2.ink)),
+                            child: QtyField2(
+                              value: _qty,
+                              onChanged: (v) =>
+                                  setState(() => _qty = v.toInt()),
+                              color: _qty > _limit ? Y2.orange : Y2.ink,
+                              fontSize: 46,
                             ),
                           ),
                           const SizedBox(width: 12),
