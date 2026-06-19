@@ -19,8 +19,8 @@ EXPECTED_TABLES = {
     "vendors", "materials", "boms", "bom_lines", "purchase_orders",
     "lines", "line_materials", "production_orders", "customers",
     # §4.3 + §11.7
-    "model_family_splits", "reason_codes", "mills", "plan_calendar",
-    "app_settings", "doc_sequences", "material_group_tolerances",
+    "model_family_splits", "model_part_factors", "reason_codes", "mills",
+    "plan_calendar", "app_settings", "doc_sequences", "material_group_tolerances",
     # §4.4
     "schedules", "schedule_lines", "line_plans", "vendor_calloffs",
     # §4.5 + §11.9

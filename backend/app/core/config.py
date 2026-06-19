@@ -19,6 +19,11 @@ class Settings(BaseSettings):
 
     ops_mode: str = "parallel_run"  # parallel_run | authoritative (mirrored in app_settings)
 
+    # The plant's local timezone. Instants are stored in UTC (timestamptz), but a
+    # *shift/plan date* is a local calendar date — deriving it from UTC midnight files
+    # 00:00–05:30 IST production under the wrong day. Single-plant today (1117 = IST).
+    plant_tz: str = "Asia/Kolkata"
+
     # CORS — only the Flutter WEB build needs this (a real Android build uses native
     # HTTP, so CORS never applies on device). cors_origins = explicit production
     # origins (comma-separated); cors_allow_localhost reflects any

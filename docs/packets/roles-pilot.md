@@ -50,16 +50,21 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
 - **`?role=` web previews show DEMO data, not live** — until CORS is deployed in front
   of a running backend, OR the web build is served same-origin behind a reverse proxy.
   On a real Android/tablet build this never applies.
-- **2 pre-existing backend test failures (NOT from this branch — predate it on `main`,
-  from the `P11-final` commit):**
-  1. `test_models.py::test_every_architecture_table_exists` — the `model_part_factors`
-     table exists in the models but isn't in the test's `EXPECTED_TABLES` (stale list).
-     Trivial reconciliation (update the set + Architecture §4 schema).
-  2. `test_e2e_thin_slice.py::test_thin_slice` — `plans/line-plans.confirmed_good`
-     returns `0` instead of `215` after a confirmation. Root area: `confirmed_totals()`
-     (production svc) joins confirmations to a date via `ShiftContext.shift_date`; the
-     live join into the plan view (`_plan_rows`) comes back empty. **This is the exact
-     field the production cockpit reads — fix before/with the Phase 1 cockpit wiring.**
+- **2 pre-existing backend test failures (predated this branch, from `P11-final`) —
+  now FIXED in Phase 1 (user approved):**
+  1. `test_every_architecture_table_exists` — added `model_part_factors` (a real
+     `config_tables` model) to the test's `EXPECTED_TABLES`.
+  2. `test_thin_slice` — `confirmed_good` returned `0` after a confirmation. **Root
+     cause: timezone.** `_now()` is UTC, so the confirmation's `shift_date =
+     now.date()` was the UTC day; between 00:00–05:30 IST that is the *previous* day,
+     so it never matched `line_plans.plan_date` / the date the cockpit queries → the
+     live `confirmed_totals` join missed. Fix: a plant-local `_business_date()` (new
+     `PLANT_TZ=Asia/Kolkata` setting) for the `shift_date` default. Deterministic
+     regression test added (`test_shift_date_tz.py`). `_now()` itself stays UTC.
+- **Deferred (noticed while fixing the above, NOT touched):** the shift *auto-close*
+  job (`_shift_end` / `shift_auto_close_job`) combines the local shift window time with
+  `now.tzinfo` (UTC), so an IST shift boundary is compared in the wrong zone (~5.5h
+  off). Same timezone class of bug; out of the pilot's scope — flagged for Kartik.
 
 ## Verify (sandbox-safe; full `make verify` runs on Kartik's machine)
     cd app && ~/flutter-sdk/bin/flutter analyze lib test && ~/flutter-sdk/bin/flutter test

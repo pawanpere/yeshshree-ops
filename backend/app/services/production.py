@@ -49,11 +49,13 @@ Decisions (documented per packet brief):
 import datetime as dt
 import uuid
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
 from app.core.audit import record
+from app.core.config import get_settings
 from app.core.deps import CurrentUser, _error
 from app.models.config_tables import AppSetting, PlanCalendar, ReasonCode
 from app.models.identity import User
@@ -76,6 +78,15 @@ DEFAULT_PLAN_EXCEED_PCT = Decimal("20")
 
 def _now(now: dt.datetime | None = None) -> dt.datetime:
     return now if now is not None else dt.datetime.now(dt.timezone.utc)
+
+
+def _business_date(now: dt.datetime | None = None) -> dt.date:
+    """The plant-local CALENDAR date for an instant — the shift/plan day a
+    confirmation belongs to. Instants are UTC (timestamptz), but `shift_date` is a
+    local date that must match `line_plans.plan_date` and the date the cockpit queries
+    `confirmed_totals` with. Using UTC `now.date()` here filed 00:00–05:30 IST work
+    under the previous day, so the live confirmed-good join missed (P45 thin slice)."""
+    return _now(now).astimezone(ZoneInfo(get_settings().plant_tz)).date()
 
 
 def _plan_exceed_pct(db: Session) -> Decimal:
@@ -159,7 +170,7 @@ def post_confirmation(db: Session, user: CurrentUser, body) -> ProductionConfirm
         return existing
 
     now = _now()
-    shift_date = body.shift_date or now.date()
+    shift_date = body.shift_date or _business_date(now)
     line = db.get(Line, body.line_id)
     if line is None:
         raise _error("NOT_FOUND", "Line not found", "लाईन सापडली नाही", 404,
@@ -310,7 +321,7 @@ def hold_confirmation(db: Session, user: CurrentUser, body) -> ConfirmationHold:
     if existing:
         return existing
     now = _now()
-    shift_date = body.shift_date or now.date()
+    shift_date = body.shift_date or _business_date(now)
     material = db.get(Material, body.material_id)
     if material is None or db.get(Line, body.line_id) is None:
         raise _error("NOT_FOUND", "Line or material not found",
