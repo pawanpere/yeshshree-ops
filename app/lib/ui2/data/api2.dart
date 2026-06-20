@@ -353,11 +353,14 @@ class Data {
     {'id': 1, 'name': 'Line A', 'plant': '1117'},
     {'id': 2, 'name': 'Line B', 'plant': '1117'},
   ];
+  // Each reason needs a stable `id`: the reject/override pickers key options by it
+  // (a null id makes every option indistinguishable AND leaves reject_reason_id
+  // null, so "Pick a reject reason" never clears).
   static const demoReasons = <Json>[
-    {'code': 'MISCOUNT', 'label_en': 'Miscount at handover', 'label_mr': 'हस्तांतरणात चुकीची मोजणी'},
-    {'code': 'REWORK', 'label_en': 'Sent for rework', 'label_mr': 'पुनःकामासाठी पाठवले'},
-    {'code': 'TOOL', 'label_en': 'Tool / die issue', 'label_mr': 'टूल / डाय समस्या'},
-    {'code': 'MATERIAL', 'label_en': 'Material defect', 'label_mr': 'मटेरियल दोष'},
+    {'id': 1, 'code': 'MISCOUNT', 'label_en': 'Miscount at handover', 'label_mr': 'हस्तांतरणात चुकीची मोजणी'},
+    {'id': 2, 'code': 'REWORK', 'label_en': 'Sent for rework', 'label_mr': 'पुनःकामासाठी पाठवले'},
+    {'id': 3, 'code': 'TOOL', 'label_en': 'Tool / die issue', 'label_mr': 'टूल / डाय समस्या'},
+    {'id': 4, 'code': 'MATERIAL', 'label_en': 'Material defect', 'label_mr': 'मटेरियल दोष'},
   ];
   static const demoCustomers = <Json>[
     {'sap_code': 'C-100', 'name': 'Sunrise Metals', 'gstin': '27ABCDE1234F1Z5'},

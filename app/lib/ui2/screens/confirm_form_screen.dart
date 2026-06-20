@@ -129,15 +129,19 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
   // Reject can never exceed the good count — a hard block, surfaced below.
   bool get _rejectOverGood => _reject > _good;
 
+  // A reason counts as chosen once a label is set (the id can be backend-specific
+  // or, in demo data, only meaningful once present) — this is the true intent.
+  bool get _reasonChosen => _reasonLabel != null;
+
   bool get _valid =>
-      _good > 0 && !(_reject > 0 && _reasonId == null) && _reject <= _good;
+      _good > 0 && !(_reject > 0 && !_reasonChosen) && _reject <= _good;
 
   /// Why the post is blocked, for the hint above the buttons (null = OK to post).
   String? get _blockReason {
     if (_good <= 0) {
       return S.t('Enter a good count to post', 'पोस्ट करण्यासाठी चांगली संख्या भरा');
     }
-    if (_reject > 0 && _reasonId == null) {
+    if (_reject > 0 && !_reasonChosen) {
       return S.t('Pick a reject reason', 'नापास कारण निवडा');
     }
     if (_rejectOverGood) {
@@ -171,7 +175,7 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final reasonMissing = _reject > 0 && _reasonId == null;
+    final reasonMissing = _reject > 0 && !_reasonChosen;
     // The reject card also turns red when reject exceeds the good count.
     final rejectInvalid = reasonMissing || _rejectOverGood;
     return Column(
