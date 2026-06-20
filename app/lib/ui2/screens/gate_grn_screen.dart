@@ -208,9 +208,10 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                               style: F.hind(13,
                                   w: FontWeight.w700, color: Y2.ink))),
                       const SizedBox(height: 6),
-                      // Accepted — editable received qty (kg).
+                      // Received — editable gross received qty; the Rejected row
+                      // below is separate, so accepted = received − rejected.
                       _summaryRow(
-                          S.t('Accepted', 'स्वीकारले'),
+                          S.t('Received', 'मिळालेले'),
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

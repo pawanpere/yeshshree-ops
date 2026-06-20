@@ -26,7 +26,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   bool _pass = true; // QC default = Pass (primary branch)
   bool _photoAdded = false;
   String? _photoName; // file name of the captured photo, shown once added
-  int _rejected = 0; // how much of the receipt is being rejected
+  num _rejected = 0; // how much is being rejected (kg can be fractional, pcs whole)
   late final TextEditingController _weight =
       TextEditingController(text: '3,980');
 
@@ -49,7 +49,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   void _continue() {
     Ui2Flow.set('gate.receivedQty', _receivedQty);
     Ui2Flow.set('gate.qcResult', _pass ? 'pass' : 'fail');
-    Ui2Flow.set('gate.rejectedQty', '$_rejected');
+    Ui2Flow.set('gate.rejectedQty', _fmtQty(_rejected.toDouble()));
     nav.replace(ScreenId.gateGrn);
   }
 
@@ -80,7 +80,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   /// editable weight/count field (decimal-as-string, commas stripped).
   double get _acceptedQty {
     final received = _weightKg ?? 0;
-    final acc = received - _rejected;
+    final acc = received - _rejected.toDouble();
     return acc > 0 ? acc : 0;
   }
 
@@ -227,8 +227,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                           alignment: Alignment.centerLeft,
                           child: QtyField2(
                             value: _rejected,
-                            onChanged: (v) =>
-                                setState(() => _rejected = v.toInt()),
+                            onChanged: (v) => setState(() => _rejected = v),
                             color: Y2.red,
                             fontSize: 22,
                             decimal: true,
