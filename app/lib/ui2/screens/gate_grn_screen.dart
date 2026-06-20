@@ -72,7 +72,37 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
     return v != null && V.positive(v) && v > _rejectedQty;
   }
 
+  // NOTE: over-PO receiving is deliberately NOT part of _canPost. Over-delivery is
+  // a legitimate case the backend handles (the goods-receipt service posts a SOFT
+  // `gr_qty_deviation` anomaly in the same transaction, and an extreme one a hard
+  // `gr_qty_vs_po`), and stock checks never hard-block (invariant #11). We only
+  // surface a non-blocking advisory warning so the operator can re-check the
+  // weighbridge before posting.
   bool get _canPost => _receivedValid;
+
+  /// PO ordered qty carried in from the gate entry (gate.ordered). Null on paths
+  /// that don't carry it (the quality-worklist hand-off, or a cold/demo open) —
+  /// then there's nothing to compare against and no warning is shown.
+  double? get _orderedQty {
+    final n = double.tryParse((Ui2Flow.get<String>('gate.ordered') ?? '')
+        .replaceAll(',', '')
+        .replaceAll(RegExp(r'[^0-9.]'), ''));
+    return (n == null || n == 0) ? null : n;
+  }
+
+  /// Advisory only: the (valid) received qty exceeds the PO ordered qty.
+  bool get _overReceiving {
+    final ordered = _orderedQty;
+    final v = double.tryParse(_receivedQty);
+    return ordered != null && v != null && _receivedValid && v > ordered;
+  }
+
+  /// PO ordered qty formatted for the warning (whole number when it is one).
+  String get _orderedLabel {
+    final o = _orderedQty;
+    if (o == null) return '';
+    return o == o.roundToDouble() ? '${o.round()}' : o.toStringAsFixed(3);
+  }
 
   void _pickLocation() {
     nav.overlay(Picker2Sheet<String>(
@@ -293,6 +323,16 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                                     : S.t('Enter a quantity greater than 0',
                                         '० पेक्षा जास्त प्रमाण भरा'),
                                 show: _receivedQty.isNotEmpty && !_receivedValid,
+                              ),
+                              // Advisory (non-blocking): over the PO ordered qty.
+                              // Posting is still allowed — the backend records a
+                              // soft anomaly — but flag it so the operator can
+                              // re-check the weighbridge first.
+                              FieldHint(
+                                S.t('Over PO — ordered was $_orderedLabel $_unit',
+                                    'PO पेक्षा जास्त — ऑर्डर $_orderedLabel $_unit होती'),
+                                tone: FieldHintTone.warning,
+                                show: _overReceiving,
                               ),
                             ],
                           )),

@@ -121,29 +121,39 @@ class _LowerCaseFormatter extends TextInputFormatter {
       next.copyWith(text: next.text.toLowerCase());
 }
 
-/// Inline red validation hint shown under a field. Render it only when the field
-/// is non-empty-but-invalid so the form isn't pre-littered with errors.
+/// Severity of a [FieldHint]: a hard [error] (red) that blocks submit, or a soft
+/// [warning] (orange) that is purely advisory and never gates the CTA.
+enum FieldHintTone { error, warning }
+
+/// Inline validation hint shown under a field. Render it only when the field is
+/// non-empty-but-invalid (error) or worth flagging (warning), so the form isn't
+/// pre-littered. Red = hard error (blocks); orange = soft warning (advisory).
 class FieldHint extends StatelessWidget {
-  const FieldHint(this.message, {super.key, this.show = true});
+  const FieldHint(this.message,
+      {super.key, this.show = true, this.tone = FieldHintTone.error});
   final String message;
   final bool show;
+  final FieldHintTone tone;
 
   @override
   Widget build(BuildContext context) {
     if (!show) return const SizedBox.shrink();
+    final warn = tone == FieldHintTone.warning;
+    final color = warn ? Y2.orange : Y2.red;
+    final icon = warn ? Icons.warning_amber_rounded : Icons.error_outline;
     return Padding(
       padding: const EdgeInsets.only(top: 5),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 1),
-            child: Icon(Icons.error_outline, size: 13, color: Y2.red),
+          Padding(
+            padding: const EdgeInsets.only(top: 1),
+            child: Icon(icon, size: 13, color: color),
           ),
           const SizedBox(width: 5),
           Flexible(
             child: Text(message,
-                style: F.hind(11, w: FontWeight.w500, color: Y2.red)),
+                style: F.hind(11, w: FontWeight.w500, color: color)),
           ),
         ],
       ),
