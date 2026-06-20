@@ -53,10 +53,14 @@ class _EntryState extends ConsumerState<_Entry> {
     final lang = q['lang'];
     if (lang == 'en' || lang == 'mr') S.lang.value = lang!;
     _devRole = q['role'];
-    _maybeDevBypass(_devRole);
-    // Decide login-vs-shell only after the persisted session has loaded.
+    // Apply the dev-bypass demo session AFTER the persisted session has loaded,
+    // so the async _restore() can't clobber it. (A persisted logged-out/expired
+    // session would otherwise overwrite the demo sign-in and leave the splash
+    // spinning forever for ?role= deep-links — the "keeps buffering" bug.)
     ref.read(authProvider.notifier).whenRestored.then((_) {
-      if (mounted) setState(() => _restored = true);
+      if (!mounted) return;
+      _maybeDevBypass(_devRole);
+      setState(() => _restored = true);
     });
   }
 
