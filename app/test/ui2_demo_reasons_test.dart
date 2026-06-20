@@ -7,14 +7,26 @@ import 'package:yeshshree_ops/ui2/data/api2.dart';
 /// reason" stuck and the Close-shift / Save-interim buttons disabled even after a
 /// reason was chosen.
 void main() {
-  test('every demo reason has a non-null integer id', () {
-    expect(Data.demoReasons, isNotEmpty);
-    for (final r in Data.demoReasons) {
-      expect(r['id'], isA<int>(),
-          reason: 'reason ${r['code']} is missing an id');
-    }
-    // Ids must be distinct so the picker can resolve the tapped option.
-    final ids = Data.demoReasons.map((r) => r['id']).toSet();
-    expect(ids.length, Data.demoReasons.length);
+  // Every master list shown in a picker must carry stable, distinct ids: a null
+  // id makes options indistinguishable AND leaves an id-gated CTA disabled (this
+  // bit the reject-reason picker, the issue-material picker, and would have bitten
+  // customers/vendors next).
+  final lists = <String, List<Map<String, dynamic>>>{
+    'demoReasons': Data.demoReasons,
+    'demoMaterials': Data.demoMaterials,
+    'demoCustomers': Data.demoCustomers,
+    'demoVendors': Data.demoVendors,
+    'demoLines': Data.demoLines,
+  };
+
+  lists.forEach((name, rows) {
+    test('$name rows all have a distinct non-null integer id', () {
+      expect(rows, isNotEmpty, reason: '$name is empty');
+      for (final r in rows) {
+        expect(r['id'], isA<int>(), reason: '$name row $r is missing an id');
+      }
+      final ids = rows.map((r) => r['id']).toSet();
+      expect(ids.length, rows.length, reason: '$name has duplicate ids');
+    });
   });
 }

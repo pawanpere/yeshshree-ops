@@ -365,16 +365,18 @@ class Data {
     {'id': 3, 'code': 'TOOL', 'label_en': 'Tool / die issue', 'label_mr': 'टूल / डाय समस्या'},
     {'id': 4, 'code': 'MATERIAL', 'label_en': 'Material defect', 'label_mr': 'मटेरियल दोष'},
   ];
+  // Master rows carry a stable `id` (pickers key the selection by it; a null id
+  // leaves an id-gated CTA permanently disabled).
   static const demoCustomers = <Json>[
-    {'sap_code': 'C-100', 'name': 'Sunrise Metals', 'gstin': '27ABCDE1234F1Z5'},
-    {'sap_code': 'C-101', 'name': 'Deccan Recyclers', 'gstin': '27ZYXWV9876K1A2'},
+    {'id': 1, 'sap_code': 'C-100', 'name': 'Sunrise Metals', 'gstin': '27ABCDE1234F1Z5'},
+    {'id': 2, 'sap_code': 'C-101', 'name': 'Deccan Recyclers', 'gstin': '27ZYXWV9876K1A2'},
   ];
   static const demoPurchaseOrders = <Json>[
     {'sap_po_no': '77-2291', 'vendor': 'Sandhar Steel', 'material': 'CR coil 2.5mm', 'open_qty': '4000', 'rate': '52.74'},
   ];
   static const demoVendors = <Json>[
-    {'sap_code': 'V-1', 'name': 'Sandhar Steel'},
-    {'sap_code': 'V-2', 'name': 'Bharat Forge'},
+    {'id': 1, 'sap_code': 'V-1', 'name': 'Sandhar Steel'},
+    {'id': 2, 'sap_code': 'V-2', 'name': 'Bharat Forge'},
   ];
   // Gate inbox. A deliberate mix so tapping different rows shows real variety:
   // raw-material coil deliveries (weighed in kg) AND purchased components (counted
