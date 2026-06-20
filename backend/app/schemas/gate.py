@@ -9,7 +9,9 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict
 
 DocType = Literal["invoice", "challan", "return_gatepass", "other_inward"]
-InwardCategory = Literal["po_supply", "customer_return", "consumable", "repair"]
+InwardCategory = Literal[
+    "po_supply", "customer_return", "consumable", "repair", "job_work_return"
+]
 
 
 class GateEntryRead(BaseModel):

@@ -17,6 +17,7 @@ class MaterialRead(_Read):
     description: str
     mat_type: str
     mat_group: str | None
+    category: str
     uom: str
     price: Decimal | None
     abc: str | None
@@ -29,6 +30,7 @@ class MaterialCreate(BaseModel):
     description: str
     mat_type: str = "ROH"
     mat_group: str | None = None
+    category: str = "rm"  # rm | component | fg (plant stock-routing category)
     uom: str = "EA"
     price: Decimal | None = None
     abc: str | None = None
@@ -37,6 +39,7 @@ class MaterialCreate(BaseModel):
 class MaterialUpdate(BaseModel):
     description: str | None = None
     mat_group: str | None = None
+    category: str | None = None
     uom: str | None = None
     price: Decimal | None = None
     abc: str | None = None

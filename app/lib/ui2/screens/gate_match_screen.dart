@@ -70,9 +70,11 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
     Ui2Flow.set('gate.supplier', _poSupplier);
     Ui2Flow.set('gate.material', _poMaterial);
     // This path matches a fresh challan rather than receipting a worklist entry;
-    // clear any entry id/vehicle a prior worklist tap left so the GRN self-creates.
+    // clear any entry id/vehicle/category a prior worklist tap left so the GRN
+    // self-creates and QC defaults to the raw-material (weighbridge) branch.
     Ui2Flow.set('gate.entryId', null);
     Ui2Flow.set('gate.vehicle', null);
+    Ui2Flow.set('gate.category', null);
     nav.replace(ScreenId.gateQc);
   }
 

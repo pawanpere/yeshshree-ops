@@ -161,7 +161,7 @@ class Data {
         demo: demoQualityWorklist, demoIfEmpty: true);
     if (res.demo) return res;
     final mats = await materials();
-    final byId = {for (final m in mats.data) m['id']: m['description']};
+    final byId = {for (final m in mats.data) m['id']: m};
     return Loaded([
       for (final e in res.data)
         {
@@ -169,8 +169,11 @@ class Data {
           'vehicle': e['vehicle_no'],
           'supplier': e['vendor_name_text'] ?? '—',
           'invoice': e['invoice_no'] ?? e['doc_no'],
-          'material': byId[e['material_id']] ??
+          'material': byId[e['material_id']]?['description'] ??
               (e['material_id'] != null ? 'Material #${e['material_id']}' : '—'),
+          // Plant stock category drives the QC branch (component = counted pieces,
+          // rm = weighed on the weighbridge).
+          'category': byId[e['material_id']]?['category'] ?? 'rm',
           'qty_expected': e['qty_expected'],
         },
     ]);
@@ -274,12 +277,15 @@ class Data {
      'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6',
      'remaining': '68', 'sap_order_no': '100482'},
   ];
-  // Matched gate entries awaiting inward QC (the quality worklist cards).
+  // Matched gate entries awaiting inward QC (the quality worklist cards). One raw
+  // material (weighed) + one component (counted) so the QC branch is demonstrable.
   static const demoQualityWorklist = <Json>[
     {'id': 11, 'vehicle': 'MH12 AB 4421', 'supplier': 'Sandhar Steel',
-     'invoice': 'INV-3131079408', 'material': 'CR coil 2.5mm', 'qty_expected': '4000'},
+     'invoice': 'INV-3131079408', 'material': 'CR coil 2.5mm', 'category': 'rm',
+     'qty_expected': '4000'},
     {'id': 12, 'vehicle': 'MH14 CD 9032', 'supplier': 'Bharat Forge',
-     'invoice': 'INV-7740221', 'material': 'CR coil 3.0mm', 'qty_expected': '2800'},
+     'invoice': 'INV-7740221', 'material': 'Fasteners M8', 'category': 'component',
+     'qty_expected': '2400'},
   ];
   // Mirrors ApprovalRead; payload carries a bilingual summary for the card.
   static const demoApprovals = <Json>[

@@ -50,6 +50,8 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
     Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
     Ui2Flow.set('gate.supplier', '${row['supplier'] ?? ''}');
     Ui2Flow.set('gate.material', '${row['material'] ?? ''}');
+    // Drives the QC branch (component = counted, rm = weighed).
+    Ui2Flow.set('gate.category', '${row['category'] ?? 'rm'}');
     nav.go(ScreenId.gateQc);
   }
 
@@ -106,6 +108,8 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
     final supplier = '${row['supplier'] ?? '—'}';
     final material = '${row['material'] ?? '—'}';
     final qty = row['qty_expected'];
+    final isComponent = '${row['category'] ?? 'rm'}' == 'component';
+    final unit = isComponent ? S.t('pcs', 'नग') : 'kg';
     return Pressable2(
       onTap: () => _startQc(row),
       child: Container(
@@ -150,7 +154,7 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
                 ),
                 if (qty != null) ...[
                   const SizedBox(width: 8),
-                  Text(S.t('exp. $qty kg', 'अपे. $qty kg'),
+                  Text(S.t('exp. $qty $unit', 'अपे. $qty $unit'),
                       style: F.hind(12, w: FontWeight.w600, color: Y2.body)),
                 ],
               ],

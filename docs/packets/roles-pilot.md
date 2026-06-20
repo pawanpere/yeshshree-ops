@@ -88,8 +88,20 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
   material + supplier and an honest PO; (MED) the QC subtitle was stale on a cold tab
   open → fixed by the same tab-clear. Verified: live endpoint returns 1 matched row
   through CORS, analyze clean, tests 14/14, web build OK.
-- **Phase 4** — inbound RM vs components (new component category, migration); GR routes
-  by type; job-work-return inward category.
+- **Phase 4 — inbound RM vs components. ✅ DONE.** New plant stock `category`
+  (`rm`/`component`/`fg`) on materials (model CHECK + a hand-authored Alembic migration
+  `0001_material_category_and_inward.py` — the repo has no Alembic baseline yet, schema
+  is built via `create_all`, so the migration is the reviewable DIFF to reconcile on the
+  dev machine). `Material.stock_location` routes inbound GR stock: components → the new
+  `COMP` store, raw material → `RM` (existing materials default `rm` → unchanged). Added
+  `job_work_return` to the gate `inward_category` (DB CHECK + the `InwardCategory` schema
+  Literal). Frontend: the quality worklist carries the material category and the inward-QC
+  + GRN screens **branch by type** — components are counted in pieces, raw material is
+  weighed on the weighbridge (kg). 7 backend tests (`test_components.py`: stock_location,
+  CHECKs, schema literal, component GR→COMP, rm GR→RM). **Scope boundary (documented):**
+  only the INBOUND (GR) path routes by category; component *consumption* + stock-balance
+  routing is a deferred follow-up (existing rm flows are byte-for-byte unchanged).
+  Verified: backend 145/145, flutter analyze clean, tests 14/14, web build OK.
 - **Phase 5** — users & devices (backend + admin office UI).
 - **Phase 6** — remaining role screens (management dashboards/approvals/anomalies;
   planning plan-view + holds; store stock-browse; admin master + settings; vendor

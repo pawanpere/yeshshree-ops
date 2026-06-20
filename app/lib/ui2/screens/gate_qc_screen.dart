@@ -60,6 +60,10 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
     return parts.isEmpty ? null : parts.join(' · ');
   }
 
+  /// Inward QC branches by the material's plant category: a purchased component is
+  /// counted in pieces, raw material is weighed on the weighbridge (Phase 4).
+  bool get _isComponent => Ui2Flow.get<String>('gate.category') == 'component';
+
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -79,8 +83,11 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(S.t('RECEIVED WEIGHT · WEIGHBRIDGE',
-                        'मिळालेले वजन · वजनकाटा'),
+                Text(
+                    _isComponent
+                        ? S.t('RECEIVED COUNT · PIECES', 'मिळालेली संख्या · नग')
+                        : S.t('RECEIVED WEIGHT · WEIGHBRIDGE',
+                            'मिळालेले वजन · वजनकाटा'),
                     style: F.hind(12, w: FontWeight.w600, color: Y2.muted)),
                 const SizedBox(height: 11),
                 Container(
@@ -110,16 +117,24 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text('kg', style: F.hind(16, color: Y2.muted)),
+                      Text(_isComponent ? S.t('pcs', 'नग') : 'kg',
+                          style: F.hind(16, color: Y2.muted)),
                     ],
                   ),
                 ),
                 const SizedBox(height: 6),
-                Text(S.t('from weighbridge', 'वजनकाट्यावरून'),
+                Text(
+                    _isComponent
+                        ? S.t('counted at receipt', 'पावतीवेळी मोजले')
+                        : S.t('from weighbridge', 'वजनकाट्यावरून'),
                     style: F.hind(11, color: Y2.muted)),
                 const SizedBox(height: 11),
-                _tolerance(),
-                const SizedBox(height: 13),
+                // The weighbridge tolerance pill compares against a kg challan figure;
+                // it's meaningless for counted components, so show it only for RM.
+                if (!_isComponent) ...[
+                  _tolerance(),
+                  const SizedBox(height: 13),
+                ],
                 Text(S.t('QUALITY CHECK', 'गुणवत्ता तपासणी'),
                     style: F.hind(12, w: FontWeight.w600, color: Y2.muted)),
                 const SizedBox(height: 9),

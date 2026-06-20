@@ -46,10 +46,15 @@ def _get_or_create(db: Session, model, defaults: dict | None = None, **keys):
 def seed_materials(db: Session) -> int:
     n = 0
     for row in sap_files.parse_materials(FILES["materials"]):
+        mat_type = row["mat_type"] or "ROH"
         _, created = _get_or_create(
             db, Material, sap_code=row["sap_code"],
-            defaults=dict(description=row["description"], mat_type=row["mat_type"] or "ROH",
+            defaults=dict(description=row["description"], mat_type=mat_type,
                           mat_group=row["mat_group"] or None, uom=row["uom"] or "EA",
+                          # Plant stock category from SAP mat_type: finished goods → fg,
+                          # everything else → rm. Purchased parts are re-tagged
+                          # 'component' via admin/import (no reliable SAP signal for it).
+                          category="fg" if mat_type == "FERT" else "rm",
                           price=row["price"], abc=row["abc"]),
         )
         n += created
@@ -68,7 +73,7 @@ def seed_boms(db: Session) -> int:
         parent, _ = _get_or_create(
             db, Material, sap_code=parent_code,
             defaults=dict(description=lines[0]["parent_desc"], mat_type="FERT",
-                          uom="EA", source="manual"),
+                          category="fg", uom="EA", source="manual"),
         )
         bom, created = _get_or_create(
             db, Bom, parent_material_id=parent.id,

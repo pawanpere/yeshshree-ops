@@ -61,7 +61,7 @@ class StockLedger(Base):
     """Append-only signed movements; the only way stock changes. §4.6."""
     __tablename__ = "stock_ledger"
     __table_args__ = (
-        CheckConstraint("location IN ('RM','WIP','FG','AT_VENDOR')", name="location_valid"),
+        CheckConstraint("location IN ('RM','COMP','WIP','FG','AT_VENDOR')", name="location_valid"),
         CheckConstraint(
             "movement IN ('GR_IN','ISSUE_OUT','PROD_IN','PROD_CONSUME','DISPATCH_OUT','ADJUST')",
             name="movement_valid",

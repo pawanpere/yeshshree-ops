@@ -100,7 +100,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
         'rejected_qty': '0',
         'qc_result': Ui2Flow.get<String>('gate.qcResult') ?? 'pass',
       },
-      label: '${S.t('Goods receipt', 'माल पावती')} $_receivedQty kg',
+      label: '${S.t('Goods receipt', 'माल पावती')} $_receivedQty $_unit',
     );
     if (!mounted) return;
 
@@ -116,6 +116,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
     // would otherwise let a re-entry post a duplicate goods-receipt).
     Ui2Flow.set('gate.entryId', null);
     Ui2Flow.set('gate.vehicle', null);
+    Ui2Flow.set('gate.category', null);
     // Stash for the result screen (real doc id when posted, queued marker else).
     Ui2Flow.set('gate.grnDoc',
         grnRes.data?['grn_no'] ?? grnRes.data?['doc_no'] ?? grnRes.data?['id']);
@@ -147,6 +148,13 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
     final v = Ui2Flow.get<String>(key);
     return (v != null && v.isNotEmpty) ? v : fallback;
   }
+
+  /// Receipt unit follows the material category: components are counted (pcs),
+  /// raw material is weighed (kg) — Phase 4.
+  String get _unit =>
+      Ui2Flow.get<String>('gate.category') == 'component'
+          ? S.t('pcs', 'नग')
+          : 'kg';
 
   @override
   Widget build(BuildContext context) {
@@ -222,7 +230,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                                   ),
                                 ),
                               ),
-                              Text(' kg',
+                              Text(' $_unit',
                                   style: F.mono(13,
                                       w: FontWeight.w700, color: Y2.green)),
                             ],
@@ -230,7 +238,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                       const SizedBox(height: 6),
                       _summaryRow(
                           S.t('Rejected', 'नाकारले'),
-                          Text('0 kg',
+                          Text('0 $_unit',
                               style: F.mono(13,
                                   w: FontWeight.w700, color: Y2.ink))),
                     ],

@@ -48,7 +48,8 @@ def update_material(material_id: int, body: s.MaterialUpdate,
                     user: CurrentUser = Depends(write_guard)):
     obj = get_or_404(db, Material, material_id, "material")
     apply_update(db, obj, body.model_dump(exclude_unset=True), user, "materials",
-                 allowed={"description", "mat_group", "uom", "price", "abc", "is_active"})
+                 allowed={"description", "mat_group", "category", "uom", "price",
+                          "abc", "is_active"})
     return obj
 
 

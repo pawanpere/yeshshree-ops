@@ -61,7 +61,8 @@ class GateEntry(Base):
             "doc_type IN ('invoice','challan','return_gatepass','other_inward')", name="doc_type_valid"
         ),
         CheckConstraint(
-            "inward_category IN ('po_supply','customer_return','consumable','repair')",
+            "inward_category IN "
+            "('po_supply','customer_return','consumable','repair','job_work_return')",
             name="inward_category_valid",
         ),
         Index(

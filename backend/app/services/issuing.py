@@ -118,6 +118,17 @@ def post_issue(db: Session, user: CurrentUser, body) -> Issue:
     if material is None:
         raise _error("NOT_FOUND", "Material not found", "सामग्री सापडली नाही", 404,
                      {"material_id": body.material_id})
+    # Phase 4 boundary: components are received into the COMP store, but outbound
+    # (issue/consume) routing for components is a later phase. Until then issuing a
+    # component is refused outright rather than silently posting against RM (which,
+    # in parallel_run, would not block and would strand COMP stock / drive RM negative).
+    if material.category == "component":
+        raise _error(
+            "ISSUE_COMPONENT_UNSUPPORTED",
+            "Issuing components is not supported yet — component stock lives in the "
+            "COMP store and outbound component routing is a later phase",
+            "घटक इश्यू करणे अद्याप समर्थित नाही", 422,
+            {"material_id": material.id, "category": material.category})
     qty = to_decimal(body.qty).quantize(QTY)
     if qty <= 0:
         raise _error("ISSUE_QTY_INVALID", "Quantity must be greater than zero",

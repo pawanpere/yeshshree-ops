@@ -36,6 +36,10 @@ class Material(Base):
         # export contains ERSA, HIBE, ROH1, LEIH, ZCDT, ZSCP, ZCAP…). We never CHECK
         # vocabularies an external system controls. Found by golden-file test, 2026-06-11.
         CheckConstraint("source IN ('sap_import','manual')", name="source_valid"),
+        # category is OUR plant's stock-routing classification (distinct from SAP's
+        # mat_type): rm = raw material, component = purchased part, fg = finished good.
+        # It decides the GR stock location (§4.6) — see `stock_location`.
+        CheckConstraint("category IN ('rm','component','fg')", name="category_valid"),
     )
     id: Mapped[intpk]
     sap_code: Mapped[str] = mapped_column(Text, unique=True)
@@ -47,6 +51,15 @@ class Material(Base):
     abc: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     source: Mapped[str] = mapped_column(Text, default="sap_import", server_default="sap_import")
+    # Plant stock category. Defaults to 'rm' (back-compatible: existing materials keep
+    # posting to the RM store); finished goods are 'fg'; purchased parts are 'component'.
+    category: Mapped[str] = mapped_column(Text, default="rm", server_default="rm")
+
+    @property
+    def stock_location(self) -> str:
+        """The store location this material's inbound (GR) stock posts to: purchased
+        components go to the COMP store, everything else to RM (§4.6 stock routing)."""
+        return "COMP" if self.category == "component" else "RM"
 
 
 class Bom(Base):

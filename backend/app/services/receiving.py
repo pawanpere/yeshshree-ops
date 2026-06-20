@@ -151,7 +151,11 @@ def post_goods_receipt(db: Session, user: CurrentUser, body) -> GoodsReceipt:
                              amount=base, status="draft"))
     else:
         if accepted > 0:  # invariant 2: stock changes ONLY via stock_ledger
-            db.add(StockLedger(material_id=material.id, location="RM", movement="GR_IN",
+            # Route inbound stock by category: a purchased component goes to the COMP
+            # store, raw material to RM (§4.6). Outbound/consumption routing for
+            # components is a deferred follow-up (this phase covers inbound only).
+            db.add(StockLedger(material_id=material.id,
+                               location=material.stock_location, movement="GR_IN",
                                qty=accepted, uom=material.uom, vendor_id=vendor_id,
                                ref_type="goods_receipts", ref_id=gr.id,
                                created_by=user.id))
