@@ -7,10 +7,12 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/qty_field2.dart';
 
 /// Dispatch detail — prototype screen [20]. Parts to load for a delivery order.
 /// The DO chip + customer reflect the order stashed by the dispatch list. The
@@ -40,6 +42,16 @@ class _Ui2DispatchDetailScreenState
   String _vehType = _vehicles.first.$2;
   bool _submitting = false;
 
+  // How much of the picked lot to dispatch. Not every lot ships in full, so the
+  // operator chooses the qty up to what's available (320 pc picked from WIP);
+  // defaults to the full lot.
+  static const _available = 320; // pc available to dispatch
+  int _dispatchQty = 320;
+
+  void _stepQty(int d) =>
+      setState(() => _dispatchQty = (_dispatchQty + d).clamp(0, _available));
+  bool get _qtyValid => _dispatchQty > 0 && _dispatchQty <= _available;
+
   String get _do => '${Ui2Flow.get<String>('dispatch.do') ?? 'DO-3391'}';
   String get _customer =>
       '${Ui2Flow.get<String>('dispatch.customer') ?? 'Bajaj Auto'}';
@@ -66,7 +78,7 @@ class _Ui2DispatchDetailScreenState
   }
 
   Future<void> _confirm() async {
-    if (_submitting) return;
+    if (_submitting || !_qtyValid) return;
     setState(() => _submitting = true);
     // client_ref is auto-added by Data.submit (idempotency key).
     final res = await Data.submit(
@@ -75,9 +87,12 @@ class _Ui2DispatchDetailScreenState
       {
         'customer_id': 1,
         'vehicle_no': _veh,
-        'lines': <Map<String, dynamic>>[],
+        // Dispatch exactly the chosen quantity (a partial ship is normal).
+        'lines': <Map<String, dynamic>>[
+          {'material': 'Front fork 4521', 'qty': '$_dispatchQty'},
+        ],
       },
-      label: '${S.t('Dispatch', 'डिस्पॅच')} $_do',
+      label: '${S.t('Dispatch', 'डिस्पॅच')} $_do · $_dispatchQty pc',
     );
     if (!mounted) return;
     // Surface a real failure, but still proceed for the demo so the flow works.
@@ -100,6 +115,7 @@ class _Ui2DispatchDetailScreenState
         'GP-2208';
     Ui2Flow.set('dispatch.pass', pass);
     Ui2Flow.set('dispatch.vehicle', _veh);
+    Ui2Flow.set('dispatch.qty', _dispatchQty);
     nav.replace(ScreenId.gatePass);
   }
 
@@ -171,12 +187,66 @@ class _Ui2DispatchDetailScreenState
                         crossAxisAlignment: CrossAxisAlignment.baseline,
                         textBaseline: TextBaseline.alphabetic,
                         children: [
-                          Text('320', style: F.mono(17, color: Y2.ink)),
+                          Text('$_available', style: F.mono(17, color: Y2.ink)),
                           const SizedBox(width: 3),
-                          Text(S.t('pc', 'pc'),
+                          Text(S.t('pc avail.', 'pc उपलब्ध'),
                               style: F.hind(11, color: Y2.muted)),
                         ],
                       ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 11),
+                // Quantity to dispatch — editable, capped at what's available, so
+                // the operator can ship a partial lot rather than always the whole.
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+                  decoration: BoxDecoration(
+                    color: Y2.card,
+                    borderRadius: BorderRadius.circular(Y2.rCard),
+                    border: Border.all(color: Y2.line),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 9),
+                        child: Text(
+                            S.t('QUANTITY TO DISPATCH · PC',
+                                'डिस्पॅच करायचे प्रमाण · PC'),
+                            style: F.hind(11,
+                                w: FontWeight.w600, ls: 0.6, color: Y2.muted)),
+                      ),
+                      Row(
+                        children: [
+                          _stepBtn(Icons.remove,
+                              accent: false, onTap: () => _stepQty(-10)),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: QtyField2(
+                              value: _dispatchQty,
+                              max: _available,
+                              onChanged: (v) =>
+                                  setState(() => _dispatchQty = v.toInt()),
+                              fontSize: 46,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          _stepBtn(Icons.add,
+                              accent: true, onTap: () => _stepQty(10)),
+                        ],
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                            S.t('of $_available pc available',
+                                '$_available pc पैकी'),
+                            style: F.hind(11, color: Y2.muted)),
+                      ),
+                      if (_dispatchQty <= 0)
+                        FieldHint(S.t('Enter a quantity to dispatch',
+                            'डिस्पॅच करायचे प्रमाण भरा')),
                     ],
                   ),
                 ),
@@ -259,13 +329,32 @@ class _Ui2DispatchDetailScreenState
           child: PrimaryButton2(
             label: _submitting
                 ? S.t('Generating…', 'तयार करत आहे…')
-                : S.t('Confirm & generate gate pass',
-                    'पुष्टी करा आणि गेट पास तयार करा'),
+                : S.t('Dispatch $_dispatchQty pc · gate pass',
+                    '$_dispatchQty pc डिस्पॅच · गेट पास'),
             busy: _submitting,
+            enabled: _qtyValid,
             onTap: _confirm,
           ),
         ),
       ],
     );
   }
+
+  Widget _stepBtn(IconData icon,
+          {required bool accent, required VoidCallback onTap}) =>
+      Pressable2(
+        onTap: onTap,
+        child: Container(
+          width: 50,
+          height: 50,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: accent ? const Color(0x121D4ED8) : null,
+            border:
+                Border.all(color: accent ? Y2.accent : const Color(0xFFD2DAE6)),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 24, color: accent ? Y2.accent : Y2.ink),
+        ),
+      );
 }

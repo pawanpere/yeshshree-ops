@@ -344,10 +344,13 @@ class Data {
   // Mirrors the values the prototype screens display, used as fallback so the
   // app is fully functional offline / against an empty DB. Marked DEMO in UI.
 
+  // Materials need a stable `id`: the issue/production material pickers key the
+  // selection by it, and the issue form gates on a real material_id — a null id
+  // left the Issue button permanently disabled.
   static const demoMaterials = <Json>[
-    {'sap_code': 'CR-25', 'description': 'CR coil 2.5mm', 'uom': 'KG', 'price': '52.74'},
-    {'sap_code': 'CR-30', 'description': 'CR coil 3.0mm', 'uom': 'KG', 'price': '54.10'},
-    {'sap_code': 'FAST-M8', 'description': 'Fasteners M8', 'uom': 'BOX', 'price': '180.00'},
+    {'id': 1, 'sap_code': 'CR-25', 'description': 'CR coil 2.5mm', 'uom': 'KG', 'price': '52.74'},
+    {'id': 2, 'sap_code': 'CR-30', 'description': 'CR coil 3.0mm', 'uom': 'KG', 'price': '54.10'},
+    {'id': 3, 'sap_code': 'FAST-M8', 'description': 'Fasteners M8', 'uom': 'BOX', 'price': '180.00'},
   ];
   static const demoLines = <Json>[
     {'id': 1, 'name': 'Line A', 'plant': '1117'},

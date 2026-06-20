@@ -36,8 +36,10 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
 
   int _qty = 350;
 
-  // Material selection (defaults mirror the prototype literals).
-  int? _materialId;
+  // Material selection. The form opens with a real default already chosen (the
+  // CR-25 coil, id 1 in the master list) so it reads as selected AND the Issue
+  // button is enabled out of the box; the operator can still change it.
+  int? _materialId = 1;
   String _materialCode = 'CR-25';
   String _materialDesc = S.t('CR coil 2.5mm', 'CR कॉइल 2.5mm');
 
