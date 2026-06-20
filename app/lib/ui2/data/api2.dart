@@ -179,6 +179,15 @@ class Data {
     ]);
   }
 
+  // Admin: users + station devices (admin-only endpoints).
+  static Future<Loaded<List<Json>>> users({bool activeOnly = true}) =>
+      _list('/master/users', query: {'active_only': activeOnly},
+          demo: demoUsers, demoIfEmpty: true);
+
+  static Future<Loaded<List<Json>>> stationDevices({bool activeOnly = true}) =>
+      _list('/master/station-devices', query: {'active_only': activeOnly},
+          demo: demoStationDevices, demoIfEmpty: true);
+
   static Future<Loaded<List<Json>>> dispatches() =>
       _list('/dispatches', query: {'status': 'open'},
           demo: demoDispatches, demoIfEmpty: true);
@@ -214,6 +223,18 @@ class Data {
       String path, Map<String, dynamic> body) async {
     try {
       final r = await Api.dio.post(path, data: body);
+      return WriteResult(WriteStatus.ok,
+          data: r.data is Map ? Json.from(r.data as Map) : null);
+    } on DioException catch (e) {
+      return WriteResult(WriteStatus.error, error: ApiException.from(e));
+    }
+  }
+
+  /// PATCH update (admin master/user/device edits). Direct, non-transactional.
+  static Future<WriteResult> patch(
+      String path, Map<String, dynamic> body) async {
+    try {
+      final r = await Api.dio.patch(path, data: body);
       return WriteResult(WriteStatus.ok,
           data: r.data is Map ? Json.from(r.data as Map) : null);
     } on DioException catch (e) {
@@ -276,6 +297,25 @@ class Data {
      'sap_code': '1402010035', 'description': 'Front fork 4521', 'revision': 1,
      'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6',
      'remaining': '68', 'sap_order_no': '100482'},
+  ];
+  // Admin: demo users + station devices (mirror UserRead / StationDeviceRead).
+  static const demoUsers = <Json>[
+    {'id': 1, 'username': 'admin', 'full_name': 'Kartik (Admin)', 'role': 'admin',
+     'station': null, 'phone': null, 'language': 'en', 'is_active': true, 'has_pin': false},
+    {'id': 2, 'username': 'sunita', 'full_name': 'Sunita P.', 'role': 'supervisor',
+     'station': null, 'phone': '+91 98xxxxxx01', 'language': 'mr', 'is_active': true, 'has_pin': true},
+    {'id': 3, 'username': 'gate1', 'full_name': 'Ravi (Gate)', 'role': 'plant_ops',
+     'station': 'gate', 'phone': null, 'language': 'mr', 'is_active': true, 'has_pin': true},
+    {'id': 4, 'username': 'anil', 'full_name': 'Anil (PPC)', 'role': 'planning',
+     'station': null, 'phone': null, 'language': 'en', 'is_active': true, 'has_pin': false},
+  ];
+  static const demoStationDevices = <Json>[
+    {'id': 1, 'device_key': 'gate-kiosk-1', 'station': 'gate', 'label': 'Gate scanner kiosk',
+     'registered_by': 1, 'last_seen_at': '2026-06-20T13:40:00', 'is_active': true},
+    {'id': 2, 'device_key': 'qc-tablet-2', 'station': 'qc', 'label': 'QC tablet',
+     'registered_by': 1, 'last_seen_at': '2026-06-20T12:05:00', 'is_active': true},
+    {'id': 3, 'device_key': 'store-tablet-1', 'station': 'store', 'label': 'Store tablet',
+     'registered_by': 1, 'last_seen_at': null, 'is_active': true},
   ];
   // Matched gate entries awaiting inward QC (the quality worklist cards). One raw
   // material (weighed) + one component (counted) so the QC branch is demonstrable.

@@ -79,6 +79,8 @@ app.add_middleware(
 
 app.include_router(auth_router)
 app.include_router(master_router)
+from app.api.identity import router as identity_router  # noqa: E402
+app.include_router(identity_router)
 app.include_router(config_router)
 app.include_router(gate_router)
 app.include_router(scans_router)

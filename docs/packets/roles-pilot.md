@@ -102,7 +102,15 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
   only the INBOUND (GR) path routes by category; component *consumption* + stock-balance
   routing is a deferred follow-up (existing rm flows are byte-for-byte unchanged).
   Verified: backend 145/145, flutter analyze clean, tests 14/14, web build OK.
-- **Phase 5** — users & devices (backend + admin office UI).
+- **Phase 5 — users & devices. ✅ DONE.** New admin-only backend (`api/identity.py`,
+  `services/identity.py`, `schemas/identity.py`): `/master/users` + `/master/station-devices`
+  list/create/update. Passwords + PINs are hashed (never read back; `has_pin` flag only),
+  username/device_key immutable, no deletes (deactivate via is_active), unique-conflict →
+  409, every change audited; `require("admin")` gates all routes. 7 tests (`test_users.py`)
+  incl. role-guard, hashing+login, dup→409, invalid-role→422, audited password change,
+  deactivate-hides. Frontend: `admin_users` + `admin_devices` office screens (list + add
+  form with role/station chips + deactivate), via `Data.users/stationDevices/mutate/patch`,
+  demo fallback, bilingual. Verified: backend 153/153, analyze clean, tests 14/14.
 - **Phase 6** — remaining role screens (management dashboards/approvals/anomalies;
   planning plan-view + holds; store stock-browse; admin master + settings; vendor
   orders/financials via new vendor-scoped endpoints).

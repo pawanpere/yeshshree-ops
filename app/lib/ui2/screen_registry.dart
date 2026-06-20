@@ -21,6 +21,8 @@ import 'screens/issue_done_screen.dart';
 import 'screens/gate_arrivals_screen.dart';
 import 'screens/gate_match_screen.dart';
 import 'screens/quality_worklist_screen.dart';
+import 'screens/admin_users_screen.dart';
+import 'screens/admin_devices_screen.dart';
 import 'screens/gate_qc_screen.dart';
 import 'screens/gate_grn_screen.dart';
 import 'screens/gate_received_screen.dart';
@@ -104,12 +106,8 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.mgmtAnomalies => ComingSoonScreen(
         nav: nav, titleEn: 'Anomaly register', titleMr: 'विसंगती नोंदवही',
         phase: 'Phase 6', icon: Icons.report_outlined),
-    ScreenId.adminUsers => ComingSoonScreen(
-        nav: nav, titleEn: 'Users', titleMr: 'वापरकर्ते',
-        phase: 'Phase 5', icon: Icons.people_outline),
-    ScreenId.adminDevices => ComingSoonScreen(
-        nav: nav, titleEn: 'Devices', titleMr: 'उपकरणे',
-        phase: 'Phase 5', icon: Icons.devices_outlined),
+    ScreenId.adminUsers => Ui2AdminUsersScreen(nav: nav),
+    ScreenId.adminDevices => Ui2AdminDevicesScreen(nav: nav),
     ScreenId.adminMaster => ComingSoonScreen(
         nav: nav, titleEn: 'Master data', titleMr: 'मास्टर डेटा',
         phase: 'Phase 6', icon: Icons.storage_outlined),
@@ -167,6 +165,8 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.offlineGate, 'Offline gate entry', 'gate', null),
   ScreenEntry(ScreenId.offlineGateSaved, 'Offline gate saved', 'gate', null),
   ScreenEntry(ScreenId.forceUpdate, 'Force update', 'misc', null),
+  ScreenEntry(ScreenId.adminUsers, 'Admin users', 'admin', null),
+  ScreenEntry(ScreenId.adminDevices, 'Admin devices', 'admin', null),
   ScreenEntry(ScreenId.vHome, 'Vendor home', 'vendor', null),
   ScreenEntry(ScreenId.vAlert, 'Vendor call-off', 'vendor', null),
   ScreenEntry(ScreenId.vStock, 'Vendor stock', 'vendor', null),

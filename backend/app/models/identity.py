@@ -28,6 +28,11 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, server_default="true")
     created_at: Mapped[created_at]
 
+    @property
+    def has_pin(self) -> bool:
+        """Whether a PIN is set (for the admin UI) — never exposes the hash itself."""
+        return self.pin_hash is not None
+
 
 class StationDevice(Base):
     """Registered station device (gate scanner kiosk etc.); keyed by device_key. §4.1."""
