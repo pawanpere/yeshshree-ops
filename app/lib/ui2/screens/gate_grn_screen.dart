@@ -97,7 +97,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
       <String, dynamic>{
         'gate_entry_id': gateEntryId,
         'received_qty': _receivedQty,
-        'rejected_qty': '0',
+        'rejected_qty': Ui2Flow.get<String>('gate.rejectedQty') ?? '0',
         'qc_result': Ui2Flow.get<String>('gate.qcResult') ?? 'pass',
       },
       label: '${S.t('Goods receipt', 'माल पावती')} $_receivedQty $_unit',
@@ -117,6 +117,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
     Ui2Flow.set('gate.entryId', null);
     Ui2Flow.set('gate.vehicle', null);
     Ui2Flow.set('gate.category', null);
+    Ui2Flow.set('gate.rejectedQty', null);
     // Stash for the result screen (real doc id when posted, queued marker else).
     Ui2Flow.set('gate.grnDoc',
         grnRes.data?['grn_no'] ?? grnRes.data?['doc_no'] ?? grnRes.data?['id']);
@@ -238,7 +239,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                       const SizedBox(height: 6),
                       _summaryRow(
                           S.t('Rejected', 'नाकारले'),
-                          Text('0 $_unit',
+                          Text('${_ctx('gate.rejectedQty', '0')} $_unit',
                               style: F.mono(13,
                                   w: FontWeight.w700, color: Y2.ink))),
                     ],

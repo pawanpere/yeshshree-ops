@@ -77,7 +77,6 @@ const Map<Role, RoleSpec> kRoles = {
     tabs: [
       RoleTab(ScreenId.issueForm, I2.store, 'Issue', 'जारी'),
       RoleTab(ScreenId.dispatchList, I2.truck, 'Dispatch', 'डिस्पॅच'),
-      RoleTab(ScreenId.saleForm, I2.invoice, 'Billing', 'बिलिंग'),
       RoleTab(ScreenId.storeStock, Icons.inventory_2_outlined, 'Stock', 'स्टॉक'),
     ],
   ),

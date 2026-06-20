@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/strings.dart';
 import '../data/flow.dart';
@@ -8,6 +9,7 @@ import '../tokens.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/qty_field2.dart';
 
 /// Inward QC — prototype screen [15]. Editable received/weighbridge weight +
 /// pass/fail quality check; the chosen weight and QC result are stashed into the
@@ -23,6 +25,8 @@ class Ui2GateQcScreen extends StatefulWidget {
 class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   bool _pass = true; // QC default = Pass (primary branch)
   bool _photoAdded = false;
+  String? _photoName; // file name of the captured photo, shown once added
+  int _rejected = 0; // how much of the receipt is being rejected
   late final TextEditingController _weight =
       TextEditingController(text: '3,980');
 
@@ -45,8 +49,44 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   void _continue() {
     Ui2Flow.set('gate.receivedQty', _receivedQty);
     Ui2Flow.set('gate.qcResult', _pass ? 'pass' : 'fail');
+    Ui2Flow.set('gate.rejectedQty', '$_rejected');
     nav.replace(ScreenId.gateGrn);
   }
+
+  /// Open the camera and attach a single QC photo. Cancel leaves it unset; a
+  /// platform error (no camera / permission) surfaces a SnackBar.
+  Future<void> _capturePhoto() async {
+    try {
+      final x = await ImagePicker()
+          .pickImage(source: ImageSource.camera, maxWidth: 1600);
+      if (!mounted) return;
+      if (x != null) {
+        setState(() {
+          _photoAdded = true;
+          _photoName = x.name;
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(S.t('Could not open camera', 'कॅमेरा उघडता आला नाही')),
+        ),
+      );
+    }
+  }
+
+  /// Accepted = received − rejected, floored at 0; received parsed from the
+  /// editable weight/count field (decimal-as-string, commas stripped).
+  double get _acceptedQty {
+    final received = _weightKg ?? 0;
+    final acc = received - _rejected;
+    return acc > 0 ? acc : 0;
+  }
+
+  /// Trim a trailing `.0` so whole numbers read cleanly in the helper line.
+  String _fmtQty(double v) =>
+      v == v.roundToDouble() ? '${v.round()}' : v.toStringAsFixed(3);
 
   /// The entry being QC'd, carried in from the quality worklist (or the gate
   /// match step). Shown under the title so the QC isn't context-free. Null when
@@ -167,9 +207,51 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 13),
+                // ---- Rejected qty: how much of the receipt is rejected ----
+                Text(S.t('REJECTED QTY', 'नापास प्रमाण'),
+                    style: F.hind(12, w: FontWeight.w600, color: Y2.muted)),
+                const SizedBox(height: 9),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+                  decoration: BoxDecoration(
+                    color: Y2.card,
+                    border: Border.all(color: Y2.line),
+                    borderRadius: BorderRadius.circular(11),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: QtyField2(
+                            value: _rejected,
+                            onChanged: (v) =>
+                                setState(() => _rejected = v.toInt()),
+                            color: Y2.red,
+                            fontSize: 22,
+                            decimal: true,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(_isComponent ? S.t('pcs', 'नग') : 'kg',
+                          style: F.hind(15, color: Y2.muted)),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                    S.t('Accepted = received − rejected = ${_fmtQty(_acceptedQty)} ${_isComponent ? 'pcs' : 'kg'}',
+                        'स्वीकृत = मिळालेले − नापास = ${_fmtQty(_acceptedQty)} ${_isComponent ? 'नग' : 'kg'}'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false,
+                    style: F.hind(11, color: Y2.muted)),
                 const SizedBox(height: 11),
                 Pressable2(
-                  onTap: () => setState(() => _photoAdded = !_photoAdded),
+                  onTap: _capturePhoto,
                   child: Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
@@ -196,8 +278,8 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                         Flexible(
                           child: Text(
                               _photoAdded
-                                  ? S.t('photo added · tap to remove',
-                                      'फोटो जोडला · काढण्यासाठी टॅप करा')
+                                  ? S.t('Photo added · ${_photoName ?? ''}',
+                                      'फोटो जोडला · ${_photoName ?? ''}')
                                   : S.t('add photo (optional)',
                                       'फोटो जोडा (ऐच्छिक)'),
                               maxLines: 1,

@@ -382,6 +382,8 @@ class Data {
      'remaining': '68', 'sap_order_no': '100482'},
   ];
   // ---- Phase 6 demos ----
+  // 7-day achievement % trend (for the management dashboard sparkline/chart).
+  static const demoMgmtTrend = <double>[58, 63, 61, 67, 71, 64, 66];
   // Management KPI summary (mirror OverviewOut).
   static const demoOverview = <String, dynamic>{
     'date': '2026-06-20', 'achievement_pct': '66', 'billed_today_value': '1840000',
@@ -451,8 +453,8 @@ class Data {
      'qty': '5000', 'status': 'planned'},
   ];
   static const demoVendorExposure = <String, dynamic>{
-    'vendor_id': 1, 'credit_exposure': '288000', 'qty_mt': '0',
-    'credit_limit': '2500000', 'qty_limit_mt': '0',
+    'vendor_id': 1, 'credit_exposure': '1450000', 'qty_mt': '34',
+    'credit_limit': '2500000', 'qty_limit_mt': '60',
   };
   static const demoVendorDebitNotes = <Json>[
     {'id': 1, 'doc_no': 'DN-2261', 'kind': 'shortage_5x', 'base_amount': '8400',
@@ -484,12 +486,21 @@ class Data {
   // Matched gate entries awaiting inward QC (the quality worklist cards). One raw
   // material (weighed) + one component (counted) so the QC branch is demonstrable.
   static const demoQualityWorklist = <Json>[
-    {'id': 11, 'vehicle': 'MH12 AB 4421', 'supplier': 'Sandhar Steel',
+    {'id': 11, 'vehicle': 'MH12 AB 4421', 'supplier': 'Tata Steel BSL',
      'invoice': 'INV-3131079408', 'material': 'CR coil 2.5mm', 'category': 'rm',
      'qty_expected': '4000'},
-    {'id': 12, 'vehicle': 'MH14 CD 9032', 'supplier': 'Bharat Forge',
-     'invoice': 'INV-7740221', 'material': 'Fasteners M8', 'category': 'component',
-     'qty_expected': '2400'},
+    {'id': 12, 'vehicle': 'MH14 CD 9032', 'supplier': 'Mahalaxmi Components',
+     'invoice': 'INV-7740221', 'material': 'Fasteners M8 hex', 'category': 'component',
+     'qty_expected': '6000'},
+    {'id': 13, 'vehicle': 'MH04 GT 7788', 'supplier': 'Sandhar Steel',
+     'invoice': 'INV-5521003', 'material': 'CR coil 3.0mm', 'category': 'rm',
+     'qty_expected': '2800'},
+    {'id': 14, 'vehicle': 'MH12 ZX 1190', 'supplier': 'Precision Fasteners',
+     'invoice': 'INV-9982271', 'material': 'Mounting bracket 7782',
+     'category': 'component', 'qty_expected': '1500'},
+    {'id': 15, 'vehicle': 'MH02 BR 5521', 'supplier': 'Mahalaxmi Components',
+     'invoice': 'INV-7740555', 'material': 'Spacer clip 12mm', 'category': 'component',
+     'qty_expected': '8000'},
   ];
   // Mirrors ApprovalRead; payload carries a bilingual summary for the card.
   static const demoApprovals = <Json>[

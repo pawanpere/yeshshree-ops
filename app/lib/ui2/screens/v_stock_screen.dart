@@ -7,16 +7,41 @@ import '../widgets/bits.dart';
 import '../widgets/frame.dart';
 import '../widgets/polish2.dart';
 
-/// Vendor — Stock at Yeshshree drill-down (prototype screen [31]). Read-only:
-/// the back chevron pops; the stock item cards are intentionally non-interactive
-/// (informational), matching the prototype and the audit's intended design.
-class Ui2VStockScreen extends StatelessWidget {
+/// Vendor — Stock at Yeshshree drill-down (prototype screen [31]). This vendor
+/// supplies COMPONENTS; each card shows a days-of-cover bar. The low item lets
+/// the vendor commit a resupply ETA inline (demo only — no backend call).
+class Ui2VStockScreen extends StatefulWidget {
   const Ui2VStockScreen({super.key, required this.nav});
   final PhoneNav nav;
 
+  @override
+  State<Ui2VStockScreen> createState() => _Ui2VStockScreenState();
+}
+
+class _Ui2VStockScreenState extends State<Ui2VStockScreen> {
   // rgba(194,65,12,0.06) card fill + #f0b89a hairline (the low-stock card).
   static const _lowFill = Color(0x0FC2410C);
   static const _lowLine = Color(0xFFF0B89A);
+
+  bool _picking = false; // ETA chooser revealed on the low item
+  String? _eta; // committed ETA label (null until chosen)
+
+  void _togglePicker() {
+    if (!mounted) return;
+    setState(() => _picking = !_picking);
+  }
+
+  void _commit(String choice) {
+    if (!mounted) return;
+    setState(() {
+      _eta = choice;
+      _picking = false;
+    });
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(S.t('Resupply ETA committed', 'पुनर्पुरवठा ETA नोंदवली')),
+      behavior: SnackBarBehavior.floating,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +50,7 @@ class Ui2VStockScreen extends StatelessWidget {
         const StatusBar2(),
         ScreenHeader2(
           title: S.t('STOCK AT YESHSHREE', 'येशश्रीकडील स्टॉक'),
-          onBack: nav.pop,
+          onBack: widget.nav.pop,
           demo: true,
         ),
         Expanded(
@@ -66,7 +91,7 @@ class Ui2VStockScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text('CR coil 2.5 mm',
+                  child: Text(S.t('Fasteners M8 hex', 'फास्टनर्स M8 हेक्स'),
                       style: F.hind(14, w: FontWeight.w600, color: Y2.ink),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -91,10 +116,10 @@ class Ui2VStockScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text('2,400', style: F.mono(30, height: 0.8, color: Y2.ink)),
+                  Text('24,000', style: F.mono(30, height: 0.8, color: Y2.ink)),
                   const SizedBox(width: 7),
                   Flexible(
-                    child: Text(S.t('kg · ~6 days cover', 'kg · ~6 दिवस कव्हर'),
+                    child: Text(S.t('EA · ~9 days cover', 'EA · ~9 दिवस कव्हर'),
                         style: F.hind(12, color: Y2.green),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -103,7 +128,7 @@ class Ui2VStockScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const AnimatedBar2(fraction: 0.60, color: Y2.green),
+            const AnimatedBar2(fraction: 0.75, color: Y2.green),
           ],
         ),
       );
@@ -122,7 +147,8 @@ class Ui2VStockScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Expanded(
-                  child: Text('Fasteners M8',
+                  child: Text(
+                      S.t('Mounting bracket 7782', 'माउंटिंग ब्रॅकेट 7782'),
                       style: F.hind(14, w: FontWeight.w600, color: Y2.ink),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -147,10 +173,10 @@ class Ui2VStockScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text('3,100', style: F.mono(30, height: 0.8, color: Y2.ink)),
+                  Text('1,800', style: F.mono(30, height: 0.8, color: Y2.ink)),
                   const SizedBox(width: 7),
                   Flexible(
-                    child: Text(S.t('pc · ~1 day cover', 'pc · ~1 दिवस कव्हर'),
+                    child: Text(S.t('EA · ~2 days cover', 'EA · ~2 दिवस कव्हर'),
                         style: F.hind(12, color: Y2.orange),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -159,8 +185,66 @@ class Ui2VStockScreen extends StatelessWidget {
                 ],
               ),
             ),
-            const AnimatedBar2(fraction: 0.15, color: Y2.orange),
+            const AnimatedBar2(fraction: 0.18, color: Y2.orange),
+            const SizedBox(height: 12),
+            _resupplyAction(),
           ],
+        ),
+      );
+
+  // Inline resupply-ETA affordance: action -> chooser -> confirmed line.
+  Widget _resupplyAction() {
+    if (_eta != null) {
+      return Row(
+        children: [
+          const Glyph(GlyphShape.dot, Y2.green, size: 9),
+          const SizedBox(width: 7),
+          Expanded(
+            child: Text(
+              S.t('ETA committed: ', 'ETA नोंदवली: ') + _eta!,
+              style: F.hind(13, w: FontWeight.w600, color: Y2.green),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        OutlineButton2(
+          label: S.t('Commit resupply ETA', 'पुनर्पुरवठा ETA नोंदवा'),
+          onTap: _togglePicker,
+        ),
+        if (_picking) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _etaChip(S.t('Tomorrow', 'उद्या')),
+              _etaChip(S.t('In 2 days', '2 दिवसांत')),
+              _etaChip(S.t('In 3 days', '3 दिवसांत')),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _etaChip(String label) => Pressable2(
+        onTap: () => _commit(label),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Y2.card,
+            border: Border.all(color: _lowLine),
+            borderRadius: BorderRadius.circular(Y2.rPill),
+          ),
+          child: Text(label,
+              style: F.hind(12, w: FontWeight.w600, color: Y2.orange)),
         ),
       );
 }

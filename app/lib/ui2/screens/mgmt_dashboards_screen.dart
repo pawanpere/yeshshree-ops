@@ -24,6 +24,7 @@ class Ui2MgmtDashboardsScreen extends StatefulWidget {
 
 class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
   Loaded<Json>? _data;
+  Loaded<List<Json>>? _plans;
 
   PhoneNav get nav => widget.nav;
 
@@ -34,9 +35,12 @@ class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
   }
 
   Future<void> _load() async {
-    final res = await Data.overview();
+    final res = await Future.wait([Data.overview(), Data.linePlans()]);
     if (!mounted) return;
-    setState(() => _data = res);
+    setState(() {
+      _data = res[0] as Loaded<Json>;
+      _plans = res[1] as Loaded<List<Json>>;
+    });
   }
 
   /// INR (paise as a string) → a compact "₹X.YL" lakhs label.
@@ -56,10 +60,10 @@ class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
       children: [
         ScreenHeader2(
           title: S.t('DASHBOARDS', 'डॅशबोर्ड'),
-          demo: loaded?.demo ?? false,
+          demo: (loaded?.demo ?? false) || (_plans?.demo ?? false),
         ),
         Expanded(
-          child: loaded == null
+          child: loaded == null || _plans == null
               ? const SkeletonRows(count: 4)
               : isEmpty
                   ? EmptyState2(
@@ -69,13 +73,13 @@ class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
                           "Today's plant summary will appear here once the day gets going.",
                           'दिवस सुरू झाल्यावर आजचा प्लांट सारांश येथे दिसेल.'),
                     )
-                  : _body(o),
+                  : _body(o, _plans?.data ?? const <Json>[]),
         ),
       ],
     );
   }
 
-  Widget _body(Json o) {
+  Widget _body(Json o, List<Json> plans) {
     final achievement = double.tryParse('${o['achievement_pct'] ?? ''}') ?? 0;
     final yieldPct = double.tryParse('${o['yield_pct'] ?? ''}') ?? 0;
 
@@ -139,6 +143,24 @@ class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
             );
           },
         ),
+        const SizedBox(height: 14),
+        // ---- two centerpiece chart cards: line achievement + 7-day trend ----
+        LayoutBuilder(
+          builder: (context, c) {
+            final w = (c.maxWidth - 11) / 2;
+            // Charts need room; collapse to one column on a phone width.
+            final wide = c.maxWidth >= 520;
+            final cardW = wide ? w : c.maxWidth;
+            return Wrap(
+              spacing: 11,
+              runSpacing: 11,
+              children: [
+                SizedBox(width: cardW, child: _lineAchievementCard(plans)),
+                SizedBox(width: cardW, child: _trendCard()),
+              ],
+            );
+          },
+        ),
         const SizedBox(height: 16),
         Text(S.t('NEEDS ATTENTION', 'लक्ष आवश्यक'),
             style: F.hind(11, w: FontWeight.w600, ls: 0.5, color: Y2.muted)),
@@ -177,6 +199,116 @@ class _Ui2MgmtDashboardsScreenState extends State<Ui2MgmtDashboardsScreen> {
           ],
         ),
       ],
+    );
+  }
+
+  // ---- centerpiece: per-line achievement (good / planned) bar chart ----
+  Widget _lineAchievementCard(List<Json> plans) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: BoxDecoration(
+        color: Y2.card,
+        borderRadius: BorderRadius.circular(Y2.rCard),
+        border: Border.all(color: Y2.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(S.t('LINE ACHIEVEMENT', 'लाईन साध्यता'),
+              style: F.hind(11, w: FontWeight.w600, ls: 0.5, color: Y2.muted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 11),
+          if (plans.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 6),
+              child: Text(
+                  S.t('No line plans for today.',
+                      'आजसाठी कोणतेही लाईन नियोजन नाही.'),
+                  style: F.hind(12, color: Y2.muted)),
+            )
+          else
+            for (var i = 0; i < plans.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _lineRow(plans[i]),
+            ],
+        ],
+      ),
+    );
+  }
+
+  Widget _lineRow(Json p) {
+    final name = '${p['line_name'] ?? p['description'] ?? '—'}';
+    final planned = double.tryParse('${p['planned_qty'] ?? ''}') ?? 0;
+    final good = double.tryParse('${p['confirmed_good'] ?? ''}') ?? 0;
+    final frac = planned > 0 ? (good / planned).clamp(0.0, 1.0) : 0.0;
+    final pct = (frac * 100).round();
+    final color = frac >= 0.9 ? Y2.green : Y2.accent;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(name,
+                  style: F.hind(12, w: FontWeight.w600, color: Y2.ink),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ),
+            const SizedBox(width: 8),
+            Text('$pct%',
+                style: F.mono(12, w: FontWeight.w600, color: color)),
+          ],
+        ),
+        const SizedBox(height: 6),
+        AnimatedBar2(fraction: frac, color: color),
+      ],
+    );
+  }
+
+  // ---- centerpiece: 7-day achievement % trend sparkline ----
+  Widget _trendCard() {
+    const trend = Data.demoMgmtTrend;
+    final latest = trend.isEmpty ? 0 : trend.last.round();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 13, 14, 14),
+      decoration: BoxDecoration(
+        color: Y2.card,
+        borderRadius: BorderRadius.circular(Y2.rCard),
+        border: Border.all(color: Y2.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(S.t('7-DAY ACHIEVEMENT', '७-दिवस साध्यता'),
+                    style: F.hind(11,
+                        w: FontWeight.w600, ls: 0.5, color: Y2.muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis),
+              ),
+              const SizedBox(width: 8),
+              Ticker2(latest, style: F.khand(22, color: Y2.accent), suffix: '%'),
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, c) => Sparkline2(
+              trend,
+              width: c.maxWidth < 260 ? c.maxWidth : 260,
+              height: 46,
+              color: Y2.accent,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(S.t('daily achievement trend', 'दैनिक साध्यता कल'),
+              style: F.hind(11, color: Y2.muted),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis),
+        ],
+      ),
     );
   }
 

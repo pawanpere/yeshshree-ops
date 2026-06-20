@@ -177,7 +177,10 @@ class ScreenHeader2 extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis),
                 if (subtitle != null)
-                  Text(subtitle!, style: F.hind(11, color: Y2.muted)),
+                  Text(subtitle!,
+                      style: F.hind(11, color: Y2.muted),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis),
               ],
             ),
           ),

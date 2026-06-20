@@ -169,18 +169,10 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
         const StatusBar2(),
         // Header — shared back affordance + doc chip + shift/line/started meta.
         ScreenHeader2(
-          title: S.t('FRONT FORK', 'फ्रंट फोर्क'),
+          // Reflects the picked material so the header isn't stuck on one part.
+          title: _materialLabel.toUpperCase(),
           onBack: nav.pop,
           subtitle: 'Line A · Shift B · ${S.t('Started', 'सुरू')} 14:02',
-          chip: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: BoxDecoration(
-              color: Y2.lineSoft,
-              border: Border.all(color: _d2),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text('4521', style: F.mono(12, color: Y2.accent)),
-          ),
         ),
         Expanded(
           child: SingleChildScrollView(
