@@ -397,16 +397,18 @@ class AnimatedBar2 extends StatelessWidget {
         border: Border.all(color: Y2.line),
         borderRadius: BorderRadius.circular(5),
       ),
-      child: Align(
-        alignment: Alignment.centerLeft,
-        child: TweenAnimationBuilder<double>(
-          tween: Tween(begin: 0, end: fraction.clamp(0.0, 1.0)),
-          duration: const Duration(milliseconds: 700),
-          curve: Curves.easeOutCubic,
-          builder: (context, v, _) => FractionallySizedBox(
-            widthFactor: v,
-            child: ColoredBox(color: color),
-          ),
+      child: TweenAnimationBuilder<double>(
+        tween: Tween(begin: 0, end: fraction.clamp(0.0, 1.0)),
+        duration: const Duration(milliseconds: 700),
+        curve: Curves.easeOutCubic,
+        // heightFactor:1 so the fill takes the full bar height (without it the
+        // ColoredBox has no height and the bar looked empty); centerLeft so it
+        // grows from the left edge.
+        builder: (context, v, _) => FractionallySizedBox(
+          alignment: Alignment.centerLeft,
+          widthFactor: v,
+          heightFactor: 1,
+          child: ColoredBox(color: color),
         ),
       ),
     );

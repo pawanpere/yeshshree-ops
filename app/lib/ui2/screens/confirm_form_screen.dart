@@ -640,7 +640,9 @@ class _PlanBar extends StatelessWidget {
               duration: const Duration(milliseconds: 350),
               curve: Curves.easeOutCubic,
               builder: (context, v, _) => FractionallySizedBox(
+                alignment: Alignment.centerLeft,
                 widthFactor: v,
+                heightFactor: 1,
                 child: const ColoredBox(color: Color(0x331D4ED8)),
               ),
             ),
@@ -649,7 +651,9 @@ class _PlanBar extends StatelessWidget {
           Align(
             alignment: Alignment.centerLeft,
             child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
               widthFactor: (done / plan).clamp(0.0, 1.0),
+              heightFactor: 1,
               child: const ColoredBox(color: Y2.accent),
             ),
           ),
