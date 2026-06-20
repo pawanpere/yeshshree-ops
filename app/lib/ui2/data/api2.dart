@@ -64,6 +64,16 @@ class Data {
     }
   }
 
+  /// Single-object read (e.g. a dashboard summary), with a DEMO fallback.
+  static Future<Loaded<Json>> _one(String path, {required Json demo}) async {
+    try {
+      final r = await Api.dio.get(path);
+      return (r.data is Map) ? Loaded(Json.from(r.data as Map)) : Loaded(demo, demo: true);
+    } on DioException {
+      return Loaded(demo, demo: true);
+    }
+  }
+
   // Master data — real rows exist in dev.db.
   static Future<Loaded<List<Json>>> materials({String? q}) =>
       _list('/master/materials',
@@ -195,6 +205,61 @@ class Data {
   static Future<Loaded<List<Json>>> notifications() =>
       _list('/notifications', demo: demoNotifications, demoIfEmpty: true);
 
+  // ---- Phase 6: office / store / vendor reads ----
+
+  /// Management one-screen KPI summary.
+  static Future<Loaded<Json>> overview() =>
+      _one('/dashboards/overview', demo: demoOverview);
+
+  /// Anomaly register (open by default).
+  static Future<Loaded<List<Json>>> anomalies({String status = 'open'}) =>
+      _list('/anomalies', query: {'status': status},
+          demo: demoAnomalies, demoIfEmpty: true);
+
+  /// Today's line plans (all lines) — planning + dashboards.
+  static Future<Loaded<List<Json>>> linePlans({String? date}) =>
+      _list('/plans/line-plans', query: {'date': date ?? todayIso()},
+          demo: demoLinePlans, demoIfEmpty: true);
+
+  /// Open production holds (waiting for a SAP order) — planning + production.
+  static Future<Loaded<List<Json>>> holds({String status = 'open'}) =>
+      _list('/confirmations/holds', query: {'status': status},
+          demo: demoHolds, demoIfEmpty: true);
+
+  /// Current stock balances per material/location (store stock browse).
+  static Future<Loaded<List<Json>>> stockBalances({String? location}) =>
+      _list('/stock/balances',
+          query: {if (location != null) 'location': location},
+          demo: demoStockBalances, demoIfEmpty: true);
+
+  /// System settings (ops_mode + thresholds) — admin settings.
+  static Future<Loaded<List<Json>>> settings() =>
+      _list('/config/settings', demo: demoSettings, demoIfEmpty: true);
+
+  /// Resolve a held confirmation by giving PPC's SAP order number.
+  static Future<WriteResult> resolveHold(int holdId, String sapOrderNo) =>
+      mutate('/confirmations/holds/$holdId/resolve', {'sap_order_no': sapOrderNo});
+
+  /// Mark an anomaly reviewed/resolved.
+  static Future<WriteResult> resolveAnomaly(int anomalyId, String note) =>
+      mutate('/anomalies/$anomalyId/resolve', {'note': note});
+
+  // ---- vendor portal (scoped to the signed-in vendor on the server) ----
+  static Future<Loaded<List<Json>>> vendorOrders() =>
+      _list('/vendor/purchase-orders', demo: demoVendorOrders, demoIfEmpty: true);
+
+  static Future<Loaded<List<Json>>> vendorCalloffs() =>
+      _list('/vendor/calloffs', demo: demoVendorCalloffs, demoIfEmpty: true);
+
+  static Future<Loaded<Json>> vendorExposure() =>
+      _one('/vendor/exposure', demo: demoVendorExposure);
+
+  static Future<Loaded<List<Json>>> vendorDebitNotes() =>
+      _list('/vendor/debit-notes', demo: demoVendorDebitNotes, demoIfEmpty: true);
+
+  static Future<Loaded<List<Json>>> vendorStock() =>
+      _list('/vendor/stock', demo: demoVendorStock, demoIfEmpty: true);
+
   // --------------------------------------------------------------- writes ---
 
   /// Transactional POST through the retry queue. A fresh `client_ref` is added
@@ -297,6 +362,83 @@ class Data {
      'sap_code': '1402010035', 'description': 'Front fork 4521', 'revision': 1,
      'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6',
      'remaining': '68', 'sap_order_no': '100482'},
+  ];
+  // ---- Phase 6 demos ----
+  // Management KPI summary (mirror OverviewOut).
+  static const demoOverview = <String, dynamic>{
+    'date': '2026-06-20', 'achievement_pct': '66', 'billed_today_value': '1840000',
+    'yield_pct': '96', 'open_anomalies': {'total': 3, 'hard': 1},
+    'approvals_pending': 2, 'open_override_reviews': 0,
+    'unmatched_gate_entries': 2, 'outbox_backlog': {'pending': 4, 'failed': 0},
+    'holds_open': 1,
+  };
+  // Anomaly register (mirror AnomalyRead).
+  static const demoAnomalies = <Json>[
+    {'id': 1, 'rule_code': 'SHORTAGE_5X', 'severity': 'hard', 'ref_type': 'goods_receipt',
+     'ref_id': 88, 'message_en': 'Receipt 4.2% short of PO — debit raised',
+     'message_mr': 'पावती PO पेक्षा 4.2% कमी — डेबिट केले', 'status': 'open'},
+    {'id': 2, 'rule_code': 'REJECT_SPIKE', 'severity': 'soft', 'ref_type': 'confirmation',
+     'ref_id': 261, 'message_en': 'Reject rate 2× the line average',
+     'message_mr': 'नापास दर लाईन सरासरीच्या 2×', 'status': 'open'},
+    {'id': 3, 'rule_code': 'PLAN_EXCEED', 'severity': 'soft', 'ref_type': 'confirmation',
+     'ref_id': 262, 'message_en': 'Confirmed 24% over plan',
+     'message_mr': 'नियोजनापेक्षा 24% जास्त पुष्टी', 'status': 'open'},
+  ];
+  // Today's line plans (mirror PlanRow).
+  static const demoLinePlans = <Json>[
+    {'plan_id': 1, 'line_id': 1, 'line_name': 'Line A', 'material_id': 10,
+     'sap_code': '1402010035', 'description': 'Front fork 4521', 'revision': 1,
+     'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6', 'remaining': '68'},
+    {'plan_id': 2, 'line_id': 2, 'line_name': 'Line B', 'material_id': 11,
+     'sap_code': '1402010044', 'description': 'Bracket 7782', 'revision': 1,
+     'planned_qty': '300', 'confirmed_good': '252', 'confirmed_reject': '3', 'remaining': '48'},
+  ];
+  // Open production holds (mirror HoldRead; payload carries the confirmation body).
+  static const demoHolds = <Json>[
+    {'id': 1, 'line_id': 1, 'material_id': 10, 'status': 'open',
+     'payload': {'line_id': 1, 'shift': 'B', 'material_id': 10, 'good_qty': '48',
+                 'rejected_qty': '0', 'material': 'Front fork 4521'}},
+  ];
+  // Stock balances (mirror BalanceRead).
+  static const demoStockBalances = <Json>[
+    {'material_id': 1, 'material': 'CR coil 2.5mm', 'location': 'RM', 'vendor_id': null, 'qty': '28090', 'uom': 'KG'},
+    {'material_id': 2, 'material': 'CR coil 3.0mm', 'location': 'RM', 'vendor_id': null, 'qty': '12400', 'uom': 'KG'},
+    {'material_id': 3, 'material': 'Fasteners M8', 'location': 'COMP', 'vendor_id': null, 'qty': '8600', 'uom': 'EA'},
+    {'material_id': 1, 'material': 'CR coil 2.5mm', 'location': 'AT_VENDOR', 'vendor_id': 1, 'qty': '5000', 'uom': 'KG'},
+    {'material_id': 10, 'material': 'Front fork 4521', 'location': 'FG', 'vendor_id': null, 'qty': '320', 'uom': 'EA'},
+  ];
+  // System settings (mirror SettingRead {key,value}).
+  static const demoSettings = <Json>[
+    {'key': 'ops_mode', 'value': {'mode': 'parallel_run'}},
+    {'key': 'anomaly_thresholds', 'value': {'hard_qty_multiple': 5, 'soft_deviation_pct': 20,
+        'rejection_spike_factor': 2.0, 'plan_exceed_pct': 20}},
+    {'key': 'debit_note', 'value': {'multiplier': 5}},
+  ];
+  // Vendor portal demos.
+  static const demoVendorOrders = <Json>[
+    {'id': 1, 'sap_po_no': '520000845', 'item_no': 1, 'material_id': 1,
+     'material': 'CR coil 2.5mm', 'ordered_qty': '56000', 'open_qty': '28172',
+     'rate': '63', 'uom': 'KG', 'due_date': '2026-06-25', 'status': 'open'},
+    {'id': 2, 'sap_po_no': '520000846', 'item_no': 1, 'material_id': 2,
+     'material': 'CR coil 3.0mm', 'ordered_qty': '40000', 'open_qty': '0',
+     'rate': '64', 'uom': 'KG', 'due_date': '2026-06-18', 'status': 'open'},
+  ];
+  static const demoVendorCalloffs = <Json>[
+    {'id': 1, 'material_id': 1, 'material': 'CR coil 2.5mm', 'calloff_date': '2026-06-22',
+     'qty': '8000', 'status': 'open'},
+    {'id': 2, 'material_id': 1, 'material': 'CR coil 2.5mm', 'calloff_date': '2026-06-29',
+     'qty': '8000', 'status': 'planned'},
+  ];
+  static const demoVendorExposure = <String, dynamic>{
+    'vendor_id': 1, 'credit_exposure': '315000', 'qty_mt': '5',
+    'credit_limit': '9900000', 'qty_limit_mt': '999',
+  };
+  static const demoVendorDebitNotes = <Json>[
+    {'id': 1, 'doc_no': 'DN-2261', 'kind': 'shortage_5x', 'base_amount': '12600',
+     'amount': '63000', 'status': 'draft'},
+  ];
+  static const demoVendorStock = <Json>[
+    {'material_id': 1, 'material': 'CR coil 2.5mm', 'qty': '5000', 'uom': 'KG'},
   ];
   // Admin: demo users + station devices (mirror UserRead / StationDeviceRead).
   static const demoUsers = <Json>[

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import 'nav.dart';
-import 'screens/coming_soon_screen.dart';
 import 'screens/home_screen.dart';
 import 'screens/tasks_screen.dart';
 import 'screens/cockpit_screen.dart';
@@ -23,6 +22,17 @@ import 'screens/gate_match_screen.dart';
 import 'screens/quality_worklist_screen.dart';
 import 'screens/admin_users_screen.dart';
 import 'screens/admin_devices_screen.dart';
+import 'screens/admin_master_screen.dart';
+import 'screens/admin_settings_screen.dart';
+import 'screens/mgmt_dashboards_screen.dart';
+import 'screens/mgmt_approvals_screen.dart';
+import 'screens/mgmt_anomalies_screen.dart';
+import 'screens/plan_today_screen.dart';
+import 'screens/plan_holds_screen.dart';
+import 'screens/store_stock_screen.dart';
+import 'screens/production_holds_screen.dart';
+import 'screens/v_orders_screen.dart';
+import 'screens/v_finance_screen.dart';
 import 'screens/gate_qc_screen.dart';
 import 'screens/gate_grn_screen.dart';
 import 'screens/gate_received_screen.dart';
@@ -83,43 +93,21 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.vStock => Ui2VStockScreen(nav: nav),
     ScreenId.vLogin => Ui2VLoginScreen(nav: nav),
     ScreenId.vOtp => Ui2VOtpScreen(nav: nav),
-    // ---- Later-phase role screens (placeholdered in Phase 0) ----
+    // ---- Role screens (Phase 3-6) ----
     ScreenId.qualityWorklist => Ui2QualityWorklistScreen(nav: nav),
-    ScreenId.productionHolds => ComingSoonScreen(
-        nav: nav, titleEn: 'Parked holds', titleMr: 'पार्क केलेले होल्ड',
-        phase: 'Phase 6', icon: Icons.pause_circle_outline),
-    ScreenId.storeStock => ComingSoonScreen(
-        nav: nav, titleEn: 'Stock browse', titleMr: 'स्टॉक पहा',
-        phase: 'Phase 6', icon: Icons.inventory_2_outlined),
-    ScreenId.planToday => ComingSoonScreen(
-        nav: nav, titleEn: "Today's plan", titleMr: 'आजची योजना',
-        phase: 'Phase 6', icon: Icons.event_note_outlined),
-    ScreenId.planHolds => ComingSoonScreen(
-        nav: nav, titleEn: 'Resolve holds', titleMr: 'होल्ड सोडवा',
-        phase: 'Phase 6', icon: Icons.pause_circle_outline),
-    ScreenId.mgmtDashboards => ComingSoonScreen(
-        nav: nav, titleEn: 'Dashboards', titleMr: 'डॅशबोर्ड',
-        phase: 'Phase 6', icon: Icons.dashboard_outlined),
-    ScreenId.mgmtApprovals => ComingSoonScreen(
-        nav: nav, titleEn: 'Approvals inbox', titleMr: 'मंजुरी इनबॉक्स',
-        phase: 'Phase 6', icon: Icons.approval_outlined),
-    ScreenId.mgmtAnomalies => ComingSoonScreen(
-        nav: nav, titleEn: 'Anomaly register', titleMr: 'विसंगती नोंदवही',
-        phase: 'Phase 6', icon: Icons.report_outlined),
+    ScreenId.productionHolds => Ui2ProductionHoldsScreen(nav: nav),
+    ScreenId.storeStock => Ui2StoreStockScreen(nav: nav),
+    ScreenId.planToday => Ui2PlanTodayScreen(nav: nav),
+    ScreenId.planHolds => Ui2PlanHoldsScreen(nav: nav),
+    ScreenId.mgmtDashboards => Ui2MgmtDashboardsScreen(nav: nav),
+    ScreenId.mgmtApprovals => Ui2MgmtApprovalsScreen(nav: nav),
+    ScreenId.mgmtAnomalies => Ui2MgmtAnomaliesScreen(nav: nav),
     ScreenId.adminUsers => Ui2AdminUsersScreen(nav: nav),
     ScreenId.adminDevices => Ui2AdminDevicesScreen(nav: nav),
-    ScreenId.adminMaster => ComingSoonScreen(
-        nav: nav, titleEn: 'Master data', titleMr: 'मास्टर डेटा',
-        phase: 'Phase 6', icon: Icons.storage_outlined),
-    ScreenId.adminSettings => ComingSoonScreen(
-        nav: nav, titleEn: 'Settings', titleMr: 'सेटिंग्ज',
-        phase: 'Phase 6', icon: Icons.settings_outlined),
-    ScreenId.vOrders => ComingSoonScreen(
-        nav: nav, titleEn: 'Orders & call-offs', titleMr: 'ऑर्डर व कॉल-ऑफ',
-        phase: 'Phase 6', icon: Icons.receipt_long_outlined),
-    ScreenId.vFinance => ComingSoonScreen(
-        nav: nav, titleEn: 'Financial position', titleMr: 'आर्थिक स्थिती',
-        phase: 'Phase 6', icon: Icons.payments_outlined),
+    ScreenId.adminMaster => Ui2AdminMasterScreen(nav: nav),
+    ScreenId.adminSettings => Ui2AdminSettingsScreen(nav: nav),
+    ScreenId.vOrders => Ui2VOrdersScreen(nav: nav),
+    ScreenId.vFinance => Ui2VFinanceScreen(nav: nav),
     };
 
 /// A catalog entry for the dev jump-nav and URL deep-linking.
@@ -167,6 +155,17 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.forceUpdate, 'Force update', 'misc', null),
   ScreenEntry(ScreenId.adminUsers, 'Admin users', 'admin', null),
   ScreenEntry(ScreenId.adminDevices, 'Admin devices', 'admin', null),
+  ScreenEntry(ScreenId.adminMaster, 'Admin master data', 'admin', null),
+  ScreenEntry(ScreenId.adminSettings, 'Admin settings', 'admin', null),
+  ScreenEntry(ScreenId.mgmtDashboards, 'Mgmt dashboards', 'mgmt', null),
+  ScreenEntry(ScreenId.mgmtApprovals, 'Mgmt approvals', 'mgmt', null),
+  ScreenEntry(ScreenId.mgmtAnomalies, 'Mgmt anomalies', 'mgmt', null),
+  ScreenEntry(ScreenId.planToday, 'Plan today', 'planning', null),
+  ScreenEntry(ScreenId.planHolds, 'Plan holds', 'planning', null),
+  ScreenEntry(ScreenId.productionHolds, 'Production holds', 'production', null),
+  ScreenEntry(ScreenId.storeStock, 'Store stock', 'store', null),
+  ScreenEntry(ScreenId.vOrders, 'Vendor orders', 'vendor', null),
+  ScreenEntry(ScreenId.vFinance, 'Vendor finance', 'vendor', null),
   ScreenEntry(ScreenId.vHome, 'Vendor home', 'vendor', null),
   ScreenEntry(ScreenId.vAlert, 'Vendor call-off', 'vendor', null),
   ScreenEntry(ScreenId.vStock, 'Vendor stock', 'vendor', null),

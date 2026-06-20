@@ -111,9 +111,19 @@ migration (if schema) + tests. Verify each phase, commit, check in before the ne
   deactivate-hides. Frontend: `admin_users` + `admin_devices` office screens (list + add
   form with role/station chips + deactivate), via `Data.users/stationDevices/mutate/patch`,
   demo fallback, bilingual. Verified: backend 153/153, analyze clean, tests 14/14.
-- **Phase 6** — remaining role screens (management dashboards/approvals/anomalies;
-  planning plan-view + holds; store stock-browse; admin master + settings; vendor
-  orders/financials via new vendor-scoped endpoints).
+- **Phase 6 — remaining role screens + vendor portal. ✅ DONE.** All 11 placeholder
+  screens are now real (no ComingSoon left): management dashboards (`/dashboards/overview`),
+  approvals inbox + decide, anomaly register + resolve; planning today-plan (`/plans/line-plans`)
+  + resolve-holds (`/confirmations/holds/{id}/resolve`); production parked-holds; store
+  stock-browse (`/stock/balances` by location); admin master-data browse + settings
+  (`/config/settings`); vendor orders/call-offs + financial position. All via `Data.*`
+  with demo fallback, bilingual, overflow-safe (2 office screens needed Flexible fixes).
+  **New vendor-scoped backend** (`api/vendor.py`, `services/vendor_portal.py`,
+  `schemas/vendor.py`): `/vendor/purchase-orders|calloffs|exposure|debit-notes|stock`,
+  every route `require("vendor")` and scoped to the caller's own `vendor_id` from the
+  JWT in the SERVICE layer (invariant 5) — no client-supplied id. 5 tests
+  (`test_vendor_portal.py`) incl. cross-vendor isolation, orphan-vendor→409, non-vendor→403.
+  Verified: backend 158/158, analyze clean, tests 14/14, web build OK.
 
 ## Honest follow-ups / known issues
 - **`?role=` web previews show DEMO data, not live** — until CORS is deployed in front
