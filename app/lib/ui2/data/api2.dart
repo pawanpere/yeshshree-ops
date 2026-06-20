@@ -226,11 +226,26 @@ class Data {
       _list('/confirmations/holds', query: {'status': status},
           demo: demoHolds, demoIfEmpty: true);
 
-  /// Current stock balances per material/location (store stock browse).
-  static Future<Loaded<List<Json>>> stockBalances({String? location}) =>
-      _list('/stock/balances',
-          query: {if (location != null) 'location': location},
-          demo: demoStockBalances, demoIfEmpty: true);
+  /// Current stock balances per material/location (store stock browse). The live
+  /// BalanceRead carries only {material_id, location, vendor_id, qty}, so enrich
+  /// each row with the material description + uom (same pattern as the other reads).
+  static Future<Loaded<List<Json>>> stockBalances({String? location}) async {
+    final res = await _list('/stock/balances',
+        query: {if (location != null) 'location': location},
+        demo: demoStockBalances, demoIfEmpty: true);
+    if (res.demo) return res;
+    final mats = await materials();
+    final byId = {for (final m in mats.data) m['id']: m};
+    return Loaded([
+      for (final b in res.data)
+        {
+          ...b,
+          'material': byId[b['material_id']]?['description'] ??
+              (b['material_id'] != null ? 'Material #${b['material_id']}' : '—'),
+          'uom': byId[b['material_id']]?['uom'] ?? '',
+        },
+    ]);
+  }
 
   /// System settings (ops_mode + thresholds) — admin settings.
   static Future<Loaded<List<Json>>> settings() =>
