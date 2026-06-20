@@ -1,11 +1,13 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/api_client.dart';
 import '../../core/auth_state.dart';
 import '../../core/strings.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/polish2.dart';
 
 /// Pilot entry login (username + password → /auth/login). Full-viewport,
@@ -26,20 +28,32 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscure = true;
 
   @override
+  void initState() {
+    super.initState();
+    // Re-evaluate the CTA + inline hints on every keystroke in either field.
+    for (final c in [_user, _pass]) {
+      c.addListener(() => setState(() {}));
+    }
+  }
+
+  @override
   void dispose() {
     _user.dispose();
     _pass.dispose();
     super.dispose();
   }
 
+  // Both fields are required and must be valid before Sign in is tappable: a
+  // login-shaped username and a non-trivial password (≥6, not all-whitespace).
+  bool get _userValid => V.loginUsername(_user.text);
+  bool get _passValid => V.password(_pass.text);
+  bool get _canSignIn => _userValid && _passValid;
+
   Future<void> _login() async {
+    // Hard-block: never submit while invalid (the button is also disabled).
+    if (_busy || !_canSignIn) return;
     final u = _user.text.trim();
     final p = _pass.text;
-    if (u.isEmpty || p.isEmpty) {
-      setState(() => _error = S.t('Enter username and password',
-          'वापरकर्तानाव आणि पासवर्ड भरा'));
-      return;
-    }
     setState(() {
       _busy = true;
       _error = null;
@@ -88,12 +102,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 _brand(),
                 const SizedBox(height: 22),
                 _label(S.t('USERNAME', 'वापरकर्तानाव')),
-                _field(_user, hint: 'admin'),
+                _field(_user,
+                    hint: 'admin',
+                    formatters: V.usernameInput,
+                    // Show the rule only once they've typed something invalid.
+                    error: _user.text.trim().isNotEmpty && !_userValid
+                        ? S.t('3–64 chars: a–z, 0–9, dot or underscore',
+                            '३–६४ अक्षरे: a–z, 0–9, टिंब किंवा अंडरस्कोर')
+                        : null),
                 const SizedBox(height: 14),
                 _label(S.t('PASSWORD', 'पासवर्ड')),
                 _field(_pass,
                     obscure: _obscure,
                     onSubmit: (_) => _login(),
+                    error: _pass.text.isNotEmpty && !_passValid
+                        ? S.t('Password must be at least 6 characters',
+                            'पासवर्ड किमान ६ अक्षरांचा हवा')
+                        : null,
                     trailing: GestureDetector(
                       onTap: () => setState(() => _obscure = !_obscure),
                       child: Icon(
@@ -113,6 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 PrimaryButton2(
                   label: S.t('Sign in', 'साइन इन'),
                   busy: _busy,
+                  enabled: _canSignIn,
                   onTap: _login,
                 ),
                 const SizedBox(height: 12),
@@ -173,34 +199,44 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           {String? hint,
           bool obscure = false,
           Widget? trailing,
-          ValueChanged<String>? onSubmit}) =>
-      Container(
-        decoration: BoxDecoration(
-          color: Y2.card,
-          border: Border.all(color: Y2.line),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: c,
-                obscureText: obscure,
-                onSubmitted: onSubmit,
-                style: F.hind(15, color: Y2.ink),
-                cursorColor: Y2.accent,
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: F.hind(15, color: Y2.muted2),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-              ),
+          ValueChanged<String>? onSubmit,
+          List<TextInputFormatter>? formatters,
+          String? error}) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Y2.card,
+              // Red hairline when the field is filled-but-invalid.
+              border: Border.all(color: error != null ? Y2.red : Y2.line),
+              borderRadius: BorderRadius.circular(10),
             ),
-            if (trailing != null) trailing,
-          ],
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: c,
+                    obscureText: obscure,
+                    onSubmitted: onSubmit,
+                    inputFormatters: formatters,
+                    style: F.hind(15, color: Y2.ink),
+                    cursorColor: Y2.accent,
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: F.hind(15, color: Y2.muted2),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing,
+              ],
+            ),
+          ),
+          if (error != null) FieldHint(error),
+        ],
       );
 }

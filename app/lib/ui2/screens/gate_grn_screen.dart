@@ -7,6 +7,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
@@ -27,6 +28,11 @@ class Ui2GateGrnScreen extends ConsumerStatefulWidget {
 }
 
 class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
+  // Numeric input that allows a decimal point (qty is NUMERIC(14,3)). Kept local
+  // because the shared V.digitsOnly is integer-only and validators.dart is shared.
+  static final List<TextInputFormatter> _decimalQty = [
+    FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+  ];
   static const _locations = ['Store A · Rack 12', 'Store B · Rack 4'];
   String _location = _locations.first;
   bool _posting = false;
@@ -36,12 +42,37 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
   PhoneNav get nav => widget.nav;
 
   @override
+  void initState() {
+    super.initState();
+    // Re-evaluate the CTA + inline error on every keystroke in the qty field.
+    _received.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _received.dispose();
     super.dispose();
   }
 
   String get _receivedQty => _received.text.replaceAll(',', '').trim();
+
+  /// Rejected qty carried in from quality (defaults to 0). Accepted = received −
+  /// rejected, so a receipt that does not exceed the rejected amount is invalid.
+  double get _rejectedQty =>
+      double.tryParse(
+          (Ui2Flow.get<String>('gate.rejectedQty') ?? '0')
+              .replaceAll(',', '')
+              .trim()) ??
+      0;
+
+  /// Received must parse to a positive number AND be strictly greater than the
+  /// rejected qty (otherwise nothing is actually accepted into stock).
+  bool get _receivedValid {
+    final v = double.tryParse(_receivedQty);
+    return v != null && V.positive(v) && v > _rejectedQty;
+  }
+
+  bool get _canPost => _receivedValid;
 
   void _pickLocation() {
     nav.overlay(Picker2Sheet<String>(
@@ -57,7 +88,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
   }
 
   Future<void> _post() async {
-    if (_posting) return;
+    if (_posting || !_canPost) return;
     setState(() => _posting = true);
 
     // Step 1 — resolve the gate entry to receipt. Prefer the REAL entry the
@@ -216,29 +247,53 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                       // below is separate, so accepted = received − rejected.
                       _summaryRow(
                           S.t('Received', 'मिळालेले'),
-                          Row(
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IntrinsicWidth(
-                                child: TextField(
-                                  controller: _received,
-                                  textAlign: TextAlign.right,
-                                  keyboardType:
-                                      const TextInputType.numberWithOptions(
-                                          decimal: true),
-                                  style: F.mono(13,
-                                      w: FontWeight.w700, color: Y2.green),
-                                  cursorColor: Y2.accent,
-                                  decoration: const InputDecoration(
-                                    isDense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    border: InputBorder.none,
+                              Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IntrinsicWidth(
+                                    child: TextField(
+                                      controller: _received,
+                                      textAlign: TextAlign.right,
+                                      keyboardType:
+                                          const TextInputType.numberWithOptions(
+                                              decimal: true),
+                                      inputFormatters: _decimalQty,
+                                      style: F.mono(13,
+                                          w: FontWeight.w700,
+                                          color: _receivedValid
+                                              ? Y2.green
+                                              : Y2.red),
+                                      cursorColor: Y2.accent,
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        contentPadding: EdgeInsets.zero,
+                                        border: InputBorder.none,
+                                      ),
+                                    ),
                                   ),
-                                ),
+                                  Text(' $_unit',
+                                      style: F.mono(13,
+                                          w: FontWeight.w700,
+                                          color: _receivedValid
+                                              ? Y2.green
+                                              : Y2.red)),
+                                ],
                               ),
-                              Text(' $_unit',
-                                  style: F.mono(13,
-                                      w: FontWeight.w700, color: Y2.green)),
+                              // Inline error when the qty is non-positive or does
+                              // not exceed the rejected amount (nothing accepted).
+                              FieldHint(
+                                _rejectedQty > 0
+                                    ? S.t(
+                                        'Received must be more than rejected (${_ctx('gate.rejectedQty', '0')})',
+                                        'मिळालेले नाकारलेल्यापेक्षा जास्त हवे (${_ctx('gate.rejectedQty', '0')})')
+                                    : S.t('Enter a quantity greater than 0',
+                                        '० पेक्षा जास्त प्रमाण भरा'),
+                                show: _receivedQty.isNotEmpty && !_receivedValid,
+                              ),
                             ],
                           )),
                       const SizedBox(height: 6),
@@ -330,6 +385,7 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
                 ? S.t('Posting…', 'नोंदवत आहे…')
                 : S.t('Confirm & post', 'पुष्टी करा व नोंदवा'),
             busy: _posting,
+            enabled: _canPost,
             onTap: _post,
           ),
         ),

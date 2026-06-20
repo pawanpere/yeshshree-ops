@@ -7,6 +7,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/polish2.dart';
 
@@ -39,8 +40,10 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
     final now = DateTime.now();
     _gateTime =
         '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-    // Re-enable the CTA the moment the vehicle field becomes non-empty.
-    _vehicle.addListener(() => setState(() {}));
+    // Re-evaluate the CTA + inline errors on every keystroke in any field.
+    for (final c in [_vehicle, _driver, _vendor]) {
+      c.addListener(() => setState(() {}));
+    }
   }
 
   @override
@@ -51,10 +54,17 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
     super.dispose();
   }
 
+  // All three fields are required and must be valid: a strict Indian plate, and
+  // a real (≥3-char, contains a letter) driver name and vendor — so "AB" no
+  // longer enables Save. The plate is normalised (uppercased, spaces stripped).
+  bool get _vehicleValid => V.plate(_vehicle.text);
+  bool get _driverValid => V.name(_driver.text);
+  bool get _vendorValid => V.freeText(_vendor.text);
+  bool get _canSave => _vehicleValid && _driverValid && _vendorValid;
+
   Future<void> _save() async {
-    if (_busy) return;
-    final veh = _vehicle.text.trim();
-    if (veh.isEmpty) return;
+    if (_busy || !_canSave) return;
+    final veh = V.normPlate(_vehicle.text);
     setState(() => _busy = true);
     HapticFeedback.lightImpact();
     final vendor = _vendor.text.trim();
@@ -85,7 +95,7 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave = _vehicle.text.trim().isNotEmpty;
+    final canSave = _canSave;
     return Column(
       children: [
         const StatusBar2(),
@@ -147,11 +157,17 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
                   TextField(
                     controller: _vehicle,
                     textCapitalization: TextCapitalization.characters,
+                    inputFormatters: V.plateInput,
                     style: F.mono(18, color: Y2.ink),
                     cursorColor: Y2.accent,
                     decoration: _inputDeco('MH __ __ ____',
                         F.mono(18, color: Y2.muted)),
                   ),
+                  // Show the format hint only once they've typed something invalid.
+                  error: _vehicle.text.trim().isNotEmpty && !_vehicleValid
+                      ? S.t('Enter a full plate, e.g. MH12 AB 4421',
+                          'पूर्ण क्रमांक भरा, उदा. MH12 AB 4421')
+                      : null,
                 ),
                 const SizedBox(height: 11),
                 // Driver name field (real TextField).
@@ -166,6 +182,10 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
                     decoration: _inputDeco(S.t('Type name…', 'नाव टाइप करा…'),
                         F.hind(15, color: Y2.muted)),
                   ),
+                  error: _driver.text.trim().isNotEmpty && !_driverValid
+                      ? S.t('Enter the driver’s name (min 3 letters)',
+                          'चालकाचे नाव भरा (किमान ३ अक्षरे)')
+                      : null,
                 ),
                 const SizedBox(height: 11),
                 // Vendor field (real free-text TextField).
@@ -181,6 +201,10 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
                         S.t('e.g. Sandhar Steel', 'उदा. Sandhar Steel'),
                         F.hind(15, color: Y2.muted)),
                   ),
+                  error: _vendor.text.trim().isNotEmpty && !_vendorValid
+                      ? S.t('Enter the vendor name (min 3 letters)',
+                          'विक्रेत्याचे नाव भरा (किमान ३ अक्षरे)')
+                      : null,
                 ),
                 const SizedBox(height: 11),
                 // Gate time row — real current time.
@@ -263,11 +287,13 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
         ),
       );
 
-  Widget _field(String label, IconData icon, Widget value) => Container(
+  Widget _field(String label, IconData icon, Widget value, {String? error}) =>
+      Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
         decoration: BoxDecoration(
           color: Y2.card,
-          border: Border.all(color: Y2.line),
+          // Red hairline when the field is filled-but-invalid, for a clear signal.
+          border: Border.all(color: error != null ? Y2.red : Y2.line),
           borderRadius: BorderRadius.circular(11),
         ),
         child: Row(
@@ -289,6 +315,7 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
                       style: F.hind(11, w: FontWeight.w400, color: Y2.muted)),
                   const SizedBox(height: 2),
                   value,
+                  if (error != null) FieldHint(error),
                 ],
               ),
             ),

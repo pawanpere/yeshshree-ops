@@ -6,6 +6,7 @@ import '../../core/strings.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/polish2.dart';
@@ -33,6 +34,14 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   static const double _tolerancePct = 1.0; // ±1% within tolerance
 
   PhoneNav get nav => widget.nav;
+
+  @override
+  void initState() {
+    super.initState();
+    // Re-evaluate the CTA + tolerance pill + cross-field hint on every keystroke
+    // in the received weight/count field.
+    _weight.addListener(() => setState(() {}));
+  }
 
   /// The challan qty for this entry (carried from the gate match step); the
   /// weighbridge tolerance compares the received weight against it. Defaults to a
@@ -74,7 +83,19 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
 
   double? get _weightKg => double.tryParse(_receivedQty);
 
+  // Received must parse to a positive number.
+  bool get _weightValid => V.positive(_weightKg);
+
+  // Cross-field: you can't reject more than was received.
+  bool get _rejectedOk =>
+      _weightKg != null && _rejected.toDouble() <= _weightKg!;
+
+  // Receive into store is allowed only with a valid positive received qty and a
+  // rejected qty that doesn't exceed it.
+  bool get _valid => _weightValid && _rejectedOk;
+
   void _continue() {
+    if (!_valid) return;
     Ui2Flow.set('gate.receivedQty', _receivedQty);
     Ui2Flow.set('gate.qcResult', _pass ? 'pass' : 'fail');
     Ui2Flow.set('gate.rejectedQty', _fmtQty(_rejected.toDouble()));
@@ -174,9 +195,15 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                           textAlign: TextAlign.center,
                           keyboardType: const TextInputType.numberWithOptions(
                               decimal: true),
+                          // kg OR pcs, so allow a decimal point; commas are kept
+                          // for the grouped default and stripped before parsing.
+                          // Letters can't be typed or pasted in.
+                          inputFormatters: [
+                            FilteringTextInputFormatter.allow(
+                                RegExp(r'[0-9.,]')),
+                          ],
                           style: F.mono(28, color: Y2.ink),
                           cursorColor: Y2.accent,
-                          onChanged: (_) => setState(() {}),
                           decoration: const InputDecoration(
                             isDense: true,
                             contentPadding: EdgeInsets.zero,
@@ -268,6 +295,16 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                     ],
                   ),
                 ),
+                // Cross-field guard: rejected can't exceed received. Only show
+                // when both are present and rejected actually exceeds received —
+                // an empty/invalid received qty is flagged by the tolerance pill,
+                // not here.
+                if (_weightKg != null && _rejected.toDouble() > _weightKg!)
+                  FieldHint(_isComponent
+                      ? S.t('Rejected count can’t exceed received count',
+                          'नापास संख्या मिळालेल्या संख्येपेक्षा जास्त असू शकत नाही')
+                      : S.t('Rejected weight can’t exceed received weight',
+                          'नापास वजन मिळालेल्या वजनापेक्षा जास्त असू शकत नाही')),
                 const SizedBox(height: 6),
                 Text(
                     S.t('Accepted = received − rejected = ${_fmtQty(_acceptedQty)} ${_isComponent ? 'pcs' : 'kg'}',
@@ -332,6 +369,7 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
           ),
           child: PrimaryButton2(
             label: S.t('Receive into store', 'स्टोअरमध्ये घ्या'),
+            enabled: _valid,
             onTap: _continue,
           ),
         ),

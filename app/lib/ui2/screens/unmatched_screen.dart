@@ -5,6 +5,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
@@ -31,10 +32,22 @@ class _Ui2UnmatchedScreenState extends State<Ui2UnmatchedScreen> {
   String? _poNo;
 
   @override
+  void initState() {
+    super.initState();
+    // Re-evaluate the CTA + inline error on every keystroke in the plate field.
+    _vehicle.addListener(() => setState(() {}));
+  }
+
+  @override
   void dispose() {
     _vehicle.dispose();
     super.dispose();
   }
+
+  // The plate must be a strict Indian plate before it can be logged; the seeded
+  // 'MH09 KL 2210' already passes. Stored normalised (uppercased, spaces stripped).
+  bool get _vehicleValid => V.plate(_vehicle.text);
+  bool get _canLog => _vehicleValid;
 
   Future<void> _pickPo() async {
     final res = await Data.purchaseOrders();
@@ -66,8 +79,9 @@ class _Ui2UnmatchedScreenState extends State<Ui2UnmatchedScreen> {
       });
 
   void _logIt() {
+    if (!_canLog) return; // Re-guard: never log an invalid plate.
     // Stash for the gate flow; the office matches it later.
-    Ui2Flow.set('offlineGate.vehicle', _vehicle.text.trim());
+    Ui2Flow.set('offlineGate.vehicle', V.normPlate(_vehicle.text));
     if (_poNo != null) Ui2Flow.set('gate.po', _poNo);
     nav.home();
   }
@@ -128,17 +142,30 @@ class _Ui2UnmatchedScreenState extends State<Ui2UnmatchedScreen> {
                 // Vehicle plate — editable so the gate user can confirm/correct.
                 _field(
                   S.t('Vehicle', 'वाहन'),
-                  TextField(
-                    controller: _vehicle,
-                    textCapitalization: TextCapitalization.characters,
-                    style: F.mono(16, color: Y2.ink),
-                    decoration: InputDecoration(
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      border: InputBorder.none,
-                      hintText: 'MH __ __ ____',
-                      hintStyle: F.mono(16, color: Y2.muted),
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TextField(
+                        controller: _vehicle,
+                        textCapitalization: TextCapitalization.characters,
+                        inputFormatters: V.plateInput,
+                        style: F.mono(16, color: Y2.ink),
+                        decoration: InputDecoration(
+                          isDense: true,
+                          contentPadding: EdgeInsets.zero,
+                          border: InputBorder.none,
+                          hintText: 'MH __ __ ____',
+                          hintStyle: F.mono(16, color: Y2.muted),
+                        ),
+                      ),
+                      // Show the format hint only once a non-empty plate is invalid.
+                      FieldHint(
+                        S.t('Enter a full plate, e.g. MH12 AB 4421',
+                            'पूर्ण क्रमांक भरा, उदा. MH12 AB 4421'),
+                        show:
+                            _vehicle.text.trim().isNotEmpty && !_vehicleValid,
+                      ),
+                    ],
                   ),
                 ),
                 const SizedBox(height: 11),
@@ -212,6 +239,7 @@ class _Ui2UnmatchedScreenState extends State<Ui2UnmatchedScreen> {
               PrimaryButton2(
                 label: S.t('Log as unmatched · send to office',
                     'जुळत नसलेले म्हणून नोंदवा · ऑफिसला पाठवा'),
+                enabled: _canLog,
                 onTap: _logIt,
               ),
               const SizedBox(height: 9),

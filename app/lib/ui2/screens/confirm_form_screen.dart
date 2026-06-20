@@ -85,7 +85,7 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
   }
 
   void _addDowntime(int n) =>
-      setState(() => _downtime = (_downtime + n).clamp(0, 999));
+      setState(() => _downtime = (_downtime + n).clamp(0, 600));
 
   /// Loss % = reject / (good + reject) * 100 — auto-calculated, not a literal.
   double get _lossPct {
@@ -126,7 +126,11 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
     ));
   }
 
-  bool get _valid => _good > 0 && !(_reject > 0 && _reasonId == null);
+  // Reject can never exceed the good count — a hard block, surfaced below.
+  bool get _rejectOverGood => _reject > _good;
+
+  bool get _valid =>
+      _good > 0 && !(_reject > 0 && _reasonId == null) && _reject <= _good;
 
   /// Why the post is blocked, for the hint above the buttons (null = OK to post).
   String? get _blockReason {
@@ -135,6 +139,10 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
     }
     if (_reject > 0 && _reasonId == null) {
       return S.t('Pick a reject reason', 'नापास कारण निवडा');
+    }
+    if (_rejectOverGood) {
+      return S.t("Reject can't exceed good count",
+          'नापास संख्या चांगल्या संख्येपेक्षा जास्त असू शकत नाही');
     }
     return null;
   }
@@ -164,6 +172,8 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
   @override
   Widget build(BuildContext context) {
     final reasonMissing = _reject > 0 && _reasonId == null;
+    // The reject card also turns red when reject exceeds the good count.
+    final rejectInvalid = reasonMissing || _rejectOverGood;
     return Column(
       children: [
         const StatusBar2(),
@@ -283,6 +293,8 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                                   setState(() => _good = v.toInt()),
                               color: Y2.ink,
                               fontSize: 50,
+                              // Aligned with the stepper cap (_addGood clamps 0–9999).
+                              max: 9999,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -313,7 +325,7 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                   decoration: BoxDecoration(
                     color: Y2.card,
                     border: Border.all(
-                        color: reasonMissing ? Y2.redLine : Y2.line),
+                        color: rejectInvalid ? Y2.redLine : Y2.line),
                     borderRadius: BorderRadius.circular(13),
                   ),
                   child: Column(
@@ -360,6 +372,8 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                               }),
                               color: _reject > 0 ? Y2.red : Y2.ink,
                               fontSize: 42,
+                              // Aligned with the stepper cap (_addReject clamps 0–9999).
+                              max: 9999,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -377,7 +391,7 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                             decoration: BoxDecoration(
                               color: _f6,
                               border: Border.all(
-                                  color: reasonMissing ? Y2.redLine : Y2.line),
+                                  color: rejectInvalid ? Y2.redLine : Y2.line),
                               borderRadius: BorderRadius.circular(9),
                             ),
                             child: Row(
@@ -552,7 +566,8 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                     onChanged: (v) => setState(() => _downtime = v.toInt()),
                     color: Y2.navy,
                     fontSize: 18,
-                    max: 999,
+                    // Capped at 600 min, matching the stepper clamp.
+                    max: 600,
                     suffix: S.t(' min', ' मि'),
                   ),
                 ),

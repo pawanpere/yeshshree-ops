@@ -5,6 +5,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
@@ -30,6 +31,7 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
   static const _bChev = Color(0xFFD2DAE6);
   static const _bBanner = Color(0xFFF0B89A);
   static const _limit = 500; // allowed today, kg
+  static const _onHand = 2400; // physical stock on hand, kg
 
   PhoneNav get nav => widget.nav;
 
@@ -38,6 +40,17 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
   String? _reasonLabel; // null until the operator picks an override reason
 
   int get _over => (_qty - _limit).clamp(0, 99999);
+
+  // Per-field validity. The override only makes sense for a real qty that
+  // EXCEEDS today's limit (otherwise no override is needed) and that we can
+  // actually fulfil from on-hand stock. A reason is mandatory for the override.
+  bool get _qtyPositive => V.positive(_qty);
+  bool get _overLimit => _qty > _limit;
+  bool get _withinStock => _qty <= _onHand;
+  bool get _reasonChosen => _reasonLabel != null;
+  // Single gate for the "Ask supervisor" CTA.
+  bool get _canAsk =>
+      _qtyPositive && _overLimit && _withinStock && _reasonChosen;
 
   void _step(int d) => setState(() => _qty = (_qty + d).clamp(0, 99999));
 
@@ -73,7 +86,7 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
   }
 
   void _ask() {
-    if (_reasonLabel == null) return; // reason is required for an override
+    if (!_canAsk) return; // hard-block: qty over limit, within stock, reason set
     // Stash the pending request for the waiting / approved / done screens.
     Ui2Flow.set('issue.material', S.t('CR coil 2.5mm', 'CR कॉइल 2.5mm'));
     Ui2Flow.set('issue.qty', _qty);
@@ -93,7 +106,7 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final reasonChosen = _reasonLabel != null;
+    final reasonChosen = _reasonChosen;
     return Column(
       children: [
         const StatusBar2(),
@@ -205,7 +218,8 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
                 Row(
                   children: [
                     Expanded(
-                        child: _miniStat(S.t('In stock', 'स्टॉकमध्ये'), '2,400')),
+                        child: _miniStat(
+                            S.t('In stock', 'स्टॉकमध्ये'), _fmtKg(_onHand))),
                     const SizedBox(width: 11),
                     Expanded(
                         child:
@@ -246,6 +260,20 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
                           _stepBtn(Icons.add, true, () => _step(10)),
                         ],
                       ),
+                      // Inline guard: an override needs a qty that is BOTH over
+                      // the limit and within physical stock. Show whichever rule
+                      // is currently breached.
+                      if (!_qtyPositive)
+                        FieldHint(S.t('Enter a quantity over $_limit kg',
+                            '$_limit kg पेक्षा जास्त प्रमाण भरा'))
+                      else if (!_overLimit)
+                        FieldHint(S.t(
+                            'Not over the limit — no override needed',
+                            'मर्यादेपेक्षा जास्त नाही — ओव्हरराइड नको'))
+                      else if (!_withinStock)
+                        FieldHint(S.t(
+                            'Only $_onHand kg on hand — reduce the quantity',
+                            'फक्त $_onHand kg स्टॉकमध्ये — प्रमाण कमी करा')),
                     ],
                   ),
                 ),
@@ -377,7 +405,7 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
               PrimaryButton2(
                 label: S.t('Ask supervisor for +$_over kg',
                     'सुपरवायझरला +$_over kg विचारा'),
-                enabled: reasonChosen,
+                enabled: _canAsk,
                 onTap: _ask,
               ),
               const SizedBox(height: 9),
@@ -391,6 +419,18 @@ class _Ui2IssueOverlimitScreenState extends State<Ui2IssueOverlimitScreen> {
         ),
       ],
     );
+  }
+
+  // Thousands grouping for the stock figure (e.g. 2400 -> "2,400"), so the
+  // on-hand display stays in sync with the _onHand validation constant.
+  String _fmtKg(int v) {
+    final s = v.toString();
+    final buf = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) buf.write(',');
+      buf.write(s[i]);
+    }
+    return buf.toString();
   }
 
   Widget _miniStat(String label, String value) => Container(

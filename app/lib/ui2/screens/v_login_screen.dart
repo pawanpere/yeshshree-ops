@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/auth_state.dart';
@@ -7,6 +6,7 @@ import '../../core/strings.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/lang_toggle.dart';
 import '../widgets/polish2.dart';
@@ -31,10 +31,17 @@ class _Ui2VLoginScreenState extends ConsumerState<Ui2VLoginScreen> {
 
   String get _digits => _ctrl.text.replaceAll(RegExp(r'\D'), '');
 
+  // A valid-format Indian mobile (10 digits, starts 6–9). For the demo this is
+  // the only gate — any well-formed number may proceed to OTP, with no check
+  // against a registered-supplier list.
+  bool get _mobileValid => V.mobile(_digits);
+
   @override
   void initState() {
     super.initState();
     _focus.addListener(() => setState(() {}));
+    // Re-evaluate the CTA + inline hint on every keystroke.
+    _ctrl.addListener(() => setState(() {}));
   }
 
   @override
@@ -47,8 +54,9 @@ class _Ui2VLoginScreenState extends ConsumerState<Ui2VLoginScreen> {
   void _toggleLang() => toggleLanguage(context);
 
   Future<void> _sendCode() async {
-    if (_busy) return;
-    final phone = _digits.isEmpty ? '98XXX XXX21' : _ctrl.text.trim();
+    // Hard-block: never request an OTP for an invalid-format number.
+    if (_busy || !_mobileValid) return;
+    final phone = _digits;
     setState(() => _busy = true);
     try {
       await ref.read(authProvider.notifier).requestOtp(phone);
@@ -140,26 +148,28 @@ class _Ui2VLoginScreenState extends ConsumerState<Ui2VLoginScreen> {
                           controller: _ctrl,
                           focusNode: _focus,
                           keyboardType: TextInputType.phone,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.allow(
-                                RegExp(r'[0-9 ]')),
-                            LengthLimitingTextInputFormatter(15),
-                          ],
+                          inputFormatters: V.mobile10(),
                           style: F.mono(18, color: Y2.ink),
                           cursorColor: Y2.accent,
                           decoration: InputDecoration(
                             isDense: true,
                             border: InputBorder.none,
                             contentPadding: EdgeInsets.zero,
-                            hintText: '98XXX XXX21',
+                            hintText: '98765 43210',
                             hintStyle: F.mono(18, color: Y2.muted2),
                           ),
-                          onChanged: (_) => setState(() {}),
                         ),
                       ),
                     ],
                   ),
                 ),
+                // Inline hint only once they've typed an invalid-format number.
+                if (_digits.isNotEmpty && !_mobileValid)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: FieldHint(S.t('Enter a 10-digit mobile',
+                        '१० अंकी मोबाइल नंबर भरा')),
+                  ),
                 Padding(
                   padding: const EdgeInsets.only(top: 10),
                   child: Text(
@@ -172,7 +182,7 @@ class _Ui2VLoginScreenState extends ConsumerState<Ui2VLoginScreen> {
                 PrimaryButton2(
                   label: S.t('Send code', 'कोड पाठवा'),
                   busy: _busy,
-                  enabled: _digits.isNotEmpty,
+                  enabled: _mobileValid,
                   onTap: _sendCode,
                 ),
               ],

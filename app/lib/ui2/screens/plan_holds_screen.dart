@@ -5,6 +5,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/bits.dart';
 import '../widgets/polish2.dart';
 
@@ -53,17 +54,27 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
     setState(() => _data = res);
   }
 
-  // A controller per hold id, created on demand and reused across rebuilds.
-  TextEditingController _ctl(int id) =>
-      _orderCtl.putIfAbsent(id, () => TextEditingController());
+  // A controller per hold id, created on demand and reused across rebuilds. The
+  // listener re-evaluates the CTA + inline hint on every keystroke.
+  TextEditingController _ctl(int id) => _orderCtl.putIfAbsent(
+        id,
+        () => TextEditingController()
+          ..addListener(() {
+            if (mounted) setState(() {});
+          }),
+      );
+
+  // SAP order must be digits-only and at least 6 long before we let it resolve.
+  bool _orderValid(int id) => V.sapOrder(_ctl(id).text);
 
   Future<void> _resolve(int id) async {
     if (_resolving != null) return;
     final order = _ctl(id).text.trim();
-    if (order.isEmpty) {
+    // Hard-block: never resolve with a missing or malformed SAP order.
+    if (!_orderValid(id)) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text(S.t('Enter the SAP order number first',
-            'आधी SAP ऑर्डर क्रमांक टाका')),
+        content: Text(S.t('Enter a valid SAP order number first (6+ digits)',
+            'आधी वैध SAP ऑर्डर क्रमांक टाका (६+ अंक)')),
         behavior: SnackBarBehavior.floating,
       ));
       return;
@@ -204,11 +215,14 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
             _label(S.t('SAP ORDER NO.', 'SAP ऑर्डर क्र.')),
             _field(_ctl(id),
                 hint: '100482', enabled: !busy, onSubmit: () => _resolve(id)),
+            // Inline hint only when they've typed something that isn't valid yet.
+            if (_ctl(id).text.trim().isNotEmpty && !_orderValid(id))
+              FieldHint(S.t('6+ digit SAP order', '६+ अंकी SAP ऑर्डर')),
             const SizedBox(height: 10),
             PrimaryButton2(
               label: S.t('Resolve with SAP order', 'SAP ऑर्डरने सोडवा'),
               busy: busy,
-              enabled: !busy,
+              enabled: !busy && _orderValid(id),
               onTap: () => _resolve(id),
             ),
           ] else
@@ -245,7 +259,8 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
           child: TextField(
             controller: c,
             enabled: enabled,
-            onChanged: (_) => setState(() {}),
+            inputFormatters: V.digitsOnly,
+            keyboardType: TextInputType.number,
             onSubmitted: (_) => onSubmit?.call(),
             textInputAction: TextInputAction.done,
             style: F.mono(15, color: Y2.ink),

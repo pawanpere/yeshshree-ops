@@ -5,6 +5,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/bits.dart';
 import '../widgets/polish2.dart';
 
@@ -46,8 +47,19 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
   @override
   void initState() {
     super.initState();
+    // Re-evaluate the Register CTA + inline hints on every keystroke.
+    for (final c in [_deviceKey, _label]) {
+      c.addListener(() => setState(() {}));
+    }
     _load();
   }
+
+  // The device key must be a valid lowercase slug, the label a real (≥3-char,
+  // contains a letter) string, and a station must be picked — so Register stays
+  // hard-blocked until all three hold.
+  bool get _keyValid => V.deviceKey(_deviceKey.text);
+  bool get _labelValid => V.freeText(_label.text);
+  bool get _canRegister => _keyValid && _labelValid && _station != null;
 
   @override
   void dispose() {
@@ -85,14 +97,11 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
   // ------------------------------------------------------------- mutations ---
 
   Future<void> _register() async {
+    final station = _station;
+    // Hard-block: the disabled button already prevents this, but re-guard.
+    if (_saving || !_canRegister || station == null) return;
     final key = _deviceKey.text.trim();
     final label = _label.text.trim();
-    final station = _station;
-    if (_saving || key.isEmpty || label.isEmpty || station == null) {
-      _toast(S.t('Fill device key, label and station',
-          'डिव्हाइस की, लेबल आणि स्टेशन भरा'));
-      return;
-    }
     setState(() => _saving = true);
     final res = await Data.mutate('/master/station-devices', {
       'device_key': key,
@@ -318,12 +327,22 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
         _textField(_deviceKey,
             hint: S.t('e.g. gate-kiosk-1', 'उदा. gate-kiosk-1'),
             mono: true,
-            autofocus: true),
+            autofocus: true,
+            formatters: V.slugInput),
+        FieldHint(
+          S.t('3–64 chars: a–z, 0–9, single hyphens',
+              '3–64 अक्षरे: a–z, 0–9, एकल हायफन'),
+          show: _deviceKey.text.trim().isNotEmpty && !_keyValid,
+        ),
         const SizedBox(height: 14),
         _fieldLabel(S.t('Label', 'लेबल')),
         const SizedBox(height: 6),
         _textField(_label,
             hint: S.t('e.g. Gate scanner kiosk', 'उदा. गेट स्कॅनर कियोस्क')),
+        FieldHint(
+          S.t('At least 3 characters', 'किमान 3 अक्षरे'),
+          show: _label.text.trim().isNotEmpty && !_labelValid,
+        ),
         const SizedBox(height: 14),
         _fieldLabel(S.t('Station', 'स्टेशन')),
         const SizedBox(height: 8),
@@ -338,6 +357,7 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
         PrimaryButton2(
           label: S.t('Register device', 'उपकरण नोंदवा'),
           busy: _saving,
+          enabled: _canRegister,
           onTap: _register,
         ),
         const SizedBox(height: 10),
@@ -353,10 +373,14 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
       style: F.hind(12, w: FontWeight.w600, ls: 0.2, color: Y2.body));
 
   Widget _textField(TextEditingController c,
-      {String? hint, bool mono = false, bool autofocus = false}) {
+      {String? hint,
+      bool mono = false,
+      bool autofocus = false,
+      List<TextInputFormatter>? formatters}) {
     return TextField(
       controller: c,
       autofocus: autofocus,
+      inputFormatters: formatters,
       style: mono
           ? F.mono(14, color: Y2.ink)
           : F.hind(14, color: Y2.ink),

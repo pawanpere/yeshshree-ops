@@ -6,6 +6,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
@@ -27,6 +28,9 @@ class Ui2IssueFormScreen extends ConsumerStatefulWidget {
 
 class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
   static const _limit = 500; // allowed today, kg
+  // Hard physical ceiling: the "In stock" figure shown below ('2,400' kg). You
+  // can never issue more than exists, so qty is capped here even above _limit.
+  static const _stockCap = 2400; // in stock, kg
 
   PhoneNav get nav => widget.nav;
 
@@ -43,7 +47,16 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
 
   bool _busy = false;
 
-  void _step(int d) => setState(() => _qty = (_qty + d).clamp(0, 99999));
+  void _step(int d) => setState(() => _qty = (_qty + d).clamp(0, _stockCap));
+
+  // Per-field validity (mirrors offline_gate_screen.dart style).
+  // Qty must be a real amount and never exceed what's physically in stock.
+  bool get _qtyValid => _qty > 0 && _qty <= _stockCap;
+  bool get _qtyOverStock => _qty > _stockCap;
+  // A material must be explicitly chosen — the prefilled default has no real id.
+  bool get _materialValid => _materialId != null;
+  // Single CTA gate: qty>0 && qty<=stockCap && _materialId!=null.
+  bool get _canIssue => _qtyValid && _materialValid;
 
   Future<void> _pickMaterial() async {
     // Show the sheet immediately with a spinner while the read resolves.
@@ -111,6 +124,17 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
     if (_busy) return;
     if (_qty <= 0) {
       _snack(S.t('Enter a quantity first', 'आधी प्रमाण भरा'));
+      return;
+    }
+    if (_qtyOverStock) {
+      // Hard-block: cannot issue more than what is in stock.
+      _snack(S.t('Quantity exceeds stock ($_stockCap kg)',
+          'प्रमाण स्टॉकपेक्षा जास्त आहे ($_stockCap kg)'));
+      return;
+    }
+    if (!_materialValid) {
+      // No real material chosen yet — must pick one before issuing.
+      _snack(S.t('Choose a material first', 'आधी माल निवडा'));
       return;
     }
     if (_qty > _limit) {
@@ -287,9 +311,12 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
                           Expanded(
                             child: QtyField2(
                               value: _qty,
+                              max: _stockCap,
                               onChanged: (v) =>
                                   setState(() => _qty = v.toInt()),
-                              color: _qty > _limit ? Y2.orange : Y2.ink,
+                              color: _qtyOverStock
+                                  ? Y2.red
+                                  : (_qty > _limit ? Y2.orange : Y2.ink),
                               fontSize: 46,
                             ),
                           ),
@@ -298,6 +325,10 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
                               accent: true, onTap: () => _step(10)),
                         ],
                       ),
+                      // Inline hint when qty exceeds what's in stock.
+                      if (_qtyOverStock)
+                        FieldHint(S.t('Only $_stockCap kg in stock',
+                            'फक्त $_stockCap kg स्टॉकमध्ये')),
                     ],
                   ),
                 ),
@@ -317,6 +348,9 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
                 ? S.t('Ask supervisor', 'सुपरवायझरला विचारा')
                 : S.t('Issue $_qty kg', '$_qty kg जारी करा'),
             busy: _busy,
+            // Gate: qty>0 && qty<=stockCap && _materialId!=null. (Over the
+            // allowed limit but within stock stays enabled → supervisor flow.)
+            enabled: _canIssue,
             onTap: _issue,
           ),
         ),

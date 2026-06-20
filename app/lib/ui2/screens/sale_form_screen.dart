@@ -7,6 +7,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/picker2.dart';
@@ -30,29 +31,41 @@ class Ui2SaleFormScreen extends ConsumerStatefulWidget {
 class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
   PhoneNav get nav => widget.nav;
 
-  // Selected customer.
-  String _customer = 'Sunrise Metals';
-  // Selected material + quantity.
-  String _material = 'MS turnings';
-  double _qty = 1250;
+  // Selected customer — null until the operator actually picks one (the picker
+  // returns a real customer name; no silent default carries through to billing).
+  String? _customer;
+  // Selected material + quantity — null until picked.
+  String? _material;
+  double _qty = 0;
   // Editable rate (₹ / kg).
-  final _rateCtl = TextEditingController(text: '32.00');
+  final _rateCtl = TextEditingController();
   final _rateFocus = FocusNode();
-  double _rate = 32.00;
 
   bool _submitting = false;
+
+  // Live-parsed rate. Empty / non-numeric reads as 0 so a cleared box can never
+  // bill at a stale rate — _rateValid then gates the CTA.
+  double get _rate => double.tryParse(_rateCtl.text.trim()) ?? 0;
 
   double get _amount => _rate * _qty;
   double get _gst => _amount * 0.18;
   double get _total => _amount + _gst;
 
+  // ----- validation -----
+  // Rate must be a real /kg price: > 0 and within a realistic ceiling (≤ 1000).
+  bool get _rateValid => V.positive(_rate) && _rate <= 1000;
+  bool get _qtyValid => V.positive(_qty);
+  bool get _customerValid => _customer != null;
+  bool get _materialValid => _material != null;
+  bool get _canInvoice =>
+      _rateValid && _qtyValid && _customerValid && _materialValid;
+
   @override
   void initState() {
     super.initState();
-    _rateCtl.addListener(() {
-      final v = double.tryParse(_rateCtl.text.trim());
-      if (v != null && v != _rate) setState(() => _rate = v);
-    });
+    // Re-evaluate the amount/GST/total, the CTA and the rate hint on every
+    // keystroke (the rate is derived live from the controller text).
+    _rateCtl.addListener(() => setState(() {}));
     _rateFocus.addListener(() {
       if (_rateFocus.hasFocus) {
         // Select-all on focus for fast re-typing of the rate.
@@ -110,7 +123,12 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
       title: S.t('Material', 'माल'),
       options: options,
       onPick: (desc) {
-        setState(() => _material = desc);
+        setState(() {
+          _material = desc;
+          // The picker carries only the description; seed a real, positive
+          // demo quantity so the line is billable once a material is chosen.
+          if (!_qtyValid) _qty = 1250;
+        });
         nav.hideOverlay();
       },
     ));
@@ -119,7 +137,7 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
   // ------------------------------------------------------------ submit ---
 
   Future<void> _submit() async {
-    if (_submitting) return;
+    if (_submitting || !_canInvoice) return;
     setState(() => _submitting = true);
     final res = await Data.submit(
       ref,
@@ -131,7 +149,7 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
         'total_value': _total.toStringAsFixed(2),
         'lines': <dynamic>[],
       },
-      label: '${S.t('Invoice', 'बीजक')} $_customer',
+      label: '${S.t('Invoice', 'बीजक')} ${_customer!}',
     );
     if (!mounted) return;
     // On failure still proceed for the demo, but surface the error.
@@ -142,9 +160,10 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
         behavior: SnackBarBehavior.floating,
       ));
     }
-    // Stash the submitted values for the result screen.
-    Ui2Flow.set('sale.customer', _customer);
-    Ui2Flow.set('sale.material', _material);
+    // Stash the submitted values for the result screen. _canInvoice guarantees
+    // customer/material are non-null here.
+    Ui2Flow.set('sale.customer', _customer!);
+    Ui2Flow.set('sale.material', _material!);
     Ui2Flow.set('sale.qty', _qty);
     Ui2Flow.set('sale.rate', _rate.toStringAsFixed(2));
     Ui2Flow.set('sale.amount', _total.toStringAsFixed(2));
@@ -190,9 +209,14 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Expanded(
-                          child: Text(_customer,
+                          child: Text(
+                              _customer ??
+                                  S.t('Select customer…', 'ग्राहक निवडा…'),
                               style: F.hind(15,
-                                  w: FontWeight.w600, color: Y2.ink)),
+                                  w: FontWeight.w600,
+                                  color: _customer == null
+                                      ? Y2.muted
+                                      : Y2.ink)),
                         ),
                         const Icon(I2.chevronDown, size: 20, color: Y2.muted),
                       ],
@@ -229,17 +253,26 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
                           textBaseline: TextBaseline.alphabetic,
                           children: [
                             Expanded(
-                              child: Text(_material,
+                              child: Text(
+                                  _material ??
+                                      S.t('Select material…', 'माल निवडा…'),
                                   style: F.hind(15,
-                                      w: FontWeight.w600, color: Y2.ink)),
+                                      w: FontWeight.w600,
+                                      color: _material == null
+                                          ? Y2.muted
+                                          : Y2.ink)),
                             ),
-                            const SizedBox(width: 7),
-                            Text(_qty.toStringAsFixed(0),
-                                style: F.mono(16, color: Y2.ink)),
-                            const SizedBox(width: 7),
-                            Text('kg',
-                                style: F.hind(12,
-                                    w: FontWeight.w400, color: Y2.muted)),
+                            // Quantity only reads once a material (with its qty)
+                            // is actually picked.
+                            if (_material != null) ...[
+                              const SizedBox(width: 7),
+                              Text(_qty.toStringAsFixed(0),
+                                  style: F.mono(16, color: Y2.ink)),
+                              const SizedBox(width: 7),
+                              Text('kg',
+                                  style: F.hind(12,
+                                      w: FontWeight.w400, color: Y2.muted)),
+                            ],
                           ],
                         ),
                       ],
@@ -302,6 +335,7 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
                 : S.t('Confirm sale & raise invoice',
                     'विक्री निश्चित करा व बीजक काढा'),
             busy: _submitting,
+            enabled: _canInvoice,
             onTap: _submit,
           ),
         ),
@@ -347,12 +381,24 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
   // an edit pencil + accent border/underline on focus, select-all on focus.
   Widget _rateField() {
     final focused = _rateFocus.hasFocus;
+    // Hint when the rate is missing/zero, or above the realistic ₹1000/kg cap.
+    final empty = _rateCtl.text.trim().isEmpty;
+    final hint = !_rateValid
+        ? (empty || _rate <= 0
+            ? S.t('Enter a rate above ₹0', '₹0 पेक्षा जास्त दर भरा')
+            : S.t('Rate looks too high (max ₹1000/kg)',
+                'दर खूप जास्त वाटतो (कमाल ₹1000/kg)'))
+        : null;
     return Container(
       padding: const EdgeInsets.fromLTRB(13, 10, 13, 10),
       decoration: BoxDecoration(
         color: Y2.card,
+        // Red hairline when the rate is invalid, matching the gate form's signal.
         border: Border.all(
-            color: focused ? Y2.accent : Y2.line, width: focused ? 1.5 : 1),
+            color: hint != null
+                ? Y2.red
+                : (focused ? Y2.accent : Y2.line),
+            width: focused ? 1.5 : 1),
         borderRadius: BorderRadius.circular(11),
       ),
       child: Column(
@@ -380,6 +426,7 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
                       const TextInputType.numberWithOptions(decimal: true),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(RegExp(r'[0-9.]')),
+                    _TwoDecimalFormatter(),
                   ],
                   cursorColor: Y2.accent,
                   style: F.mono(18, color: Y2.ink),
@@ -392,6 +439,7 @@ class _Ui2SaleFormScreenState extends ConsumerState<Ui2SaleFormScreen> {
               ),
             ],
           ),
+          if (hint != null) FieldHint(hint),
         ],
       ),
     );
@@ -449,5 +497,20 @@ class _PickerLoading2 extends StatelessWidget {
         ],
       ),
     );
+  }
+}
+
+/// Keeps the rate field to a money shape: at most one dot and ≤2 decimals.
+/// Pairs with the `allow([0-9.])` filter — that strips other characters; this
+/// rejects a second dot and any third decimal digit, so "32.005" can't be typed.
+class _TwoDecimalFormatter extends TextInputFormatter {
+  static final _ok = RegExp(r'^\d*\.?\d{0,2}$');
+
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue prev, TextEditingValue next) {
+    final t = next.text;
+    if (t.isEmpty || _ok.hasMatch(t)) return next;
+    return prev; // reject the keystroke, keep the prior valid value
   }
 }

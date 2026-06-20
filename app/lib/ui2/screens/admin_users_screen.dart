@@ -5,6 +5,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
 import '../tokens.dart';
+import '../validators.dart';
 import '../widgets/bits.dart';
 import '../widgets/polish2.dart';
 
@@ -54,6 +55,10 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
   @override
   void initState() {
     super.initState();
+    // Re-evaluate the CTA + inline hints on every keystroke in any field.
+    for (final c in [_username, _fullName, _password, _pin]) {
+      c.addListener(() => setState(() {}));
+    }
     _load();
   }
 
@@ -99,10 +104,21 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
     await _load();
   }
 
+  // Per-field validity. USERNAME: strict slug (V.username). FULL NAME: a real
+  // name (≥3 chars + a letter). PASSWORD: ≥6 chars, not all-whitespace — stored
+  // untrimmed. PIN: OPTIONAL — valid when empty, else exactly 4 non-trivial
+  // digits. ROLE is required (chip selection, no inline hint).
+  bool get _usernameValid => V.username(_username.text);
+  bool get _fullNameValid => V.name(_fullName.text);
+  bool get _passwordValid => V.password(_password.text);
+  bool get _pinValid =>
+      _pin.text.trim().isEmpty || V.pin(_pin.text);
+
   bool get _canCreate =>
-      _username.text.trim().isNotEmpty &&
-      _fullName.text.trim().isNotEmpty &&
-      _password.text.isNotEmpty &&
+      _usernameValid &&
+      _fullNameValid &&
+      _passwordValid &&
+      _pinValid &&
       _role.isNotEmpty;
 
   Future<void> _create() async {
@@ -378,14 +394,30 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
             style: F.hind(12, color: Y2.muted)),
         const SizedBox(height: 18),
         _label(S.t('USERNAME', 'वापरकर्तानाव')),
-        _field(_username, hint: 'gate1'),
+        _field(_username,
+            hint: 'gate1',
+            formatters: V.usernameInput,
+            // Show the rule only once they've typed something invalid.
+            error: _username.text.trim().isNotEmpty && !_usernameValid
+                ? S.t('3–32 chars: a–z, 0–9, dot or underscore',
+                    '३–३२ अक्षरे: a–z, 0–9, बिंदू किंवा अंडरस्कोर')
+                : null),
         const SizedBox(height: 14),
         _label(S.t('FULL NAME', 'पूर्ण नाव')),
-        _field(_fullName, hint: S.t('Ravi (Gate)', 'रवी (गेट)')),
+        _field(_fullName,
+            hint: S.t('Ravi (Gate)', 'रवी (गेट)'),
+            error: _fullName.text.trim().isNotEmpty && !_fullNameValid
+                ? S.t('Enter the full name (min 3 letters)',
+                    'पूर्ण नाव भरा (किमान ३ अक्षरे)')
+                : null),
         const SizedBox(height: 14),
         _label(S.t('PASSWORD', 'पासवर्ड')),
         _field(_password,
             obscure: _obscure,
+            error: _password.text.isNotEmpty && !_passwordValid
+                ? S.t('At least 6 characters',
+                    'किमान ६ वर्ण')
+                : null,
             trailing: GestureDetector(
               onTap: () => setState(() => _obscure = !_obscure),
               child: Icon(
@@ -400,7 +432,11 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
         _field(_pin,
             hint: '1234',
             keyboard: TextInputType.number,
-            formatters: [FilteringTextInputFormatter.digitsOnly]),
+            formatters: V.pin4(),
+            error: _pin.text.trim().isNotEmpty && !_pinValid
+                ? S.t('4 digits, not an easy sequence',
+                    '४ अंक, सोपा क्रम नको')
+                : null),
         const SizedBox(height: 18),
         _label(S.t('ROLE', 'भूमिका')),
         Wrap(
@@ -477,36 +513,44 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
           bool obscure = false,
           Widget? trailing,
           TextInputType? keyboard,
-          List<TextInputFormatter>? formatters}) =>
-      Container(
-        decoration: BoxDecoration(
-          color: Y2.card,
-          border: Border.all(color: Y2.line),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 13),
-        child: Row(
-          children: [
-            Expanded(
-              child: TextField(
-                controller: c,
-                obscureText: obscure,
-                keyboardType: keyboard,
-                inputFormatters: formatters,
-                onChanged: (_) => setState(() {}),
-                style: F.hind(15, color: Y2.ink),
-                cursorColor: Y2.accent,
-                decoration: InputDecoration(
-                  hintText: hint,
-                  hintStyle: F.hind(15, color: Y2.muted2),
-                  border: InputBorder.none,
-                  isDense: true,
-                  contentPadding: const EdgeInsets.symmetric(vertical: 13),
-                ),
-              ),
+          List<TextInputFormatter>? formatters,
+          String? error}) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: Y2.card,
+              // Red hairline when the field is filled-but-invalid.
+              border: Border.all(color: error != null ? Y2.red : Y2.line),
+              borderRadius: BorderRadius.circular(10),
             ),
-            if (trailing != null) trailing,
-          ],
-        ),
+            padding: const EdgeInsets.symmetric(horizontal: 13),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: c,
+                    obscureText: obscure,
+                    keyboardType: keyboard,
+                    inputFormatters: formatters,
+                    onChanged: (_) => setState(() {}),
+                    style: F.hind(15, color: Y2.ink),
+                    cursorColor: Y2.accent,
+                    decoration: InputDecoration(
+                      hintText: hint,
+                      hintStyle: F.hind(15, color: Y2.muted2),
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 13),
+                    ),
+                  ),
+                ),
+                if (trailing != null) trailing,
+              ],
+            ),
+          ),
+          if (error != null) FieldHint(error),
+        ],
       );
 }
