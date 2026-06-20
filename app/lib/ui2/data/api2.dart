@@ -355,9 +355,12 @@ class Data {
     {'sap_code': 'V-2', 'name': 'Bharat Forge'},
   ];
   static const demoGateArrivals = <Json>[
-    {'vehicle': 'MH12 AB 4421', 'supplier': 'Sandhar Steel', 'eta': '11:00', 'status': 'new'},
-    {'vehicle': 'MH14 CD 9032', 'supplier': 'Bharat Forge', 'eta': '11:30', 'status': 'new'},
+    {'vehicle': 'MH12 AB 4421', 'supplier': 'Tata Steel BSL', 'eta': '11:00', 'status': 'new'},
+    {'vehicle': 'MH14 CD 9032', 'supplier': 'Mahalaxmi Components', 'eta': '11:20', 'status': 'new'},
     {'vehicle': 'MH09 KL 2210', 'supplier': '—', 'eta': '—', 'status': 'unmatched'},
+    {'vehicle': 'MH04 GT 7788', 'supplier': 'Sandhar Steel', 'eta': '11:45', 'status': 'new'},
+    {'vehicle': 'MH12 ZX 1190', 'supplier': 'Precision Fasteners', 'eta': '12:10', 'status': 'new'},
+    {'vehicle': 'MH02 BR 5521', 'supplier': 'Bharat Forge', 'eta': '—', 'status': 'done'},
   ];
   // Shape mirrors enriched ConfirmationRead (+ material_name) so the live and demo
   // code paths in the history screen are identical. posted_at is ISO; the screen
@@ -429,31 +432,35 @@ class Data {
         'rejection_spike_factor': 2.0, 'plan_exceed_pct': 20}},
     {'key': 'debit_note', 'value': {'multiplier': 5}},
   ];
-  // Vendor portal demos.
+  // Vendor portal demos — a COMPONENT supplier (fasteners/brackets), not RM steel.
   static const demoVendorOrders = <Json>[
-    {'id': 1, 'sap_po_no': '520000845', 'item_no': 1, 'material_id': 1,
-     'material': 'CR coil 2.5mm', 'ordered_qty': '56000', 'open_qty': '28172',
-     'rate': '63', 'uom': 'KG', 'due_date': '2026-06-25', 'status': 'open'},
-    {'id': 2, 'sap_po_no': '520000846', 'item_no': 1, 'material_id': 2,
-     'material': 'CR coil 3.0mm', 'ordered_qty': '40000', 'open_qty': '0',
-     'rate': '64', 'uom': 'KG', 'due_date': '2026-06-18', 'status': 'open'},
+    {'id': 1, 'sap_po_no': '520000845', 'item_no': 1, 'material_id': 30,
+     'material': 'Fasteners M8 hex', 'ordered_qty': '50000', 'open_qty': '24000',
+     'rate': '12', 'uom': 'EA', 'due_date': '2026-06-25', 'status': 'open'},
+    {'id': 2, 'sap_po_no': '520000846', 'item_no': 1, 'material_id': 31,
+     'material': 'Mounting bracket 7782', 'ordered_qty': '8000', 'open_qty': '0',
+     'rate': '46', 'uom': 'EA', 'due_date': '2026-06-18', 'status': 'open'},
+    {'id': 3, 'sap_po_no': '520000851', 'item_no': 1, 'material_id': 32,
+     'material': 'Spacer clip 12mm', 'ordered_qty': '20000', 'open_qty': '15400',
+     'rate': '4', 'uom': 'EA', 'due_date': '2026-07-02', 'status': 'open'},
   ];
   static const demoVendorCalloffs = <Json>[
-    {'id': 1, 'material_id': 1, 'material': 'CR coil 2.5mm', 'calloff_date': '2026-06-22',
-     'qty': '8000', 'status': 'open'},
-    {'id': 2, 'material_id': 1, 'material': 'CR coil 2.5mm', 'calloff_date': '2026-06-29',
-     'qty': '8000', 'status': 'planned'},
+    {'id': 1, 'material_id': 30, 'material': 'Fasteners M8 hex', 'calloff_date': '2026-06-22',
+     'qty': '6000', 'status': 'open'},
+    {'id': 2, 'material_id': 32, 'material': 'Spacer clip 12mm', 'calloff_date': '2026-06-29',
+     'qty': '5000', 'status': 'planned'},
   ];
   static const demoVendorExposure = <String, dynamic>{
-    'vendor_id': 1, 'credit_exposure': '315000', 'qty_mt': '5',
-    'credit_limit': '9900000', 'qty_limit_mt': '999',
+    'vendor_id': 1, 'credit_exposure': '288000', 'qty_mt': '0',
+    'credit_limit': '2500000', 'qty_limit_mt': '0',
   };
   static const demoVendorDebitNotes = <Json>[
-    {'id': 1, 'doc_no': 'DN-2261', 'kind': 'shortage_5x', 'base_amount': '12600',
-     'amount': '63000', 'status': 'draft'},
+    {'id': 1, 'doc_no': 'DN-2261', 'kind': 'shortage_5x', 'base_amount': '8400',
+     'amount': '42000', 'status': 'draft'},
   ];
   static const demoVendorStock = <Json>[
-    {'material_id': 1, 'material': 'CR coil 2.5mm', 'qty': '5000', 'uom': 'KG'},
+    {'material_id': 30, 'material': 'Fasteners M8 hex', 'qty': '24000', 'uom': 'EA'},
+    {'material_id': 32, 'material': 'Spacer clip 12mm', 'qty': '9600', 'uom': 'EA'},
   ];
   // Admin: demo users + station devices (mirror UserRead / StationDeviceRead).
   static const demoUsers = <Json>[

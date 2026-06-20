@@ -25,6 +25,12 @@ class Ui2DemoApp extends StatelessWidget {
       title: 'Yeshshree Ops',
       debugShowCheckedModeBanner: false,
       theme: theme2(),
+      // Wrap everything in a transparent Material so Text never paints the
+      // "missing Material ancestor" yellow underline (our shells are bare
+      // Containers/Columns, not Scaffolds). Transparency keeps each screen's
+      // own background.
+      builder: (context, child) =>
+          Material(type: MaterialType.transparency, child: child),
       home: const _Entry(),
     );
   }

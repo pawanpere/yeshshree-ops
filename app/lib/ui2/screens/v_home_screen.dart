@@ -42,7 +42,7 @@ class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('SANDHAR STEEL',
+                    Text('MAHALAXMI COMPONENTS',
                         style: F.khand(19, ls: 0.3, height: 1, color: Y2.ink),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -53,8 +53,8 @@ class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
                         children: [
                           Flexible(
                             child: Text(
-                                S.t('Vendor portal · Yeshshree',
-                                    'विक्रेता पोर्टल · येशश्री'),
+                                S.t('Component supplier · Yeshshree',
+                                    'घटक पुरवठादार · येशश्री'),
                                 style: F.hind(11, color: Y2.muted),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis),
@@ -104,32 +104,34 @@ class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
                 _alert(),
                 const SizedBox(height: 11),
                 Row(children: [
-                  Expanded(child: _stat('6', null, S.t('open orders', 'खुल्या ऑर्डर'))),
+                  Expanded(child: _stat('3', null, S.t('open orders', 'खुल्या ऑर्डर'))),
                   const SizedBox(width: 11),
                   Expanded(child: _due()),
                 ]),
                 const SizedBox(height: 11),
+                // Tiles SWITCH tabs (not push), so the bottom nav stays in sync and
+                // the tab bar is the way back. Vendor tabs: Home0 Alerts1 Stock2
+                // Orders3 Money4.
                 _navRow(
                     I2.invoice,
                     S.t('My orders & call-offs', 'माझ्या ऑर्डर व कॉल-ऑफ'),
-                    () => nav.go(ScreenId.vAlert)),
+                    () => nav.tab(3)),
                 const SizedBox(height: 11),
                 _navRow(I2.store, S.t('Stock & cover', 'स्टॉक व कव्हर'),
-                    () => nav.go(ScreenId.vStock)),
+                    () => nav.tab(2)),
                 const SizedBox(height: 11),
                 _payments(),
               ],
             ),
           ),
         ),
-        // ---- Vendor bottom nav (Home / Orders / Stock / Money) ----
-        _vendorTabs(),
+        // Bottom nav is owned by the role shell (RoleTabBar) — no embedded one here.
       ],
     );
   }
 
   Widget _alert() => Pressable2(
-        onTap: () => nav.go(ScreenId.vAlert),
+        onTap: () => nav.tab(1),
         child: Container(
           padding: const EdgeInsets.fromLTRB(14, 13, 14, 13),
           decoration: BoxDecoration(
@@ -205,7 +207,7 @@ class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
                 crossAxisAlignment: CrossAxisAlignment.baseline,
                 textBaseline: TextBaseline.alphabetic,
                 children: [
-                  Text('₹8.4', style: F.mono(30, height: 0.8, color: Y2.ink)),
+                  Text('₹2.9', style: F.mono(30, height: 0.8, color: Y2.ink)),
                   Text('L', style: F.mono(16, color: Y2.muted)),
                 ],
               ),
@@ -242,73 +244,25 @@ class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
         ),
       );
 
-  Widget _payments() => Container(
-        padding: const EdgeInsets.all(13),
-        decoration: BoxDecoration(
-          color: Y2.card,
-          border: Border.all(color: Y2.line),
-          borderRadius: BorderRadius.circular(11),
-        ),
-        child: Row(
-          children: [
-            const Icon(I2.invoice, size: 20, color: Y2.muted),
-            const SizedBox(width: 11),
-            Expanded(
-              child: Text(S.t('Payments', 'पेमेंट्स'),
-                  style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-              decoration: BoxDecoration(
-                color: Y2.orangeTint,
-                borderRadius: BorderRadius.circular(5),
+  Widget _payments() => Pressable2(
+        onTap: () => nav.tab(4),
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: Y2.card,
+            border: Border.all(color: Y2.line),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.payments_outlined, size: 20, color: Y2.muted),
+              const SizedBox(width: 11),
+              Expanded(
+                child: Text(S.t('Payments & debit notes', 'पेमेंट्स व डेबिट नोट'),
+                    style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
               ),
-              child: Text(S.t('coming later', 'नंतर येणार'),
-                  style: F.hind(10, w: FontWeight.w600, color: Y2.orange)),
-            ),
-          ],
-        ),
-      );
-
-  Widget _vendorTabs() => Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Y2.line)),
-        ),
-        padding: const EdgeInsets.fromLTRB(0, 9, 0, 20),
-        child: Row(
-          children: [
-            _vTab(I2.homeActive, S.t('Home', 'मुख्य'), active: true),
-            _vTab(I2.invoice, S.t('Orders', 'ऑर्डर'),
-                onTap: () => nav.go(ScreenId.vAlert)),
-            _vTab(I2.store, S.t('Stock', 'स्टॉक'),
-                onTap: () => nav.go(ScreenId.vStock)),
-            _vTab(Icons.payments_outlined, S.t('Money', 'पैसे')),
-          ],
-        ),
-      );
-
-  Widget _vTab(IconData icon, String label,
-          {bool active = false, VoidCallback? onTap}) =>
-      Expanded(
-        child: Pressable2(
-          haptic: false,
-          onTap: onTap,
-          child: SizedBox(
-            height: 48,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon,
-                    size: 22, color: active ? Y2.accent : Y2.muted),
-                const SizedBox(height: 3),
-                Text(label,
-                    style: F.hind(9,
-                        w: FontWeight.w600,
-                        color: active ? Y2.accent : Y2.muted)),
-              ],
-            ),
+              const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            ],
           ),
         ),
       );

@@ -37,6 +37,41 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
   int _downtime = 0;
   int? _reasonId;
   String? _reasonLabel;
+  // What's being produced — picked from a searchable material list.
+  int _materialId = 180;
+  String _materialLabel = 'Front fork 4521';
+
+  Future<void> _pickMaterial() async {
+    nav.overlay(const _PickerLoading());
+    final res = await Data.materials();
+    if (!mounted) return;
+    final options = [
+      for (final m in res.data)
+        Picker2Option<int?>(
+          '${m['description'] ?? m['sap_code'] ?? 'Material'}',
+          (m['id'] as num?)?.toInt(),
+          sub: '${m['sap_code'] ?? ''}'
+              '${m['category'] != null ? ' · ${m['category']}' : ''}',
+        ),
+    ];
+    if (options.isEmpty) {
+      nav.overlay(_PickerEmpty(onClose: nav.hideOverlay));
+      return;
+    }
+    nav.overlay(SearchPicker2Sheet<int?>(
+      title: S.t('What is being produced?', 'काय उत्पादित होत आहे?'),
+      hint: S.t('Search material…', 'सामग्री शोधा…'),
+      options: options,
+      onPick: (id) {
+        final picked = options.firstWhere((o) => o.value == id);
+        setState(() {
+          if (id != null) _materialId = id;
+          _materialLabel = picked.label;
+        });
+        nav.hideOverlay();
+      },
+    ));
+  }
 
   void _addGood(int n) => setState(() => _good = (_good + n).clamp(0, 9999));
   void _addReject(int n) {
@@ -93,7 +128,18 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
 
   bool get _valid => _good > 0 && !(_reject > 0 && _reasonId == null);
 
-  void _submit() {
+  /// Why the post is blocked, for the hint above the buttons (null = OK to post).
+  String? get _blockReason {
+    if (_good <= 0) {
+      return S.t('Enter a good count to post', 'पोस्ट करण्यासाठी चांगली संख्या भरा');
+    }
+    if (_reject > 0 && _reasonId == null) {
+      return S.t('Pick a reject reason', 'नापास कारण निवडा');
+    }
+    return null;
+  }
+
+  void _submit({bool interim = false}) {
     if (!_valid) return; // the button is visibly disabled when invalid
     // Stash the request for the syncing screen to POST, + values for the result.
     Ui2Flow.set('confirm.good', _good);
@@ -104,13 +150,14 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
       'client_ref': Data.newRef(),
       'line_id': 1,
       'shift': 'B',
-      'material_id': 180,
       'good_qty': '$_good',
       'rejected_qty': '$_reject',
       'reject_reason_id': _reject > 0 ? _reasonId : null,
       'downtime_min': _downtime,
-      'kind': 'shift_close',
+      'material_id': _materialId,
+      'kind': interim ? 'interim' : 'shift_close',
     });
+    Ui2Flow.set('confirm.material', _materialLabel);
     nav.replace(ScreenId.confirmSyncing);
   }
 
@@ -165,6 +212,49 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                       plan: _plan,
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                // What's being produced — searchable picker.
+                Pressable2(
+                  onTap: _pickMaterial,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 15, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Y2.card,
+                      border: Border.all(color: Y2.line),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(I2.factory, size: 18, color: Y2.muted),
+                        const SizedBox(width: 11),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(S.t('PRODUCING', 'उत्पादन'),
+                                  style: F.hind(10,
+                                      w: FontWeight.w600,
+                                      ls: 0.5,
+                                      color: Y2.muted)),
+                              const SizedBox(height: 1),
+                              Text(_materialLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: F.hind(15,
+                                      w: FontWeight.w600, color: Y2.ink)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(S.t('Change', 'बदला'),
+                            style:
+                                F.hind(12, w: FontWeight.w600, color: Y2.accent)),
+                        const Icon(I2.chevronRight, size: 16, color: Y2.accent),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 // GOOD count card.
@@ -358,13 +448,31 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                   ),
                 ),
               ),
+              // Tell the operator WHY posting is blocked, so the disabled button
+              // never reads as "broken".
+              if (_blockReason != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 9),
+                  child: Row(
+                    children: [
+                      const Icon(I2.warning, size: 14, color: Y2.orange),
+                      const SizedBox(width: 6),
+                      Flexible(
+                        child: Text(_blockReason!,
+                            style: F.hind(12,
+                                w: FontWeight.w600, color: Y2.orange)),
+                      ),
+                    ],
+                  ),
+                ),
               Row(
                 children: [
                   Expanded(
                     flex: 10,
+                    // Posts an INTERIM confirmation (mid-shift); same validity gate.
                     child: OutlineButton2(
                       label: S.t('Save interim', 'तात्पुरते जतन'),
-                      onTap: nav.pop,
+                      onTap: _valid ? () => _submit(interim: true) : null,
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -375,7 +483,7 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                     child: PrimaryButton2(
                       label: S.t('Close shift', 'पाळी संपवा'),
                       enabled: _valid,
-                      onTap: _submit,
+                      onTap: () => _submit(interim: false),
                     ),
                   ),
                 ],
