@@ -119,14 +119,21 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? S.t('Password must be at least 6 characters',
                             'पासवर्ड किमान ६ अक्षरांचा हवा')
                         : null,
+                    // Eye toggle to reveal / hide the password. Opaque hit area +
+                    // padding give it a finger-sized tap target.
                     trailing: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
                       onTap: () => setState(() => _obscure = !_obscure),
-                      child: Icon(
-                          _obscure
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 18,
-                          color: Y2.muted),
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 6, vertical: 10),
+                        child: Icon(
+                            _obscure
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                            color: Y2.muted),
+                      ),
                     )),
                 if (_error != null) ...[
                   const SizedBox(height: 12),

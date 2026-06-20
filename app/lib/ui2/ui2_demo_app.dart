@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -173,12 +174,15 @@ class _PhoneRoleScaffold extends ConsumerWidget {
       color: Y2.navy,
       child: SafeArea(
         child: LayoutBuilder(builder: (context, c) {
-          final wide = c.maxWidth >= 760;
+          // The phone frame is a desktop-WEB preview affordance only. On a real
+          // native device (Android tablet/phone, iOS) the app runs full-screen —
+          // never framed, even on a wide tablet. kIsWeb is false on native.
+          final framed = kIsWeb && c.maxWidth >= 760;
           return Column(
             children: [
               _topBar(toggleLang, switchRole, signOut),
               Expanded(
-                child: wide
+                child: framed
                     ? Center(child: PhoneFrame2(child: shell))
                     : ColoredBox(color: Y2.screen, child: shell),
               ),
