@@ -73,6 +73,10 @@ class Api {
     receiveTimeout: const Duration(seconds: 20),
   ));
 
+  /// The local fake access token used by the offline `?role=` demo preview. The
+  /// live backend 401s it; we must NOT treat that as a real session expiry.
+  static const demoToken = 'demo';
+
   /// Wired once by auth_state at startup (avoids a circular import).
   static TokenReader readToken = () => null;
   static RefreshFn tryRefresh = () async => false;
@@ -94,6 +98,9 @@ class Api {
       onError: (e, handler) async {
         if (e.response?.statusCode == 401 &&
             e.requestOptions.extra['retried'] != true &&
+            // The demo preview's fake token always 401s — never refresh/force-logout
+            // it, or the offline ?role= preview would log itself out on every read.
+            readToken() != demoToken &&
             !e.requestOptions.path.startsWith('/auth/')) {
           if (await tryRefresh()) {
             final opts = e.requestOptions..extra['retried'] = true;

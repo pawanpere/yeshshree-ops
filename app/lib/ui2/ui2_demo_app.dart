@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth_state.dart';
 import '../core/strings.dart';
+import 'data/api2.dart';
 import 'office_shell.dart';
 import 'phone_shell.dart';
 import 'roles.dart';
@@ -70,6 +71,9 @@ class _EntryState extends ConsumerState<_Entry> {
   /// With no `role` param the real (network) login screen is shown.
   void _maybeDevBypass(String? role) {
     if (role == null) return;
+    // Offline preview: all data is demo, no network → the live backend's 401 on the
+    // fake token can never force-logout and bounce us back to the picker.
+    Data.demoMode = true;
     ref.read(authProvider.notifier).devSignIn();
     if (role == 'picker') return;
     for (final r in Role.values) {

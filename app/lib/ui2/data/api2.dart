@@ -43,6 +43,12 @@ class Data {
   Data._();
   static const _uuid = Uuid();
 
+  /// Offline preview mode (the `?role=` dev deep-link). When on, every read returns
+  /// DEMO data and every write is simulated as OK — NO network at all. This keeps
+  /// the preview self-contained and immune to the live backend (whose 401 on the
+  /// fake demo token would otherwise force-logout and bounce back to the picker).
+  static bool demoMode = false;
+
   // ---------------------------------------------------------------- reads ---
 
   static Future<Loaded<List<Json>>> _list(
@@ -51,6 +57,7 @@ class Data {
     required List<Json> demo,
     bool demoIfEmpty = false,
   }) async {
+    if (demoMode) return Loaded(demo, demo: true);
     try {
       final r = await Api.dio.get(path, queryParameters: query);
       final raw = r.data;
@@ -66,6 +73,7 @@ class Data {
 
   /// Single-object read (e.g. a dashboard summary), with a DEMO fallback.
   static Future<Loaded<Json>> _one(String path, {required Json demo}) async {
+    if (demoMode) return Loaded(demo, demo: true);
     try {
       final r = await Api.dio.get(path);
       return (r.data is Map) ? Loaded(Json.from(r.data as Map)) : Loaded(demo, demo: true);
@@ -287,6 +295,7 @@ class Data {
     required String label,
   }) async {
     body.putIfAbsent('client_ref', () => _uuid.v4());
+    if (demoMode) return WriteResult(WriteStatus.ok, data: _demoWrite(body));
     try {
       final res =
           await ref.read(retryQueueProvider.notifier).post(path, body, label: label);
@@ -301,6 +310,7 @@ class Data {
   /// Non-transactional mutation (approve/decline, mark-read). Direct POST.
   static Future<WriteResult> mutate(
       String path, Map<String, dynamic> body) async {
+    if (demoMode) return WriteResult(WriteStatus.ok, data: _demoWrite(body));
     try {
       final r = await Api.dio.post(path, data: body);
       return WriteResult(WriteStatus.ok,
@@ -313,6 +323,7 @@ class Data {
   /// PATCH update (admin master/user/device edits). Direct, non-transactional.
   static Future<WriteResult> patch(
       String path, Map<String, dynamic> body) async {
+    if (demoMode) return WriteResult(WriteStatus.ok, data: _demoWrite(body));
     try {
       final r = await Api.dio.patch(path, data: body);
       return WriteResult(WriteStatus.ok,
@@ -321,6 +332,11 @@ class Data {
       return WriteResult(WriteStatus.error, error: ApiException.from(e));
     }
   }
+
+  /// A plausible success payload for a simulated write in demo mode (echoes the
+  /// body + a fake id/doc_no so result screens have something to show).
+  static Json _demoWrite(Map<String, dynamic> body) =>
+      {...body, 'id': 1, 'doc_no': 'DEMO-0001'};
 
   static String newRef() => _uuid.v4();
 
