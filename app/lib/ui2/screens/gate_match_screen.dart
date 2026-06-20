@@ -23,16 +23,64 @@ class Ui2GateMatchScreen extends StatefulWidget {
 }
 
 class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
-  String _poNo = '77-2291';
-  String _poSupplier = 'Sandhar Steel';
-  String _poMaterial = 'CR coil 2.5mm';
-  String _poOrdered = '4,000 kg';
-  static const String _onChallan = '4,000 kg';
+  late String _poNo;
+  late String _poSupplier;
+  late String _poMaterial;
+  late String _poOrdered;
+  late String _onChallan;
+  late String _unit; // 'kg' for raw material, 'pcs' for purchased components
   bool _exact = true;
+  bool _manual = false; // true once the operator overrides via manual search
 
   PhoneNav get nav => widget.nav;
 
-  /// Parse "4,000 kg" → 4000.0 for the ordered-vs-challan delta chip.
+  @override
+  void initState() {
+    super.initState();
+    // Seed the matched order from the gate entry the operator tapped, so this
+    // screen shows *that* vehicle's supplier / material / PO / qty (RM weighed in
+    // kg vs components counted in pcs). Falls back to a sample RM order when the
+    // screen is opened cold (dev jump-nav) with no entry in the flow.
+    final isComp = Ui2Flow.get<String>('gate.category') == 'component';
+    _unit = isComp ? S.t('pcs', 'नग') : 'kg';
+    _poNo = _flowOr('gate.po', '77-2291');
+    _poSupplier = _flowOr('gate.supplier', 'Sandhar Steel');
+    _poMaterial = _flowOr('gate.material', 'CR coil 2.5mm');
+    _poOrdered = _qtyOr('gate.ordered', '4,000');
+    _onChallan = _qtyOr('gate.challan', '4,000');
+    // Auto-exact only when the challan equals the ordered qty.
+    final o = _kg(_poOrdered), c = _kg(_onChallan);
+    _exact = o != null && c != null && (o - c).abs() < 0.5;
+  }
+
+  String _flowOr(String key, String fallback) {
+    final v = Ui2Flow.get<String>(key);
+    return (v == null || v.isEmpty) ? fallback : v;
+  }
+
+  /// A quantity flow value ("5860") formatted with thousands + the entry's unit
+  /// ("5,860 kg"); the [fallback] is already a bare grouped number.
+  String _qtyOr(String key, String fallback) {
+    final v = Ui2Flow.get<String>(key);
+    final base = (v == null || v.isEmpty) ? fallback : _fmtNum(v);
+    return '$base $_unit';
+  }
+
+  /// Group thousands in a bare number string ("5860" → "5,860"); passes through
+  /// anything that isn't a plain integer.
+  String _fmtNum(String raw) {
+    final n = int.tryParse(raw.trim());
+    if (n == null) return raw.trim();
+    final s = n.abs().toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+      b.write(s[i]);
+    }
+    return '${n < 0 ? '-' : ''}$b';
+  }
+
+  /// Parse "4,000 kg" / "1,500 pcs" → number for the ordered-vs-challan delta chip.
   double? _kg(String v) =>
       double.tryParse(v.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), ''));
 
@@ -57,8 +105,8 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
           _poSupplier = '${r['vendor'] ?? r['supplier'] ?? '—'}';
           _poMaterial = '${r['material'] ?? '—'}';
           final qty = r['open_qty'] ?? r['ordered_qty'];
-          _poOrdered = qty == null ? _poOrdered : '$qty kg';
-          _exact = false; // a manually-chosen order is not an auto-exact match
+          _poOrdered = qty == null ? _poOrdered : '$qty $_unit';
+          _manual = true; // a manually-chosen order, not the auto match
         });
         nav.hideOverlay();
       },
@@ -69,13 +117,31 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
     Ui2Flow.set('gate.po', _poNo);
     Ui2Flow.set('gate.supplier', _poSupplier);
     Ui2Flow.set('gate.material', _poMaterial);
-    // This path matches a fresh challan rather than receipting a worklist entry;
-    // clear any entry id/vehicle/category a prior worklist tap left so the GRN
-    // self-creates and QC defaults to the raw-material (weighbridge) branch.
+    // Keep the entry's category + vehicle + challan (set when the row was tapped)
+    // so inward QC weighs raw material vs counts components and shows this
+    // vehicle's context. This is a fresh-challan match (not a worklist receipt),
+    // so the GRN self-creates — clear only the worklist entry id.
     Ui2Flow.set('gate.entryId', null);
-    Ui2Flow.set('gate.vehicle', null);
-    Ui2Flow.set('gate.category', null);
     nav.replace(ScreenId.gateQc);
+  }
+
+  /// Status pill on the matched order: EXACT (auto match, qty agrees), MATCHED
+  /// (auto match but challan differs from the PO — the delta chip shows by how
+  /// much), or SELECTED (operator overrode via manual search).
+  Widget _matchPill() {
+    final green = _exact || _manual;
+    final label = _manual
+        ? S.t('SELECTED', 'निवडले')
+        : _exact
+            ? S.t('EXACT', 'अचूक')
+            : S.t('MATCHED', 'जुळले');
+    return Pill2(
+      text: label,
+      fg: green ? Y2.green : Y2.accent,
+      bg: green ? Y2.greenTint : Y2.accent.withValues(alpha: 0.10),
+      borderColor: green ? Y2.greenLine : Y2.accent.withValues(alpha: 0.30),
+      dot: false,
+    );
   }
 
   /// Computed delta chip comparing ordered qty against the challan qty.
@@ -87,8 +153,8 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
     final exact = diff.abs() < 0.5;
     final pct = ordered == 0 ? 0.0 : (diff.abs() / ordered) * 100;
     final label = exact
-        ? S.t('0 kg · exact', '0 kg · अचूक')
-        : '${diff > 0 ? '+' : '−'}${diff.abs().round()} kg (${pct.toStringAsFixed(1)}%)';
+        ? S.t('0 $_unit · exact', '0 $_unit · अचूक')
+        : '${diff > 0 ? '+' : '−'}${diff.abs().round()} $_unit (${pct.toStringAsFixed(1)}%)';
     final fg = exact ? Y2.green : Y2.orange;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -166,15 +232,7 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
                           children: [
                             Text('PO $_poNo',
                                 style: F.mono(15, color: Y2.ink)),
-                            Pill2(
-                              text: _exact
-                                  ? S.t('EXACT', 'अचूक')
-                                  : S.t('SELECTED', 'निवडले'),
-                              fg: Y2.green,
-                              bg: Y2.greenTint,
-                              borderColor: Y2.greenLine,
-                              dot: false,
-                            ),
+                            _matchPill(),
                           ],
                         ),
                         Padding(

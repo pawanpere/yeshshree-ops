@@ -52,6 +52,9 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
     Ui2Flow.set('gate.material', '${row['material'] ?? ''}');
     // Drives the QC branch (component = counted, rm = weighed).
     Ui2Flow.set('gate.category', '${row['category'] ?? 'rm'}');
+    // This row's own expected qty, so QC pre-fills the received field and the
+    // weighbridge tolerance against THIS entry (not a stale value / RM sample).
+    Ui2Flow.set('gate.challan', '${row['qty_expected'] ?? ''}');
     nav.go(ScreenId.gateQc);
   }
 

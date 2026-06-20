@@ -41,6 +41,10 @@ class _Ui2GateReceivedScreenState extends State<Ui2GateReceivedScreen> {
     final received = Ui2Flow.get<String>('gate.received') ?? '3,980';
     final location = Ui2Flow.get<String>('gate.location') ?? 'Store A · Rack 12';
     final queued = Ui2Flow.get<bool>('gate.queued') ?? false;
+    // Receipt unit (kg for raw material, pcs for counted components), stashed by
+    // the GRN step before it cleared the category — so a component receipt reads
+    // "1,500 pcs added" rather than mislabelling it as kg.
+    final unit = Ui2Flow.get<String>('gate.receivedUnit') ?? 'kg';
     return Column(
       children: [
         const StatusBar2(),
@@ -94,11 +98,11 @@ class _Ui2GateReceivedScreenState extends State<Ui2GateReceivedScreen> {
                         TextSpan(
                             text: queued
                                 ? S.t(
-                                    ' queued for SAP. $received kg added to $location.',
-                                    ' SAP साठी रांगेत. $received kg $location मध्ये जोडले.')
+                                    ' queued for SAP. $received $unit added to $location.',
+                                    ' SAP साठी रांगेत. $received $unit $location मध्ये जोडले.')
                                 : S.t(
-                                    ' posted to SAP. $received kg added to $location.',
-                                    ' SAP मध्ये पोस्ट केले. $received kg $location मध्ये जोडले.')),
+                                    ' posted to SAP. $received $unit added to $location.',
+                                    ' SAP मध्ये पोस्ट केले. $received $unit $location मध्ये जोडले.')),
                       ],
                     ),
                     textAlign: TextAlign.center,

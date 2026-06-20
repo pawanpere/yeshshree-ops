@@ -111,6 +111,10 @@ class _Ui2GateGrnScreenState extends ConsumerState<Ui2GateGrnScreen> {
       return;
     }
 
+    // Capture the receipt unit (kg vs pcs) for the success screen BEFORE the
+    // category is cleared below — otherwise the result screen can't tell a
+    // counted component from a weighed coil and would mislabel the qty.
+    Ui2Flow.set('gate.receivedUnit', _unit);
     // The entry has now been received — clear the carried context so it can't be
     // receipted again (the Quality tabs are independent roots; a stale entryId
     // would otherwise let a re-entry post a duplicate goods-receipt).

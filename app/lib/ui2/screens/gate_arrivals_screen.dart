@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/strings.dart';
 import '../data/api2.dart';
+import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
@@ -147,32 +148,91 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
         onTap: () => nav.go(ScreenId.unmatched),
       );
     }
-    final isNew = '${row['status'] ?? ''}'.toLowerCase() == 'new';
+    final status = '${row['status'] ?? ''}'.toLowerCase();
+    final isNew = status == 'new';
+    final isDone = status == 'done';
+    final isComp = '${row['category'] ?? 'rm'}' == 'component';
+    final material = '${row['material'] ?? '—'}';
+    final unit = isComp ? S.t('pcs', 'नग') : 'kg';
+    final challan = _fmtNum('${row['challan'] ?? ''}');
+    // Third line: for new/open rows, expected time + challan qty so the operator
+    // sees how much is inbound; for an already-received row, just "received".
+    final String meta;
+    if (isDone) {
+      meta = S.t('received', 'मिळाले');
+    } else if (challan.isEmpty) {
+      meta = S.t('exp. $eta', 'अपे. $eta');
+    } else {
+      meta = S.t('exp. $eta · $challan $unit on challan',
+          'अपे. $eta · चलनावर $challan $unit');
+    }
     return _vehicle(
       plate: plate,
       plateStyle: F.mono(14, color: Y2.ink),
-      sub: S.t('$supplier · exp. $eta', '$supplier · अपे. $eta'),
-      badge: isNew
-          ? Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Glyph(GlyphShape.ring, Y2.accent, size: 9),
-                const SizedBox(width: 5),
-                Text(S.t('NEW', 'नवीन'),
-                    style: F.hind(11, w: FontWeight.w600, color: Y2.accent)),
-              ],
-            )
-          : null,
+      // Supplier + the actual material on the truck — this is what makes each
+      // entry distinct (RM coil vs a named component) instead of all looking alike.
+      sub: '$supplier · $material',
+      meta: meta,
+      metaColor: isNew ? Y2.accent : Y2.muted,
+      // Category chip (raw material vs purchased component) so the kind of arrival
+      // reads at a glance and the match/QC steps can branch correctly.
+      badge: _categoryPill(isComp),
       // The arrival came in from the gate scanner; tapping reviews & matches it
-      // to a PO (then on to quality). No in-app camera capture any more.
-      onTap: () => nav.go(ScreenId.gateMatch),
+      // to a PO (then on to quality), carrying *this* entry's details forward.
+      onTap: () {
+        _stashEntry(row);
+        nav.go(ScreenId.gateMatch);
+      },
     );
   }
+
+  /// Stash the tapped entry into the cross-screen flow so the match + inward-QC
+  /// steps show this vehicle's own supplier / material / PO / qty (and weigh vs
+  /// count correctly) instead of a single hard-coded order.
+  void _stashEntry(Json row) {
+    final isComp = '${row['category'] ?? 'rm'}' == 'component';
+    Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
+    Ui2Flow.set('gate.supplier', '${row['supplier'] ?? '—'}');
+    Ui2Flow.set('gate.material', '${row['material'] ?? '—'}');
+    Ui2Flow.set('gate.po', '${row['po'] ?? '—'}');
+    Ui2Flow.set('gate.category', isComp ? 'component' : 'rm');
+    Ui2Flow.set('gate.ordered', '${row['ordered'] ?? ''}');
+    Ui2Flow.set('gate.challan', '${row['challan'] ?? ''}');
+    Ui2Flow.set('gate.invoice', '${row['invoice'] ?? ''}');
+    // A freshly-tapped challan, not a worklist receipt — let the GRN self-create.
+    Ui2Flow.set('gate.entryId', null);
+  }
+
+  /// Group thousands in a bare number string ("5860" → "5,860"); passes through
+  /// anything that isn't a plain integer.
+  String _fmtNum(String raw) {
+    final n = int.tryParse(raw.trim());
+    if (n == null) return raw.trim();
+    final s = n.abs().toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+      b.write(s[i]);
+    }
+    return '${n < 0 ? '-' : ''}$b';
+  }
+
+  Widget _categoryPill(bool isComp) => Pill2(
+        text: isComp
+            ? S.t('COMPONENT', 'घटक')
+            : S.t('RAW MATERIAL', 'कच्चा माल'),
+        fg: isComp ? Y2.accent : Y2.body,
+        bg: isComp ? Y2.accent.withValues(alpha: 0.10) : Y2.lineSoft,
+        borderColor: isComp ? Y2.accent.withValues(alpha: 0.30) : Y2.line,
+        dot: false,
+      );
 
   Widget _vehicle({
     required String plate,
     required TextStyle plateStyle,
     required String sub,
+    String? meta,
+    Color metaColor = Y2.muted,
     Widget? badge,
     required VoidCallback onTap,
   }) {
@@ -196,11 +256,24 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Flexible(child: Text(plate, style: plateStyle)),
-                      if (badge != null) badge,
+                      if (badge != null) ...[
+                        const SizedBox(width: 8),
+                        badge,
+                      ],
                     ],
                   ),
                   const SizedBox(height: 3),
-                  Text(sub, style: F.hind(12, color: Y2.muted)),
+                  Text(sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: F.hind(12, color: Y2.muted)),
+                  if (meta != null) ...[
+                    const SizedBox(height: 2),
+                    Text(meta,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: F.hind(11, color: metaColor)),
+                  ],
                 ],
               ),
             ),

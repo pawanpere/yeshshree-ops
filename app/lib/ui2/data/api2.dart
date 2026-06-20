@@ -370,13 +370,36 @@ class Data {
     {'sap_code': 'V-1', 'name': 'Sandhar Steel'},
     {'sap_code': 'V-2', 'name': 'Bharat Forge'},
   ];
+  // Gate inbox. A deliberate mix so tapping different rows shows real variety:
+  // raw-material coil deliveries (weighed in kg) AND purchased components (counted
+  // in pcs), from distinct vendors, plus one unknown/no-pre-advice walk-in. Each
+  // row carries its own material/category/PO/ordered/challan so the match + QC
+  // steps reflect *that* entry instead of a single hard-coded order. `ordered`
+  // and `challan` are bare numbers; the unit is derived from `category`
+  // (rm → kg, component → pcs). One RM row is short vs its PO to exercise the
+  // tolerance chip.
   static const demoGateArrivals = <Json>[
-    {'vehicle': 'MH12 AB 4421', 'supplier': 'Tata Steel BSL', 'eta': '11:00', 'status': 'new'},
-    {'vehicle': 'MH14 CD 9032', 'supplier': 'Mahalaxmi Components', 'eta': '11:20', 'status': 'new'},
+    {'vehicle': 'MH12 AB 4421', 'supplier': 'Tata Steel BSL', 'eta': '11:00',
+     'status': 'new', 'category': 'rm', 'material': 'CR coil 2.5mm',
+     'po': '77-2291', 'ordered': '4000', 'challan': '4000',
+     'invoice': 'INV-3131079408'},
+    {'vehicle': 'MH14 CD 9032', 'supplier': 'Mahalaxmi Components', 'eta': '11:20',
+     'status': 'new', 'category': 'component', 'material': 'Mounting bracket 7782',
+     'po': '88-4419', 'ordered': '1500', 'challan': '1500',
+     'invoice': 'INV-7740221'},
     {'vehicle': 'MH09 KL 2210', 'supplier': '—', 'eta': '—', 'status': 'unmatched'},
-    {'vehicle': 'MH04 GT 7788', 'supplier': 'Sandhar Steel', 'eta': '11:45', 'status': 'new'},
-    {'vehicle': 'MH12 ZX 1190', 'supplier': 'Precision Fasteners', 'eta': '12:10', 'status': 'new'},
-    {'vehicle': 'MH02 BR 5521', 'supplier': 'Bharat Forge', 'eta': '—', 'status': 'done'},
+    {'vehicle': 'MH04 GT 7788', 'supplier': 'Sandhar Steel', 'eta': '11:45',
+     'status': 'new', 'category': 'rm', 'material': 'HR coil 3.0mm',
+     'po': '77-2304', 'ordered': '6000', 'challan': '5860',
+     'invoice': 'INV-5521003'},
+    {'vehicle': 'MH12 ZX 1190', 'supplier': 'Precision Fasteners', 'eta': '12:10',
+     'status': 'new', 'category': 'component', 'material': 'Fasteners M8 hex',
+     'po': '88-4631', 'ordered': '8000', 'challan': '8000',
+     'invoice': 'INV-7740555'},
+    {'vehicle': 'MH02 BR 5521', 'supplier': 'Bharat Forge', 'eta': '—',
+     'status': 'done', 'category': 'component', 'material': 'Forged lever arm 5519',
+     'po': '88-5001', 'ordered': '1200', 'challan': '1200',
+     'invoice': 'INV-6610897'},
   ];
   // Shape mirrors enriched ConfirmationRead (+ material_name) so the live and demo
   // code paths in the history screen are identical. posted_at is ISO; the screen

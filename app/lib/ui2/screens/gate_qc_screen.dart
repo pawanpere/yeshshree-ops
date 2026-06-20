@@ -28,12 +28,40 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   String? _photoName; // file name of the captured photo, shown once added
   num _rejected = 0; // how much is being rejected (kg can be fractional, pcs whole)
   late final TextEditingController _weight =
-      TextEditingController(text: '3,980');
+      TextEditingController(text: _defaultReceived());
 
-  static const double _challanKg = 4000;
   static const double _tolerancePct = 1.0; // ±1% within tolerance
 
   PhoneNav get nav => widget.nav;
+
+  /// The challan qty for this entry (carried from the gate match step); the
+  /// weighbridge tolerance compares the received weight against it. Defaults to a
+  /// sample when opened cold (dev jump-nav).
+  double get _challanKg {
+    final c = Ui2Flow.get<String>('gate.challan') ?? '';
+    final n = double.tryParse(
+        c.replaceAll(',', '').replaceAll(RegExp(r'[^0-9.]'), ''));
+    return (n == null || n == 0) ? 4000 : n;
+  }
+
+  /// Pre-fill the received field with this entry's challan qty (operator edits to
+  /// the actual weighed/counted value); a sample weight when there's no entry.
+  String _defaultReceived() {
+    final c = Ui2Flow.get<String>('gate.challan');
+    final n = int.tryParse((c ?? '').trim());
+    return n == null ? '3,980' : _grp(n);
+  }
+
+  /// Group thousands for display ("5860" → "5,860").
+  String _grp(int n) {
+    final s = n.abs().toString();
+    final b = StringBuffer();
+    for (var i = 0; i < s.length; i++) {
+      if (i > 0 && (s.length - i) % 3 == 0) b.write(',');
+      b.write(s[i]);
+    }
+    return '${n < 0 ? '-' : ''}$b';
+  }
 
   @override
   void dispose() {
@@ -315,10 +343,11 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
   /// driven by the entered weight against the 4,000 kg challan figure.
   Widget _tolerance() {
     final w = _weightKg;
+    final challanLabel = _grp(_challanKg.round());
     if (w == null) {
       return Text(
-          S.t('vs 4,000 challan · enter a weight',
-              'vs 4,000 चलन · वजन भरा'),
+          S.t('vs $challanLabel challan · enter a weight',
+              'vs $challanLabel चलन · वजन भरा'),
           style: F.hind(12, color: Y2.muted));
     }
     final diff = w - _challanKg;
@@ -330,8 +359,8 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
       children: [
         Flexible(
           child: Text(
-              S.t('vs 4,000 challan · $sign${diff.abs().round()} kg (${pct.toStringAsFixed(1)}%)',
-                  'vs 4,000 चलन · $sign${diff.abs().round()} kg (${pct.toStringAsFixed(1)}%)'),
+              S.t('vs $challanLabel challan · $sign${diff.abs().round()} kg (${pct.toStringAsFixed(1)}%)',
+                  'vs $challanLabel चलन · $sign${diff.abs().round()} kg (${pct.toStringAsFixed(1)}%)'),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               softWrap: false,
