@@ -5,6 +5,7 @@ import '../nav.dart';
 import '../tokens.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
+import '../widgets/lang_toggle.dart';
 import '../widgets/polish2.dart';
 
 /// Vendor portal home — prototype screen [29]. A different surface from the
@@ -22,8 +23,7 @@ class Ui2VHomeScreen extends StatefulWidget {
 class _Ui2VHomeScreenState extends State<Ui2VHomeScreen> {
   PhoneNav get nav => widget.nav;
 
-  void _toggleLang() => setState(
-      () => S.lang.value = S.lang.value == 'mr' ? 'en' : 'mr');
+  void _toggleLang() => toggleLanguage(context);
 
   @override
   Widget build(BuildContext context) {

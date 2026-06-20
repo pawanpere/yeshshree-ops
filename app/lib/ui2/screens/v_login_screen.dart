@@ -8,6 +8,7 @@ import '../data/flow.dart';
 import '../nav.dart';
 import '../tokens.dart';
 import '../widgets/frame.dart';
+import '../widgets/lang_toggle.dart';
 import '../widgets/polish2.dart';
 
 /// Vendor sign-in — prototype screen [37]. Editable mobile-number field; tapping
@@ -43,8 +44,7 @@ class _Ui2VLoginScreenState extends ConsumerState<Ui2VLoginScreen> {
     super.dispose();
   }
 
-  void _toggleLang() => setState(
-      () => S.lang.value = S.lang.value == 'mr' ? 'en' : 'mr');
+  void _toggleLang() => toggleLanguage(context);
 
   Future<void> _sendCode() async {
     if (_busy) return;

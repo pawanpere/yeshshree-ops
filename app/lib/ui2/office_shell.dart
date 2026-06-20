@@ -8,6 +8,7 @@ import 'roles.dart';
 import 'screen_registry.dart';
 import 'tokens.dart';
 import 'widgets/correction_sheet.dart';
+import 'widgets/lang_toggle.dart';
 
 /// Responsive office shell for the management / planning / admin roles. Wide
 /// viewports get a persistent left sidebar; narrow get a drawer. Full-viewport
@@ -40,9 +41,19 @@ class _OfficeShellState extends ConsumerState<OfficeShell>
   @override
   void replace(ScreenId id) => setState(() => _stack[_stack.length - 1] = id);
   @override
-  void pop() => setState(() {
-        if (_stack.length > 1) _stack.removeLast();
-      });
+  void pop() {
+    if (_stack.length > 1) {
+      setState(() => _stack.removeLast());
+      return;
+    }
+    // A flow step replaced onto a section root → return to THIS section's own
+    // root, not home() (which would clear staged flow state).
+    if (_stack.last != _roots[_section]) {
+      setState(() => _stacks[_section] = [_roots[_section]]);
+      return;
+    }
+    if (_section != 0) home();
+  }
   @override
   void tab(int index) => setState(() {
         _section = index.clamp(0, _roots.length - 1);
@@ -60,7 +71,7 @@ class _OfficeShellState extends ConsumerState<OfficeShell>
   @override
   void hideOverlay() => setState(() => _overlay = null);
 
-  void _toggleLang() => S.lang.value = S.lang.value == 'mr' ? 'en' : 'mr';
+  void _toggleLang() => toggleLanguage(context);
   void _switchRole() => ref.read(activeRoleProvider.notifier).state = null;
   Future<void> _signOut() async {
     await ref.read(authProvider.notifier).logout();

@@ -80,9 +80,23 @@ class _PhoneShellState extends State<PhoneShell> implements PhoneNav {
       setState(() => _stack[_stack.length - 1] = id);
 
   @override
-  void pop() => setState(() {
-        if (_stack.length > 1) _stack.removeLast();
-      });
+  void pop() {
+    if (_stack.length > 1) {
+      setState(() => _stack.removeLast());
+      return;
+    }
+    // Depth-1 stack. Forward flows advance with replace(), so a flow STEP can sit
+    // on a tab root (stack.last is then a non-root screen, e.g. gateQc/gateGrn).
+    // Back there returns to THIS tab's own root — NOT home(), which would clear
+    // all cross-screen flow state and discard the half-entered QC/GRN values.
+    if (_stack.last != _roots[_tab]) {
+      setState(() => _stacks[_tab] = [_roots[_tab]]);
+      return;
+    }
+    // Genuinely on this tab's root: a non-home tab returns to the role's main
+    // (home) screen; the home root has nothing above it, so back is a no-op there.
+    if (_tab != 0) home();
+  }
 
   @override
   void tab(int index) => setState(() {

@@ -6,6 +6,7 @@ import '../nav.dart';
 import '../tokens.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
+import '../widgets/lang_toggle.dart';
 import '../widgets/picker2.dart';
 import '../widgets/polish2.dart';
 
@@ -26,8 +27,7 @@ class _Ui2ProfileScreenState extends State<Ui2ProfileScreen> {
 
   PhoneNav get nav => widget.nav;
 
-  void _toggleLang() =>
-      setState(() => S.lang.value = S.lang.value == 'mr' ? 'en' : 'mr');
+  void _toggleLang() => toggleLanguage(context);
 
   void _pickStation() {
     nav.overlay(Picker2Sheet<String>(

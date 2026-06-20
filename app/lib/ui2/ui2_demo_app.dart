@@ -12,6 +12,7 @@ import 'screens/role_picker_screen.dart';
 import 'theme2.dart';
 import 'tokens.dart';
 import 'widgets/frame.dart';
+import 'widgets/lang_toggle.dart';
 
 /// The ui2 pilot app (mounted with `--dart-define=UI2_MODE=true`). Flow:
 /// login → pick a role → see ONLY that role's screens. Floor + vendor roles run
@@ -102,31 +103,42 @@ class _EntryState extends ConsumerState<_Entry> {
     final session = ref.watch(authProvider);
     final role = ref.watch(activeRoleProvider);
 
-    // Splash until the persisted session resolves (and while a dev-bypass login
-    // is in flight) so a returning user never sees a flash of the login form.
-    if (!_restored || (_devRole != null && !session.loggedIn)) return _splash();
+    // Rebuild the WHOLE app subtree whenever the language flips, so every visible
+    // S.t(...) string updates instantly (no more "navigate away and back"). The
+    // content is constructed INSIDE the builder — fresh widgets, not a captured
+    // const — so descendants actually re-render on a language change.
+    return ValueListenableBuilder<String>(
+      valueListenable: S.lang,
+      builder: (context, _, __) {
+        // Splash until the persisted session resolves (and while a dev-bypass
+        // login is in flight) so a returning user never sees the login form flash.
+        if (!_restored || (_devRole != null && !session.loggedIn)) {
+          return _splash();
+        }
 
-    if (!session.loggedIn) return const LoginScreen();
+        if (!session.loggedIn) return LoginScreen();
 
-    if (role == null) {
-      final allowed = rolesForAccount(session.role);
-      // Account entitled to exactly one role → skip the picker (locked role).
-      if (allowed.length == 1) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && ref.read(activeRoleProvider) == null) {
-            ref.read(activeRoleProvider.notifier).state = allowed.first;
+        if (role == null) {
+          final allowed = rolesForAccount(session.role);
+          // Account entitled to exactly one role → skip the picker (locked role).
+          if (allowed.length == 1) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted && ref.read(activeRoleProvider) == null) {
+                ref.read(activeRoleProvider.notifier).state = allowed.first;
+              }
+            });
+            return _splash();
           }
-        });
-        return _splash();
-      }
-      return RolePickerScreen(roles: allowed, onSignOut: _signOut);
-    }
+          return RolePickerScreen(roles: allowed, onSignOut: _signOut);
+        }
 
-    final spec = kRoles[role]!;
-    if (spec.isOffice) {
-      return OfficeShell(key: ValueKey('office-$role'), spec: spec);
-    }
-    return _PhoneRoleScaffold(key: ValueKey('phone-$role'), spec: spec);
+        final spec = kRoles[role]!;
+        if (spec.isOffice) {
+          return OfficeShell(key: ValueKey('office-$role'), spec: spec);
+        }
+        return _PhoneRoleScaffold(key: ValueKey('phone-$role'), spec: spec);
+      },
+    );
   }
 
   Widget _splash() => Container(
@@ -149,7 +161,7 @@ class _PhoneRoleScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    void toggleLang() => S.lang.value = S.lang.value == 'mr' ? 'en' : 'mr';
+    void toggleLang() => toggleLanguage(context);
     void switchRole() => ref.read(activeRoleProvider.notifier).state = null;
     Future<void> signOut() async {
       await ref.read(authProvider.notifier).logout();
