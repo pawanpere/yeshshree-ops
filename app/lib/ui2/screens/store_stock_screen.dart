@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -57,16 +58,29 @@ class _Ui2StoreStockScreenState extends State<Ui2StoreStockScreen> {
     }
   }
 
+  // Rows currently visible given the active location filter.
+  List<Json> _rowsFor(List<Json> all) => _location == null
+      ? all
+      : [
+          for (final r in all)
+            if ('${r['location'] ?? ''}' == _location) r
+        ];
+
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged: device chrome → header → filter → list) ----
+
+  Widget _phone() {
     final loaded = _data;
     final all = loaded?.data ?? const <Json>[];
-    final rows = _location == null
-        ? all
-        : [
-            for (final r in all)
-              if ('${r['location'] ?? ''}' == _location) r
-          ];
+    final rows = _rowsFor(all);
     return Column(
       children: [
         const StatusBar2(),
@@ -82,15 +96,7 @@ class _Ui2StoreStockScreenState extends State<Ui2StoreStockScreen> {
           child: loaded == null
               ? const SkeletonRows(count: 5)
               : rows.isEmpty
-                  ? EmptyState2(
-                      icon: Icons.inventory_2_outlined,
-                      title: S.t('No stock', 'स्टॉक नाही'),
-                      subtitle: _location == null
-                          ? S.t('No stock balances to show.',
-                              'दाखवण्यासाठी स्टॉक शिल्लक नाही.')
-                          : S.t('No stock at this location.',
-                              'या ठिकाणी स्टॉक नाही.'),
-                    )
+                  ? _empty()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                       itemCount: rows.length,
@@ -99,6 +105,159 @@ class _Ui2StoreStockScreenState extends State<Ui2StoreStockScreen> {
                     ),
         ),
       ],
+    );
+  }
+
+  // ---- desktop layout (no device chrome: header → filter → data table) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final all = loaded?.data ?? const <Json>[];
+    final rows = _rowsFor(all);
+    return Column(
+      children: [
+        ScreenHeader2(
+          title: S.t('STOCK', 'स्टॉक'),
+          demo: loaded?.demo ?? false,
+          trailing: all.isEmpty
+              ? null
+              : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
+        ),
+        if (loaded != null && all.isNotEmpty) _filterBar(),
+        Expanded(
+          child: loaded == null
+              ? const SkeletonRows(count: 6)
+              : rows.isEmpty
+                  ? _empty()
+                  : ResponsiveContent(
+                      maxWidth: 1200,
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        children: [_table(rows)],
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _empty() => EmptyState2(
+        icon: Icons.inventory_2_outlined,
+        title: S.t('No stock', 'स्टॉक नाही'),
+        subtitle: _location == null
+            ? S.t('No stock balances to show.',
+                'दाखवण्यासाठी स्टॉक शिल्लक नाही.')
+            : S.t('No stock at this location.', 'या ठिकाणी स्टॉक नाही.'),
+      );
+
+  // ---- desktop data table ----
+
+  // Fixed column widths shared by the header + data rows so cells line up. A
+  // consistent gap (see _gap) is inserted between EVERY pair of adjacent columns
+  // in both the header row and the data rows, so the right-aligned qty/UOM and
+  // the location pill never butt up against the next column's text.
+  // Every non-primary cell (location pill, qty, UOM) is wrapped in
+  // FittedBox(scaleDown) and the material name is the sole Expanded column, so
+  // the row can never overflow: 130 + 130 + 70 = 330 fixed + 3 × 16 gaps = 378px
+  // (well under 900px), and the Expanded column absorbs the remainder.
+  static const _wLoc = 130.0;
+  static const _wQty = 130.0;
+  static const _wUom = 70.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _table(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _th(S.t('Material', 'माल'))),
+                _gap,
+                SizedBox(width: _wLoc, child: _th(S.t('Location', 'ठिकाण'))),
+                _gap,
+                SizedBox(
+                    width: _wQty,
+                    child: _th(S.t('Quantity', 'प्रमाण'), right: true)),
+                _gap,
+                SizedBox(
+                    width: _wUom, child: _th(S.t('Unit', 'एकक'), right: true)),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _tableRow(rows[i], i, rows.length),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(String s, {bool right = false}) => Text(s,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  Widget _tableRow(Json row, int i, int count) {
+    final loc = '${row['location'] ?? ''}';
+    final name = '${row['material'] ?? S.t('Material #', 'मटेरियल #')}'
+            '${row['material'] == null ? '${row['material_id'] ?? ''}' : ''}'
+        .trim();
+    final qty = double.tryParse('${row['qty']}') ?? 0;
+    final uom = '${row['uom'] ?? ''}'.trim();
+    final last = i == count - 1;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border:
+            last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(name.isEmpty ? '—' : name,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+          ),
+          _gap,
+          SizedBox(
+            width: _wLoc,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: _locPill(loc),
+            ),
+          ),
+          _gap,
+          SizedBox(
+            width: _wQty,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(_fmtQty(qty),
+                  maxLines: 1, style: F.mono(15, color: Y2.ink)),
+            ),
+          ),
+          _gap,
+          SizedBox(
+            width: _wUom,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(uom.isEmpty ? '—' : uom,
+                  maxLines: 1, style: F.mono(12, color: Y2.muted)),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

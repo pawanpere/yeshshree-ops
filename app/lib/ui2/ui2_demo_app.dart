@@ -5,9 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/auth_state.dart';
 import '../core/strings.dart';
 import 'data/api2.dart';
+import 'nav.dart';
 import 'office_shell.dart';
 import 'phone_shell.dart';
+import 'responsive.dart';
 import 'roles.dart';
+import 'screen_registry.dart';
 import 'screens/login_screen.dart';
 import 'screens/role_picker_screen.dart';
 import 'theme2.dart';
@@ -48,6 +51,7 @@ class _Entry extends ConsumerStatefulWidget {
 class _EntryState extends ConsumerState<_Entry> {
   bool _restored = false;
   String? _devRole;
+  ScreenId? _devScreen;
 
   @override
   void initState() {
@@ -56,6 +60,9 @@ class _EntryState extends ConsumerState<_Entry> {
     final lang = q['lang'];
     if (lang == 'en' || lang == 'mr') S.lang.value = lang!;
     _devRole = q['role'];
+    // Optional deep-link to a specific screen within the role (dev/QA preview).
+    final screen = q['screen'];
+    if (screen != null) _devScreen = screenIdFromSlug(screen);
     // Apply the dev-bypass demo session AFTER the persisted session has loaded,
     // so the async _restore() can't clobber it. (A persisted logged-out/expired
     // session would otherwise overwrite the demo sign-in and leave the splash
@@ -135,9 +142,11 @@ class _EntryState extends ConsumerState<_Entry> {
 
         final spec = kRoles[role]!;
         if (spec.isOffice) {
-          return OfficeShell(key: ValueKey('office-$role'), spec: spec);
+          return OfficeShell(
+              key: ValueKey('office-$role'), spec: spec, initial: _devScreen);
         }
-        return _PhoneRoleScaffold(key: ValueKey('phone-$role'), spec: spec);
+        return _PhoneRoleScaffold(
+            key: ValueKey('phone-$role'), spec: spec, initial: _devScreen);
       },
     );
   }
@@ -157,8 +166,9 @@ class _EntryState extends ConsumerState<_Entry> {
 /// Wraps the phone shell for a floor/vendor role with a slim app bar (role name
 /// + language + switch role + sign out). Framed on desktop, full on mobile.
 class _PhoneRoleScaffold extends ConsumerWidget {
-  const _PhoneRoleScaffold({super.key, required this.spec});
+  const _PhoneRoleScaffold({super.key, required this.spec, this.initial});
   final RoleSpec spec;
+  final ScreenId? initial;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -169,16 +179,21 @@ class _PhoneRoleScaffold extends ConsumerWidget {
       ref.read(activeRoleProvider.notifier).state = null;
     }
 
-    final shell = PhoneShell(tabs: spec.tabs);
-    return Container(
-      color: Y2.navy,
-      child: SafeArea(
-        child: LayoutBuilder(builder: (context, c) {
-          // The phone frame is a desktop-WEB preview affordance only. On a real
-          // native device (Android tablet/phone, iOS) the app runs full-screen —
-          // never framed, even on a wide tablet. kIsWeb is false on native.
-          final framed = kIsWeb && c.maxWidth >= 760;
-          return Column(
+    return LayoutBuilder(builder: (context, c) {
+      // Wide desktop WEB → full desktop chrome: route the floor/vendor role
+      // through the same responsive sidebar shell the office roles use, so its
+      // screens render their desktop layout (P-R). Narrow windows and real
+      // native devices (kIsWeb == false) keep the phone shell — framed on web as
+      // a preview affordance, full-screen on a real device.
+      if (kIsWeb && c.maxWidth >= BP.wide) {
+        return OfficeShell(spec: spec, initial: initial);
+      }
+      final shell = PhoneShell(tabs: spec.tabs, initial: initial);
+      final framed = kIsWeb && c.maxWidth >= 760;
+      return Container(
+        color: Y2.navy,
+        child: SafeArea(
+          child: Column(
             children: [
               _topBar(toggleLang, switchRole, signOut),
               Expanded(
@@ -187,10 +202,10 @@ class _PhoneRoleScaffold extends ConsumerWidget {
                     : ColoredBox(color: Y2.screen, child: shell),
               ),
             ],
-          );
-        }),
-      ),
-    );
+          ),
+        ),
+      );
+    });
   }
 
   Widget _topBar(

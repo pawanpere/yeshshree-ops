@@ -5,6 +5,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/bits.dart';
@@ -182,20 +183,174 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared chrome ----
+
+  /// Header shared by both form factors — title, back affordance, mode pill.
+  Widget _header() => ScreenHeader2(
+        title: S.t('ISSUE MATERIAL', 'माल जारी करा'),
+        onBack: nav.pop,
+        trailing: Pill2(
+          text: S.t('ONLINE', 'ऑनलाइन'),
+          fg: Y2.green,
+          bg: Y2.greenTint,
+          borderColor: Y2.greenLine,
+        ),
+      );
+
+  /// Footer with the primary Issue action — identical on phone + desktop.
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: PrimaryButton2(
+          label: _qty > _limit
+              ? S.t('Ask supervisor', 'सुपरवायझरला विचारा')
+              : S.t('Issue $_qty kg', '$_qty kg जारी करा'),
+          busy: _busy,
+          // Gate: qty>0 && qty<=stockCap && _materialId!=null. (Over the
+          // allowed limit but within stock stays enabled → supervisor flow.)
+          enabled: _canIssue,
+          onTap: _issue,
+        ),
+      );
+
+  // ---- shared form fields (identical widgets on both form factors) ----
+
+  // Material (tappable → picker)
+  Widget _materialField() => Pressable2(
+        onTap: _pickMaterial,
+        child: _field(
+          label: S.t('Material', 'माल'),
+          child: Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Row(
+              children: [
+                _codeChip(_materialCode),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(_materialDesc,
+                      style: F.hind(15, w: FontWeight.w600, color: Y2.ink),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false),
+                ),
+                const SizedBox(width: 8),
+                const Icon(I2.chevronDown, size: 20, color: Y2.muted),
+              ],
+            ),
+          ),
+        ),
+      );
+
+  // Issue to (dropdown row → line picker)
+  Widget _lineField() => Pressable2(
+        onTap: _pickLine,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: Y2.card,
+            borderRadius: BorderRadius.circular(11),
+            border: Border.all(color: Y2.line),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(S.t('Issue to', 'कुठे जारी'),
+                        style:
+                            F.hind(11, w: FontWeight.w400, color: Y2.muted),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false),
+                    Text(_lineLabel,
+                        style: F.hind(15, w: FontWeight.w600, color: Y2.ink),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        softWrap: false),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Icon(I2.chevronDown, size: 20, color: Y2.muted),
+            ],
+          ),
+        ),
+      );
+
+  // In stock stat box.
+  Widget _inStockBox() =>
+      _statBox(S.t('In stock', 'स्टॉकमध्ये'), '2,400', 'kg');
+
+  // Allowed today stat box.
+  Widget _allowedBox() =>
+      _statBox(S.t('Allowed today', 'आज परवानगी'), '$_limit', 'kg');
+
+  // Quantity stepper card.
+  Widget _quantityStepper() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
+        decoration: BoxDecoration(
+          color: Y2.card,
+          borderRadius: BorderRadius.circular(Y2.rCard),
+          border: Border.all(color: Y2.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 9),
+              child: Text(
+                  S.t('QUANTITY TO ISSUE · KG', 'जारी करायचे प्रमाण · KG'),
+                  style: F.hind(11,
+                      w: FontWeight.w600, ls: 0.6, color: Y2.muted)),
+            ),
+            Row(
+              children: [
+                _stepBtn(Icons.remove,
+                    accent: false, onTap: () => _step(-10)),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: QtyField2(
+                    value: _qty,
+                    max: _stockCap,
+                    onChanged: (v) => setState(() => _qty = v.toInt()),
+                    color: _qtyOverStock
+                        ? Y2.red
+                        : (_qty > _limit ? Y2.orange : Y2.ink),
+                    fontSize: 46,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                _stepBtn(Icons.add, accent: true, onTap: () => _step(10)),
+              ],
+            ),
+            // Inline hint when qty exceeds what's in stock.
+            if (_qtyOverStock)
+              FieldHint(S.t('Only $_stockCap kg in stock',
+                  'फक्त $_stockCap kg स्टॉकमध्ये')),
+          ],
+        ),
+      );
+
+  // ---- phone layout (unchanged single-column form) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
         // ---- Header: shared back affordance + title + mode pill ----
-        ScreenHeader2(
-          title: S.t('ISSUE MATERIAL', 'माल जारी करा'),
-          onBack: nav.pop,
-          trailing: Pill2(
-            text: S.t('ONLINE', 'ऑनलाइन'),
-            fg: Y2.green,
-            bg: Y2.greenTint,
-            borderColor: Y2.greenLine,
-          ),
-        ),
+        _header(),
         // ---- Scrollable body ----
         Expanded(
           child: SingleChildScrollView(
@@ -203,159 +358,71 @@ class _Ui2IssueFormScreenState extends ConsumerState<Ui2IssueFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Material (tappable → picker)
-                Pressable2(
-                  onTap: _pickMaterial,
-                  child: _field(
-                    label: S.t('Material', 'माल'),
-                    child: Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Row(
-                        children: [
-                          _codeChip(_materialCode),
-                          const SizedBox(width: 7),
-                          Expanded(
-                            child: Text(_materialDesc,
-                                style: F.hind(15,
-                                    w: FontWeight.w600, color: Y2.ink),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false),
-                          ),
-                          const SizedBox(width: 8),
-                          const Icon(I2.chevronDown, size: 20, color: Y2.muted),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                _materialField(),
                 const SizedBox(height: 12),
-                // Issue to (dropdown row → line picker)
-                Pressable2(
-                  onTap: _pickLine,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: Y2.card,
-                      borderRadius: BorderRadius.circular(11),
-                      border: Border.all(color: Y2.line),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(S.t('Issue to', 'कुठे जारी'),
-                                  style: F.hind(11,
-                                      w: FontWeight.w400, color: Y2.muted),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false),
-                              Text(_lineLabel,
-                                  style: F.hind(15,
-                                      w: FontWeight.w600, color: Y2.ink),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  softWrap: false),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        const Icon(I2.chevronDown, size: 20, color: Y2.muted),
-                      ],
-                    ),
-                  ),
-                ),
+                _lineField(),
                 const SizedBox(height: 12),
                 // In stock / Allowed today
                 Row(
                   children: [
-                    Expanded(
-                      child: _statBox(
-                          S.t('In stock', 'स्टॉकमध्ये'), '2,400', 'kg'),
-                    ),
+                    Expanded(child: _inStockBox()),
                     const SizedBox(width: 11),
-                    Expanded(
-                      child: _statBox(
-                          S.t('Allowed today', 'आज परवानगी'), '$_limit', 'kg'),
-                    ),
+                    Expanded(child: _allowedBox()),
                   ],
                 ),
                 const SizedBox(height: 12),
-                // Quantity stepper
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 15, vertical: 13),
-                  decoration: BoxDecoration(
-                    color: Y2.card,
-                    borderRadius: BorderRadius.circular(Y2.rCard),
-                    border: Border.all(color: Y2.line),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 9),
-                        child: Text(
-                            S.t('QUANTITY TO ISSUE · KG',
-                                'जारी करायचे प्रमाण · KG'),
-                            style: F.hind(11,
-                                w: FontWeight.w600, ls: 0.6, color: Y2.muted)),
-                      ),
-                      Row(
-                        children: [
-                          _stepBtn(Icons.remove,
-                              accent: false, onTap: () => _step(-10)),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: QtyField2(
-                              value: _qty,
-                              max: _stockCap,
-                              onChanged: (v) =>
-                                  setState(() => _qty = v.toInt()),
-                              color: _qtyOverStock
-                                  ? Y2.red
-                                  : (_qty > _limit ? Y2.orange : Y2.ink),
-                              fontSize: 46,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          _stepBtn(Icons.add,
-                              accent: true, onTap: () => _step(10)),
-                        ],
-                      ),
-                      // Inline hint when qty exceeds what's in stock.
-                      if (_qtyOverStock)
-                        FieldHint(S.t('Only $_stockCap kg in stock',
-                            'फक्त $_stockCap kg स्टॉकमध्ये')),
-                    ],
-                  ),
-                ),
+                _quantityStepper(),
               ],
             ),
           ),
         ),
         // ---- Footer: primary Issue action ----
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: PrimaryButton2(
-            label: _qty > _limit
-                ? S.t('Ask supervisor', 'सुपरवायझरला विचारा')
-                : S.t('Issue $_qty kg', '$_qty kg जारी करा'),
-            busy: _busy,
-            // Gate: qty>0 && qty<=stockCap && _materialId!=null. (Over the
-            // allowed limit but within stock stays enabled → supervisor flow.)
-            enabled: _canIssue,
-            onTap: _issue,
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- desktop layout (centered reading-width form, no phone chrome) ----
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        // No StatusBar2 on desktop — start at the screen header.
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: ResponsiveContent(
+              maxWidth: 720,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Material + destination line side by side (dense top row).
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _materialField()),
+                      const SizedBox(width: 14),
+                      Expanded(child: _lineField()),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  // In stock / Allowed today.
+                  Row(
+                    children: [
+                      Expanded(child: _inStockBox()),
+                      const SizedBox(width: 14),
+                      Expanded(child: _allowedBox()),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _quantityStepper(),
+                ],
+              ),
+            ),
           ),
         ),
+        _footer(),
       ],
     );
   }

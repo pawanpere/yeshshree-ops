@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -43,6 +44,16 @@ class _Ui2VOrdersScreenState extends State<Ui2VOrdersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     final orders = _orders;
     final calloffs = _calloffs;
     final loading = orders == null || calloffs == null;
@@ -92,6 +103,244 @@ class _Ui2VOrdersScreenState extends State<Ui2VOrdersScreen> {
                 ),
         ),
       ],
+    );
+  }
+
+  // ---- desktop layout (no StatusBar2 chrome; same data + behaviour) ----
+
+  Widget _desktop() {
+    final orders = _orders;
+    final calloffs = _calloffs;
+    final loading = orders == null || calloffs == null;
+    final demo = (orders?.demo ?? false) || (calloffs?.demo ?? false);
+
+    return Column(
+      children: [
+        ScreenHeader2(
+          title: S.t('ORDERS', 'ऑर्डर'),
+          demo: demo,
+        ),
+        Expanded(
+          child: loading
+              ? const SkeletonRows(count: 4)
+              : ResponsiveContent(
+                  maxWidth: 1200,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    children: [
+                      _sectionHeader(
+                        S.t('Open purchase orders', 'खुले खरेदी ऑर्डर'),
+                        orders.data.length,
+                      ),
+                      const SizedBox(height: 11),
+                      if (orders.data.isEmpty)
+                        _emptyNote(S.t('No open purchase orders.',
+                            'कोणतेही खुले खरेदी ऑर्डर नाहीत.'))
+                      else
+                        _poTable(orders.data),
+                      const SizedBox(height: 20),
+                      _sectionHeader(
+                        S.t('Call-offs', 'कॉल-ऑफ'),
+                        calloffs.data.length,
+                      ),
+                      const SizedBox(height: 11),
+                      if (calloffs.data.isEmpty)
+                        _emptyNote(S.t('No call-offs scheduled.',
+                            'कोणतेही कॉल-ऑफ नियोजित नाहीत.'))
+                      else
+                        _calloffTable(calloffs.data),
+                    ],
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  // ---- desktop tables ----
+
+  /// Fixed column widths shared by header + rows so the cells line up. A gap is
+  /// inserted between every adjacent column pair (see _gap) so right-aligned
+  /// numbers/dates never butt up against the next column's text.
+  static const _wPo = 140.0;
+  static const _wQty = 150.0;
+  static const _wDue = 120.0;
+  static const _wStatus = 110.0;
+  static const _gap = SizedBox(width: 16);
+
+  /// Scale-to-fit wrapper so numeric cells never overflow their fixed column,
+  /// whatever the font metrics (widget tests render with a fixed-width font).
+  Widget _fit(Widget child, {Alignment align = Alignment.centerRight}) =>
+      FittedBox(fit: BoxFit.scaleDown, alignment: align, child: child);
+
+  Widget _th(double? w, String label, {bool right = false}) {
+    final t = Text(label,
+        textAlign: right ? TextAlign.right : TextAlign.left,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+    return w == null ? t : SizedBox(width: w, child: t);
+  }
+
+  Widget _poTable(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                _th(_wPo, S.t('PO', 'PO')),
+                _gap,
+                Expanded(child: _th(null, S.t('Material', 'माल'))),
+                _gap,
+                _th(_wQty, S.t('Open / Ordered', 'खुले / ऑर्डर'), right: true),
+                _gap,
+                _th(_wDue, S.t('Due', 'देय'), right: true),
+                _gap,
+                _th(_wStatus, S.t('Status', 'स्थिती')),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _poRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _poRow(Json o, bool last) {
+    final poNo = '${o['sap_po_no'] ?? '—'}';
+    final material = '${o['material'] ?? '—'}';
+    final uom = '${o['uom'] ?? ''}';
+    final openQty = '${o['open_qty'] ?? '0'}';
+    final orderedQty = '${o['ordered_qty'] ?? '0'}';
+    final dueDate = '${o['due_date'] ?? '—'}';
+    final status = '${o['status'] ?? ''}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      decoration: BoxDecoration(
+        border:
+            last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: _wPo,
+            child: Text(poNo,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
+          ),
+          _gap,
+          Expanded(
+            child: Text(material,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: F.hind(13, w: FontWeight.w600, color: Y2.ink)),
+          ),
+          _gap,
+          SizedBox(
+            width: _wQty,
+            child: _fit(Text(
+              '$openQty / $orderedQty${uom.isEmpty ? '' : ' $uom'}',
+              maxLines: 1,
+              style: F.mono(12, w: FontWeight.w600, color: Y2.body),
+            )),
+          ),
+          _gap,
+          SizedBox(
+            width: _wDue,
+            child: _fit(Text(dueDate,
+                maxLines: 1, style: F.mono(12, color: Y2.muted))),
+          ),
+          _gap,
+          SizedBox(
+            width: _wStatus,
+            child: _fit(_statusPill(status), align: Alignment.centerLeft),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _calloffTable(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _th(null, S.t('Material', 'माल'))),
+                _gap,
+                _th(_wQty, S.t('Qty', 'प्रमाण'), right: true),
+                _gap,
+                _th(_wDue, S.t('Call-off date', 'कॉल-ऑफ तारीख'), right: true),
+                _gap,
+                _th(_wStatus, S.t('Status', 'स्थिती')),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++)
+            _calloffRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _calloffRow(Json c, bool last) {
+    final material = '${c['material'] ?? '—'}';
+    final qty = '${c['qty'] ?? '0'}';
+    final calloffDate = '${c['calloff_date'] ?? '—'}';
+    final status = '${c['status'] ?? ''}';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      decoration: BoxDecoration(
+        border:
+            last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(material,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: F.hind(13, w: FontWeight.w600, color: Y2.ink)),
+          ),
+          _gap,
+          SizedBox(
+            width: _wQty,
+            child: _fit(Text(qty,
+                maxLines: 1,
+                style: F.mono(13, w: FontWeight.w700, color: Y2.ink))),
+          ),
+          _gap,
+          SizedBox(
+            width: _wDue,
+            child: _fit(Text(calloffDate,
+                maxLines: 1, style: F.mono(12, color: Y2.muted))),
+          ),
+          _gap,
+          SizedBox(
+            width: _wStatus,
+            child: _fit(_statusPill(status), align: Alignment.centerLeft),
+          ),
+        ],
+      ),
     );
   }
 

@@ -8,7 +8,7 @@ enum ScreenId {
   home, tasks, cockpit, sync, notifications, profile, signin,
   confirmForm, confirmSyncing, confirmSynced, confirmQueued,
   issueForm, issueOverlimit, issueWaiting, issueApproved, issueDone,
-  gateArrivals, gateMatch, gateQc, gateGrn, gateReceived,
+  gateArrivals, gateMatch, gateQc, gateGrn, gateReceived, gateReceiveItems,
   dispatchList, dispatchDetail, gatePass, saleForm, saleDone,
   issueHistory, confHistory, unmatched, offlineGate, offlineGateSaved,
   forceUpdate, vHome, vAlert, vStock, vLogin, vOtp,
@@ -16,6 +16,7 @@ enum ScreenId {
   // role→screens map is complete now; each is implemented in the phase noted.
   qualityWorklist, // P3
   productionHolds, // P6 (confirmations/holds)
+  prodWip, // P-W (operations + work-in-progress board)
   storeStock, // P6 (stock browse)
   planToday, planHolds, // P6 (planning)
   mgmtDashboards, mgmtApprovals, mgmtAnomalies, // P6 (management)

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/strings.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -81,67 +82,127 @@ class _Ui2TasksScreenState extends State<Ui2TasksScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final all = _tasks;
-    final mine = all.where((t) => t.mine).toList();
-    final visible = _filterIndex == 0 ? all : mine;
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // The current filter slice + counts, shared by both layouts.
+  List<_Task> get _all => _tasks;
+  List<_Task> get _mine => _all.where((t) => t.mine).toList();
+  List<_Task> get _visible => _filterIndex == 0 ? _all : _mine;
+
+  void _tapTask(_Task t) {
+    if (t.tab != null) {
+      nav.tab(t.tab!);
+    } else if (t.go != null) {
+      nav.go(t.go!);
+    }
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
+    final visible = _visible;
     return Column(
       children: [
         const StatusBar2(),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Y2.line))),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(S.t('TASKS', 'कामे'),
-                  style: F.khand(17, ls: 0.3, color: Y2.ink)),
-              const SizedBox(height: 9),
-              Row(children: [
-                _filter(
-                    S.t('All · ${all.length}', 'सर्व · ${all.length}'), 0),
-                const SizedBox(width: 18),
-                _filter(
-                    S.t('Mine · ${mine.length}', 'माझे · ${mine.length}'), 1),
-              ]),
-            ],
-          ),
-        ),
+        _headerBar(),
         Expanded(
           child: visible.isEmpty
-              ? EmptyState2(
-                  icon: I2.allClear,
-                  title: S.t('Nothing needs you right now',
-                      'सध्या तुमची गरज नाही'),
-                  subtitle: _filterIndex == 1
-                      ? S.t('Tasks assigned to you appear here automatically.',
-                          'तुम्हाला दिलेली कामे इथे आपोआप दिसतील.')
-                      : S.t('New tasks appear here automatically.',
-                          'नवीन कामे इथे आपोआप दिसतील.'),
-                )
+              ? _emptyState()
               : ListView(
                   padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                   children: [
-                    Text(
-                        S.t(
-                            'Pulled together from work that already exists — not a new list to keep.',
-                            'आधीच असलेल्या कामातून एकत्र केलेले — नवीन यादी ठेवायची नाही.'),
-                        style: F.hind(11, color: Y2.muted, height: 1.5)),
+                    _introNote(),
                     const SizedBox(height: 9),
                     for (final t in visible)
-                      _taskCard(t.glyph, t.left, t.title, t.sub, () {
-                        if (t.tab != null) {
-                          nav.tab(t.tab!);
-                        } else if (t.go != null) {
-                          nav.go(t.go!);
-                        }
-                      }),
+                      _taskCard(t.glyph, t.left, t.title, t.sub,
+                          () => _tapTask(t)),
                   ],
                 ),
         ),
       ],
     );
   }
+
+  // ---- desktop layout ----
+
+  Widget _desktop() {
+    final visible = _visible;
+    return Column(
+      children: [
+        _headerBar(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: visible.isEmpty
+                ? _emptyState()
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                    children: [
+                      _introNote(),
+                      const SizedBox(height: 13),
+                      CardGrid2(
+                        minTileWidth: 360,
+                        maxColumns: 3,
+                        gap: 14,
+                        children: [
+                          for (final t in visible)
+                            _taskCard(t.glyph, t.left, t.title, t.sub,
+                                () => _tapTask(t)),
+                        ],
+                      ),
+                    ],
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---- shared pieces ----
+
+  Widget _headerBar() {
+    final all = _all;
+    final mine = _mine;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Y2.line))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(S.t('TASKS', 'कामे'),
+              style: F.khand(17, ls: 0.3, color: Y2.ink)),
+          const SizedBox(height: 9),
+          Row(children: [
+            _filter(S.t('All · ${all.length}', 'सर्व · ${all.length}'), 0),
+            const SizedBox(width: 18),
+            _filter(S.t('Mine · ${mine.length}', 'माझे · ${mine.length}'), 1),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  Widget _introNote() => Text(
+      S.t(
+          'Pulled together from work that already exists — not a new list to keep.',
+          'आधीच असलेल्या कामातून एकत्र केलेले — नवीन यादी ठेवायची नाही.'),
+      style: F.hind(11, color: Y2.muted, height: 1.5));
+
+  Widget _emptyState() => EmptyState2(
+        icon: I2.allClear,
+        title: S.t('Nothing needs you right now', 'सध्या तुमची गरज नाही'),
+        subtitle: _filterIndex == 1
+            ? S.t('Tasks assigned to you appear here automatically.',
+                'तुम्हाला दिलेली कामे इथे आपोआप दिसतील.')
+            : S.t('New tasks appear here automatically.',
+                'नवीन कामे इथे आपोआप दिसतील.'),
+      );
 
   Widget _filter(String label, int i) {
     final active = _filterIndex == i;

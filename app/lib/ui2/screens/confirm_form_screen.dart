@@ -4,6 +4,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -175,21 +176,51 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Phone keeps its device chrome (StatusBar2); desktop starts at the header.
+    // Both branches share the exact same header, scroll body and footer, so the
+    // form fields, validation and POST behave identically on either form factor.
+    return Responsive(
+      phone: (_) => Column(
+        children: [
+          const StatusBar2(),
+          _header(),
+          Expanded(child: _scrollBody()),
+          _footer(),
+        ],
+      ),
+      desktop: (_) => Column(
+        children: [
+          _header(),
+          // Center the form at a comfortable reading width on wide viewports;
+          // ResponsiveContent preserves the bounded height so the inner
+          // Expanded/scroll body still works.
+          Expanded(
+            child: ResponsiveContent(
+              maxWidth: 720,
+              child: _scrollBody(),
+            ),
+          ),
+          // Footer spans full width (like the other desktop screens); its inner
+          // content is already overflow-safe with Flexible/Expanded.
+          _footer(),
+        ],
+      ),
+    );
+  }
+
+  // Header — shared back affordance + doc chip + shift/line/started meta.
+  Widget _header() => ScreenHeader2(
+        // Reflects the picked material so the header isn't stuck on one part.
+        title: _materialLabel.toUpperCase(),
+        onBack: nav.pop,
+        subtitle: 'Line A · Shift B · ${S.t('Started', 'सुरू')} 14:02',
+      );
+
+  Widget _scrollBody() {
     final reasonMissing = _reject > 0 && !_reasonChosen;
     // The reject card also turns red when reject exceeds the good count.
     final rejectInvalid = reasonMissing || _rejectOverGood;
-    return Column(
-      children: [
-        const StatusBar2(),
-        // Header — shared back affordance + doc chip + shift/line/started meta.
-        ScreenHeader2(
-          // Reflects the picked material so the header isn't stuck on one part.
-          title: _materialLabel.toUpperCase(),
-          onBack: nav.pop,
-          subtitle: 'Line A · Shift B · ${S.t('Started', 'सुरू')} 14:02',
-        ),
-        Expanded(
-          child: SingleChildScrollView(
+    return SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -430,80 +461,78 @@ class _Ui2ConfirmFormScreenState extends State<Ui2ConfirmFormScreen> {
                 ),
               ],
             ),
-          ),
-        ),
-        // Footer.
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: _f6,
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Text.rich(
-                  TextSpan(
-                    style: F.hind(11,
-                        w: FontWeight.w400, ls: 0.4, color: Y2.muted),
-                    children: [
-                      TextSpan(text: S.t('AFTER THIS POST →', 'या नोंदीनंतर →')),
-                      const TextSpan(text: ' '),
-                      TextSpan(
-                          text: '${_done + _good}/$_plan',
-                          style: F.mono(13, color: Y2.ink)),
-                    ],
-                  ),
-                ),
-              ),
-              // Tell the operator WHY posting is blocked, so the disabled button
-              // never reads as "broken".
-              if (_blockReason != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 9),
-                  child: Row(
-                    children: [
-                      const Icon(I2.warning, size: 14, color: Y2.orange),
-                      const SizedBox(width: 6),
-                      Flexible(
-                        child: Text(_blockReason!,
-                            style: F.hind(12,
-                                w: FontWeight.w600, color: Y2.orange)),
-                      ),
-                    ],
-                  ),
-                ),
-              Row(
-                children: [
-                  Expanded(
-                    flex: 10,
-                    // Posts an INTERIM confirmation (mid-shift); same validity gate.
-                    child: OutlineButton2(
-                      label: S.t('Save interim', 'तात्पुरते जतन'),
-                      onTap: _valid ? () => _submit(interim: true) : null,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 13,
-                    // Visibly disabled until a good count (and any required
-                    // reason) is present — no more silent snackbar-on-invalid.
-                    child: PrimaryButton2(
-                      label: S.t('Close shift', 'पाळी संपवा'),
-                      enabled: _valid,
-                      onTap: () => _submit(interim: false),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
+          );
   }
+
+  // Footer — after-post projection, block reason, and the two action buttons.
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: _f6,
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Text.rich(
+                TextSpan(
+                  style: F.hind(11,
+                      w: FontWeight.w400, ls: 0.4, color: Y2.muted),
+                  children: [
+                    TextSpan(text: S.t('AFTER THIS POST →', 'या नोंदीनंतर →')),
+                    const TextSpan(text: ' '),
+                    TextSpan(
+                        text: '${_done + _good}/$_plan',
+                        style: F.mono(13, color: Y2.ink)),
+                  ],
+                ),
+              ),
+            ),
+            // Tell the operator WHY posting is blocked, so the disabled button
+            // never reads as "broken".
+            if (_blockReason != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 9),
+                child: Row(
+                  children: [
+                    const Icon(I2.warning, size: 14, color: Y2.orange),
+                    const SizedBox(width: 6),
+                    Flexible(
+                      child: Text(_blockReason!,
+                          style: F.hind(12,
+                              w: FontWeight.w600, color: Y2.orange)),
+                    ),
+                  ],
+                ),
+              ),
+            Row(
+              children: [
+                Expanded(
+                  flex: 10,
+                  // Posts an INTERIM confirmation (mid-shift); same validity gate.
+                  child: OutlineButton2(
+                    label: S.t('Save interim', 'तात्पुरते जतन'),
+                    onTap: _valid ? () => _submit(interim: true) : null,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  flex: 13,
+                  // Visibly disabled until a good count (and any required
+                  // reason) is present — no more silent snackbar-on-invalid.
+                  child: PrimaryButton2(
+                    label: S.t('Close shift', 'पाळी संपवा'),
+                    enabled: _valid,
+                    onTap: () => _submit(interim: false),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
 
   // A count that cross-fades when it changes, so +10 feels distinct from +1.
   Widget _stepBtn(String glyph, double dim, VoidCallback onTap,

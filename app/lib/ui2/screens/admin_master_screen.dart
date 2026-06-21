@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/polish2.dart';
@@ -86,6 +87,14 @@ class _Ui2AdminMasterScreenState extends State<Ui2AdminMasterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  Widget _phone() {
     final loaded = _cache[_tab];
     return Column(
       children: [
@@ -100,6 +109,48 @@ class _Ui2AdminMasterScreenState extends State<Ui2AdminMasterScreen> {
         _tabBar(),
         Expanded(child: _body(loaded)),
       ],
+    );
+  }
+
+  // ---- desktop layout (capped content + a responsive card grid) ----
+
+  Widget _desktop() {
+    final loaded = _cache[_tab];
+    return Column(
+      children: [
+        ScreenHeader2(
+          title: S.t('MASTER DATA', 'मास्टर डेटा'),
+          demo: loaded?.demo ?? false,
+          trailing: loaded == null
+              ? null
+              : Text('${loaded.data.length}',
+                  style: F.mono(12, color: Y2.muted)),
+        ),
+        _tabBar(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: _desktopBody(loaded),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _desktopBody(Loaded<List<Json>>? loaded) {
+    if (loaded == null) return const SkeletonRows(count: 6);
+    final rows = loaded.data;
+    if (rows.isEmpty) return _empty();
+    // Card-shaped rows render as a 2-3 column grid (same cards as phone), so
+    // a wide monitor shows many records at once without stretching them flat.
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+      child: CardGrid2(
+        minTileWidth: 340,
+        maxColumns: 3,
+        gap: 14,
+        children: [for (final row in rows) _card(row)],
+      ),
     );
   }
 

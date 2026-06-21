@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/polish2.dart';
@@ -13,8 +14,12 @@ import '../widgets/polish2.dart';
 /// [Data.settings]; clearly-marked DEMO fallback when the backend is unreachable
 /// or the table is still empty. Each setting renders as a card: the key humanized
 /// as a title, with the value shown readably — `ops_mode` as a tinted Pill2,
-/// everything else as muted 'key: value' lines. Renders inside the office shell —
-/// no responsive code of its own. Changing settings is server-side for now.
+/// everything else as muted 'key: value' lines. Changing settings is
+/// server-side for now.
+///
+/// Phone: a single stacked list of setting cards. Desktop: the same cards laid
+/// out in a centered multi-column grid so a wide window doesn't stretch each
+/// card edge-to-edge. Both branches share [_card]/[_opsMode]/[_entries].
 class Ui2AdminSettingsScreen extends StatefulWidget {
   const Ui2AdminSettingsScreen({super.key, required this.nav});
   final PhoneNav nav;
@@ -49,28 +54,52 @@ class _Ui2AdminSettingsScreenState extends State<Ui2AdminSettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // The read-only hint shown above the cards on both form factors.
+  Widget _hint() => Text(
+      S.t('Read-only — change settings on the server for now.',
+          'सध्या फक्त वाचनासाठी — सर्व्हरवर बदला.'),
+      style: F.hind(12, color: Y2.muted),
+      maxLines: 2);
+
+  Widget _header() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return ScreenHeader2(
+      title: S.t('SETTINGS', 'सेटिंग्ज'),
+      demo: loaded?.demo ?? false,
+      trailing: rows.isEmpty
+          ? null
+          : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
+    );
+  }
+
+  Widget _empty() => EmptyState2(
+        icon: Icons.tune_outlined,
+        title: S.t('No settings', 'सेटिंग्ज नाहीत'),
+        subtitle: S.t('No system settings are configured on the server.',
+            'सर्व्हरवर कोणत्याही सिस्टम सेटिंग्ज कॉन्फिगर केलेल्या नाहीत.'),
+      );
+
+  // ---- phone layout (single stacked list) ----
+
+  Widget _phone() {
     final loaded = _data;
     final rows = loaded?.data ?? const <Json>[];
     return Column(
       children: [
-        ScreenHeader2(
-          title: S.t('SETTINGS', 'सेटिंग्ज'),
-          demo: loaded?.demo ?? false,
-          trailing: rows.isEmpty
-              ? null
-              : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
-        ),
+        _header(),
         Expanded(
           child: loaded == null
               ? const SkeletonRows(count: 3)
               : rows.isEmpty
-                  ? EmptyState2(
-                      icon: Icons.tune_outlined,
-                      title: S.t('No settings', 'सेटिंग्ज नाहीत'),
-                      subtitle: S.t(
-                          'No system settings are configured on the server.',
-                          'सर्व्हरवर कोणत्याही सिस्टम सेटिंग्ज कॉन्फिगर केलेल्या नाहीत.'),
-                    )
+                  ? _empty()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                       itemCount: rows.length + 1,
@@ -79,16 +108,50 @@ class _Ui2AdminSettingsScreenState extends State<Ui2AdminSettingsScreen> {
                         if (i == 0) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                                S.t(
-                                    'Read-only — change settings on the server for now.',
-                                    'सध्या फक्त वाचनासाठी — सर्व्हरवर बदला.'),
-                                style: F.hind(12, color: Y2.muted),
-                                maxLines: 2),
+                            child: _hint(),
                           );
                         }
                         return _card(rows[i - 1]);
                       },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // ---- desktop layout (centered multi-column grid) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: loaded == null
+              ? const SkeletonRows(count: 3)
+              : rows.isEmpty
+                  ? _empty()
+                  : ResponsiveContent(
+                      maxWidth: 1040,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(24, 18, 24, 24),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _hint(),
+                            const SizedBox(height: 14),
+                            CardGrid2(
+                              minTileWidth: 340,
+                              maxColumns: 2,
+                              gap: 16,
+                              children: [
+                                for (final r in rows) _card(r),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
         ),
       ],

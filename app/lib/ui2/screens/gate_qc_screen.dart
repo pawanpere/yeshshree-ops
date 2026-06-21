@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/strings.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/frame.dart';
@@ -155,23 +156,42 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const StatusBar2(),
-        // ---- Header: back + title (entry context) + step counter ----
-        ScreenHeader2(
-          title: S.t('INWARD QC', 'आवक QC'),
-          subtitle: _entryContext(),
-          onBack: nav.pop,
-          trailing: Text('3/4', style: F.mono(12, color: Y2.muted)),
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- Header: back + title (entry context) + step counter. Shared by both
+  // form factors (only StatusBar2 chrome differs). ----
+  Widget _header() => ScreenHeader2(
+        title: S.t('INWARD QC', 'आवक QC'),
+        subtitle: _entryContext(),
+        onBack: nav.pop,
+        trailing: Text('3/4', style: F.mono(12, color: Y2.muted)),
+      );
+
+  // ---- Footer CTA. Shared by both form factors. ----
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
         ),
-        // ---- Body ----
-        Expanded(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+        child: PrimaryButton2(
+          label: S.t('Receive into store', 'स्टोअरमध्ये घ्या'),
+          enabled: _valid,
+          onTap: _continue,
+        ),
+      );
+
+  /// The form fields + helpers, identical on phone and desktop. The desktop
+  /// branch centers this at a comfortable reading width; the phone branch shows
+  /// it edge-to-edge in the 336px frame.
+  Widget _body() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
                 Text(
                     _isComponent
                         ? S.t('RECEIVED COUNT · PIECES', 'मिळालेली संख्या · नग')
@@ -357,22 +377,42 @@ class _Ui2GateQcScreenState extends State<Ui2GateQcScreen> {
                   ),
                 ),
               ],
+      ); // _body Column
+
+  // ---- Phone layout: device chrome + header + scrolling body + footer.
+  // Byte-for-byte the original layout. ----
+  Widget _phone() {
+    return Column(
+      children: [
+        const StatusBar2(),
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
+            child: _body(),
+          ),
+        ),
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- Desktop layout: NO StatusBar2 chrome. Header, then the same form
+  // centered at a comfortable reading width, then the footer. ----
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: ResponsiveContent(
+              maxWidth: 720,
+              child: _body(),
             ),
           ),
         ),
-        // ---- Footer CTA ----
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: PrimaryButton2(
-            label: S.t('Receive into store', 'स्टोअरमध्ये घ्या'),
-            enabled: _valid,
-            onTap: _continue,
-          ),
-        ),
+        _footer(),
       ],
     );
   }

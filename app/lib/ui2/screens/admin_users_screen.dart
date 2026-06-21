@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/bits.dart';
@@ -178,37 +179,70 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // Shared header — identical title + Add-user CTA on phone and desktop.
+  Widget _header() {
     final loaded = _data;
+    return ScreenHeader2(
+      title: S.t('USERS', 'वापरकर्ते'),
+      demo: loaded?.demo ?? false,
+      trailing: _adding
+          ? null
+          : Pressable2(
+              onTap: () => setState(() => _adding = true),
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+                decoration: BoxDecoration(
+                  color: Y2.accent,
+                  borderRadius: BorderRadius.circular(9),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.add, size: 15, color: Colors.white),
+                    const SizedBox(width: 4),
+                    Text(S.t('Add', 'जोडा'),
+                        style: F.hind(12,
+                            w: FontWeight.w600, color: Colors.white)),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  // ----- PHONE layout (unchanged) -----
+
+  Widget _phone() {
     return Column(
       children: [
-        ScreenHeader2(
-          title: S.t('USERS', 'वापरकर्ते'),
-          demo: loaded?.demo ?? false,
-          trailing: _adding
-              ? null
-              : Pressable2(
-                  onTap: () => setState(() => _adding = true),
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Y2.accent,
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add, size: 15, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(S.t('Add', 'जोडा'),
-                            style: F.hind(12,
-                                w: FontWeight.w600, color: Colors.white)),
-                      ],
-                    ),
-                  ),
-                ),
-        ),
+        _header(),
         Expanded(child: _adding ? _form() : _list()),
+      ],
+    );
+  }
+
+  // ----- DESKTOP layout -----
+  // Same header + Add CTA. The LIST view becomes a centered data table; the ADD
+  // form is centered and width-capped so fields don't stretch edge-to-edge.
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: _adding ? _formWide() : _listWide(),
+          ),
+        ),
       ],
     );
   }
@@ -378,6 +412,266 @@ class _Ui2AdminUsersScreenState extends State<Ui2AdminUsersScreen> {
         bg: bg,
         borderColor: line,
         dot: false);
+  }
+
+  // ----- DESKTOP LIST view (data table) -----
+  // Same data source, SkeletonRows + EmptyState2, and tap target (Deactivate).
+  // Rows render as table columns; the role uses the same _rolePill as the cards.
+
+  // Column widths shared by header + rows so the cells line up. Exactly one
+  // column — the primary "User" name — is Expanded and absorbs all remaining
+  // width; every OTHER column is a fixed SizedBox whose content is wrapped in
+  // FittedBox(scaleDown) so it can never overflow. A shared [_gap] is inserted
+  // between EVERY pair of adjacent columns (identically in the header and in the
+  // data rows) so right-aligned values never butt up against the next column's
+  // text. The sum of the fixed columns + gaps + the Row's horizontal padding
+  // (16 + 16) stays well under 900px so the row fits any content width from
+  // ~820px up — even with the wide fixed-width test font.
+  //   170 + 110 + 104 + 56 + 116 (fixed) + 5×16 (gaps) + 32 (padding) = 668px.
+  static const _cwUser = 170.0; // "Username" column (secondary text → fixed)
+  static const _cwRole = 110.0;
+  static const _cwStation = 104.0;
+  static const _cwPin = 56.0;
+  static const _cwAction = 116.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _listWide() {
+    final loaded = _data;
+    if (loaded == null) return const SkeletonRows(count: 5);
+    final rows = loaded.data;
+    if (rows.isEmpty) {
+      return EmptyState2(
+        icon: Icons.people_outline,
+        title: S.t('No users yet', 'अद्याप वापरकर्ते नाहीत'),
+        subtitle: S.t(
+            'Add a user to give them access to the plant.',
+            'प्लांटमध्ये प्रवेश देण्यासाठी वापरकर्ता जोडा.'),
+      );
+    }
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Text(
+              S.t('${rows.length} active users',
+                  '${rows.length} सक्रिय वापरकर्ते'),
+              style: F.hind(12, color: Y2.muted)),
+        ),
+        Card2(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              // Header row.
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF6F8FB),
+                  border: Border(bottom: BorderSide(color: Y2.line)),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(child: _th(S.t('User', 'वापरकर्ता'))),
+                    _gap,
+                    SizedBox(
+                        width: _cwUser,
+                        child: _thFit(S.t('Username', 'वापरकर्तानाव'))),
+                    _gap,
+                    SizedBox(
+                        width: _cwRole,
+                        child: _thFit(S.t('Role', 'भूमिका'))),
+                    _gap,
+                    SizedBox(
+                        width: _cwStation,
+                        child: _thFit(S.t('Station', 'स्टेशन'))),
+                    _gap,
+                    SizedBox(
+                        width: _cwPin, child: _thFit(S.t('PIN', 'पिन'))),
+                    _gap,
+                    SizedBox(
+                        width: _cwAction,
+                        child: _thFit('', alignment: Alignment.centerRight)),
+                  ],
+                ),
+              ),
+              for (var i = 0; i < rows.length; i++)
+                _userRow(rows[i], last: i == rows.length - 1),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _th(String s) => Text(s,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  // Header cell for a FIXED-width column: left-aligned (or as given) and wrapped
+  // in FittedBox(scaleDown) so a wide label shrinks instead of overflowing.
+  Widget _thFit(String s, {Alignment alignment = Alignment.centerLeft}) => Align(
+        alignment: alignment,
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: alignment,
+          child: _th(s),
+        ),
+      );
+
+  Widget _userRow(Json u, {required bool last}) {
+    final fullName =
+        '${u['full_name'] ?? S.t('Unnamed user', 'नाव नसलेला वापरकर्ता')}';
+    final username = '${u['username'] ?? '—'}';
+    final role = '${u['role'] ?? ''}';
+    final station = u['station'];
+    final hasStation = station != null && '$station'.trim().isNotEmpty;
+    final hasPin = u['has_pin'] == true;
+    final id = u['id'];
+    final busy = id is int && _deactivating == id;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border:
+            last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Name — the ONE Expanded primary text column; absorbs the remainder.
+          Expanded(
+            child: Text(fullName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+          ),
+          _gap,
+          // Username — secondary text column: fixed width, shrink to fit.
+          SizedBox(
+            width: _cwUser,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text('@$username',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.mono(12, color: Y2.muted)),
+              ),
+            ),
+          ),
+          _gap,
+          // Role pill — fixed width, shrink to fit.
+          SizedBox(
+            width: _cwRole,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: _rolePill(role),
+              ),
+            ),
+          ),
+          _gap,
+          // Station — fixed width, shrink to fit.
+          SizedBox(
+            width: _cwStation,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(hasStation ? '$station' : '—',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style:
+                        F.hind(12, color: hasStation ? Y2.body : Y2.muted2)),
+              ),
+            ),
+          ),
+          _gap,
+          // PIN marker — fixed width, shrink to fit.
+          SizedBox(
+            width: _cwPin,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: hasPin
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Y2.lineSoft,
+                          borderRadius: BorderRadius.circular(Y2.rPill),
+                        ),
+                        child: Text('PIN',
+                            style: F.hind(9,
+                                w: FontWeight.w600,
+                                ls: 0.4,
+                                color: Y2.muted)),
+                      )
+                    : Text('—', style: F.hind(12, color: Y2.muted2)),
+              ),
+            ),
+          ),
+          _gap,
+          // Deactivate action — fixed width, shrink to fit. Same handler/
+          // behavior as the phone card.
+          SizedBox(
+            width: _cwAction,
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: Pressable2(
+                  onTap: busy ? null : () => _deactivate(u),
+                  child: Opacity(
+                    opacity: busy ? 0.5 : 1,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (busy) ...[
+                          const SizedBox(
+                            width: 12,
+                            height: 12,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Y2.red),
+                          ),
+                          const SizedBox(width: 7),
+                        ],
+                        Text(S.t('Deactivate', 'निष्क्रिय करा'),
+                            style: F.hind(12,
+                                w: FontWeight.w600, color: Y2.red)),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ----- DESKTOP ADD-USER form -----
+  // Reuses the exact phone _form() body, centered and width-capped so inputs
+  // don't stretch the full width of a wide monitor.
+
+  Widget _formWide() {
+    return Align(
+      alignment: Alignment.topCenter,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 640),
+        child: _form(),
+      ),
+    );
   }
 
   // ----- ADD-USER form -----

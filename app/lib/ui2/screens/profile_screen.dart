@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/strings.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
@@ -69,39 +70,20 @@ class _Ui2ProfileScreenState extends State<Ui2ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Y2.line))),
-          child: Row(
-            children: [
-              Container(
-                width: 46,
-                height: 46,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Y2.lineSoft,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFD2DAE6)),
-                ),
-                child: Text('RK', style: F.khand(18, color: Y2.ink)),
-              ),
-              const SizedBox(width: 11),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('RAMESH K.',
-                      style: F.khand(18, ls: 0.3, height: 1, color: Y2.ink)),
-                  Text(S.t('Supervisor · $_station', 'सुपरवायझर · $_station'),
-                      style: F.hind(12, color: Y2.muted)),
-                ],
-              ),
-            ],
-          ),
-        ),
+        _identityHeader(wide: false),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
@@ -109,90 +91,212 @@ class _Ui2ProfileScreenState extends State<Ui2ProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 _sectionLabel(S.t('PREFERENCES', 'प्राधान्ये')),
-                _row(
-                  Icons.language_rounded,
-                  S.t('Language', 'भाषा'),
-                  Text(S.t('English', 'मराठी'),
-                      style: F.hind(14, w: FontWeight.w600, color: Y2.accent)),
-                  onTap: _toggleLang,
-                ),
-                const SizedBox(height: 9),
-                _row(
-                  Icons.factory_outlined,
-                  S.t('My station', 'माझे स्टेशन'),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(_station, style: F.hind(14, color: Y2.muted)),
-                    const Icon(I2.chevronDown, size: 20, color: Y2.muted),
-                  ]),
-                  onTap: _pickStation,
-                ),
-                const SizedBox(height: 9),
-                _row(
-                  Icons.notifications_active_outlined,
-                  S.t('Notification sounds', 'सूचना आवाज'),
-                  Switch.adaptive(
-                    value: _soundsOn,
-                    activeThumbColor: Y2.accent,
-                    onChanged: (v) => setState(() => _soundsOn = v),
-                  ),
-                  onTap: () => setState(() => _soundsOn = !_soundsOn),
-                ),
+                _preferenceRows(),
                 const SizedBox(height: 16),
                 _sectionLabel(S.t('ACCOUNT', 'खाते')),
-                _row(
-                  Icons.lock_outline_rounded,
-                  S.t('Change PIN', 'PIN बदला'),
-                  const Icon(I2.chevronRight, size: 18, color: Y2.muted),
-                  onTap: _changePin,
-                ),
-                const SizedBox(height: 9),
-                _row(
-                  I2.sync,
-                  S.t('Sync queue', 'सिंक रांग'),
-                  Row(mainAxisSize: MainAxisSize.min, children: [
-                    Text(S.t('1 waiting', '1 प्रतीक्षेत'),
-                        style: F.hind(14, color: Y2.muted)),
-                    const Icon(I2.chevronRight, size: 18, color: Y2.muted),
-                  ]),
-                  onTap: () => nav.tab(2),
-                ),
+                _accountRows(),
                 const SizedBox(height: 16),
                 _sectionLabel(S.t('ABOUT', 'विषयी')),
-                _row(
-                  Icons.info_outline_rounded,
-                  S.t('App version', 'अॅप आवृत्ती'),
-                  Text('4.2.1', style: F.mono(13, color: Y2.muted)),
-                  bold: false,
-                ),
+                _aboutRows(),
               ],
             ),
           ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          // Destructive: red-tinted, and confirms before signing out.
-          child: Pressable2(
-            onTap: _confirmSignOut,
-            child: Container(
-              alignment: Alignment.center,
-              padding: const EdgeInsets.symmetric(vertical: 13),
-              decoration: BoxDecoration(
-                color: Y2.redTint,
-                border: Border.all(color: Y2.redLine),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(S.t('Sign out', 'साइन आउट'),
-                  style: F.hind(14, w: FontWeight.w600, color: Y2.red)),
-            ),
-          ),
-        ),
+        _signOutFooter(),
       ],
     );
   }
+
+  // ---- desktop layout ----
+  //
+  // No StatusBar2 device chrome. The identity header stays as the screen's own
+  // header; the settings sections are centered at a comfortable reading width and
+  // laid out two-up (Preferences | Account+About) on wide boxes, with the
+  // destructive Sign out pinned to the footer exactly as on phone.
+  Widget _desktop() {
+    return Column(
+      children: [
+        _identityHeader(wide: true),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: ResponsiveContent(
+              maxWidth: 720,
+              child: LayoutBuilder(builder: (context, c) {
+                final twoCol = c.maxWidth >= 600;
+                final prefs = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionLabel(S.t('PREFERENCES', 'प्राधान्ये')),
+                    _preferenceRows(),
+                  ],
+                );
+                final accountAbout = Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _sectionLabel(S.t('ACCOUNT', 'खाते')),
+                    _accountRows(),
+                    const SizedBox(height: 16),
+                    _sectionLabel(S.t('ABOUT', 'विषयी')),
+                    _aboutRows(),
+                  ],
+                );
+                if (!twoCol) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      prefs,
+                      const SizedBox(height: 16),
+                      accountAbout,
+                    ],
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: prefs),
+                    const SizedBox(width: 20),
+                    Expanded(child: accountAbout),
+                  ],
+                );
+              }),
+            ),
+          ),
+        ),
+        _signOutFooter(),
+      ],
+    );
+  }
+
+  // ---- shared pieces ----
+
+  // Identity strip (avatar + name + role/station). Shared by both layouts; the
+  // phone path renders exactly as the original, desktop adds overflow safety so
+  // the name/role can't overflow a wide row.
+  Widget _identityHeader({required bool wide}) {
+    final nameLine = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('RAMESH K.',
+            maxLines: wide ? 1 : null,
+            overflow: wide ? TextOverflow.ellipsis : null,
+            style: F.khand(18, ls: 0.3, height: 1, color: Y2.ink)),
+        Text(S.t('Supervisor · $_station', 'सुपरवायझर · $_station'),
+            maxLines: wide ? 1 : null,
+            overflow: wide ? TextOverflow.ellipsis : null,
+            style: F.hind(12, color: Y2.muted)),
+      ],
+    );
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Y2.line))),
+      child: Row(
+        children: [
+          Container(
+            width: 46,
+            height: 46,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: Y2.lineSoft,
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD2DAE6)),
+            ),
+            child: Text('RK', style: F.khand(18, color: Y2.ink)),
+          ),
+          const SizedBox(width: 11),
+          wide ? Expanded(child: nameLine) : nameLine,
+        ],
+      ),
+    );
+  }
+
+  Widget _preferenceRows() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _row(
+            Icons.language_rounded,
+            S.t('Language', 'भाषा'),
+            Text(S.t('English', 'मराठी'),
+                style: F.hind(14, w: FontWeight.w600, color: Y2.accent)),
+            onTap: _toggleLang,
+          ),
+          const SizedBox(height: 9),
+          _row(
+            Icons.factory_outlined,
+            S.t('My station', 'माझे स्टेशन'),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(_station, style: F.hind(14, color: Y2.muted)),
+              const Icon(I2.chevronDown, size: 20, color: Y2.muted),
+            ]),
+            onTap: _pickStation,
+          ),
+          const SizedBox(height: 9),
+          _row(
+            Icons.notifications_active_outlined,
+            S.t('Notification sounds', 'सूचना आवाज'),
+            Switch.adaptive(
+              value: _soundsOn,
+              activeThumbColor: Y2.accent,
+              onChanged: (v) => setState(() => _soundsOn = v),
+            ),
+            onTap: () => setState(() => _soundsOn = !_soundsOn),
+          ),
+        ],
+      );
+
+  Widget _accountRows() => Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _row(
+            Icons.lock_outline_rounded,
+            S.t('Change PIN', 'PIN बदला'),
+            const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            onTap: _changePin,
+          ),
+          const SizedBox(height: 9),
+          _row(
+            I2.sync,
+            S.t('Sync queue', 'सिंक रांग'),
+            Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(S.t('1 waiting', '1 प्रतीक्षेत'),
+                  style: F.hind(14, color: Y2.muted)),
+              const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            ]),
+            onTap: () => nav.tab(2),
+          ),
+        ],
+      );
+
+  Widget _aboutRows() => _row(
+        Icons.info_outline_rounded,
+        S.t('App version', 'अॅप आवृत्ती'),
+        Text('4.2.1', style: F.mono(13, color: Y2.muted)),
+        bold: false,
+      );
+
+  // Destructive: red-tinted, and confirms before signing out. Shared footer.
+  Widget _signOutFooter() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: Pressable2(
+          onTap: _confirmSignOut,
+          child: Container(
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(vertical: 13),
+            decoration: BoxDecoration(
+              color: Y2.redTint,
+              border: Border.all(color: Y2.redLine),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(S.t('Sign out', 'साइन आउट'),
+                style: F.hind(14, w: FontWeight.w600, color: Y2.red)),
+          ),
+        ),
+      );
 
   Widget _sectionLabel(String label) => Padding(
         padding: const EdgeInsets.only(left: 2, bottom: 8),

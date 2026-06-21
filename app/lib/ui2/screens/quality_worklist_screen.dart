@@ -4,6 +4,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -60,30 +61,49 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared header pieces ----
+
+  Widget _header() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return ScreenHeader2(
+      title: S.t('QUALITY — WORKLIST', 'गुणवत्ता — कार्यसूची'),
+      onBack: nav.pop,
+      demo: loaded?.demo ?? false,
+      trailing: rows.isEmpty
+          ? null
+          : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
+    );
+  }
+
+  Widget get _empty => EmptyState2(
+        icon: Icons.fact_check_outlined,
+        title: S.t('All caught up', 'सर्व पूर्ण'),
+        subtitle: S.t('No matched arrivals are waiting for inward QC.',
+            'आवक QC साठी जुळलेली कोणतीही आवक प्रतीक्षेत नाही.'),
+      );
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     final loaded = _data;
     final rows = loaded?.data ?? const <Json>[];
     return Column(
       children: [
         const StatusBar2(),
-        ScreenHeader2(
-          title: S.t('QUALITY — WORKLIST', 'गुणवत्ता — कार्यसूची'),
-          onBack: nav.pop,
-          demo: loaded?.demo ?? false,
-          trailing: rows.isEmpty
-              ? null
-              : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
-        ),
+        _header(),
         Expanded(
           child: loaded == null
               ? const SkeletonRows(count: 4)
               : rows.isEmpty
-                  ? EmptyState2(
-                      icon: Icons.fact_check_outlined,
-                      title: S.t('All caught up', 'सर्व पूर्ण'),
-                      subtitle: S.t(
-                          'No matched arrivals are waiting for inward QC.',
-                          'आवक QC साठी जुळलेली कोणतीही आवक प्रतीक्षेत नाही.'),
-                    )
+                  ? _empty
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                       itemCount: rows.length + 1,
@@ -103,6 +123,195 @@ class _Ui2QualityWorklistScreenState extends State<Ui2QualityWorklistScreen> {
                     ),
         ),
       ],
+    );
+  }
+
+  // ---- desktop layout (data table) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: loaded == null
+              ? const SkeletonRows(count: 6)
+              : rows.isEmpty
+                  ? _empty
+                  : ResponsiveContent(
+                      maxWidth: 1200,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 10, left: 2),
+                              child: Text(
+                                  S.t('${rows.length} waiting for QC',
+                                      '${rows.length} QC च्या प्रतीक्षेत'),
+                                  style: F.hind(12, color: Y2.muted)),
+                            ),
+                            _table(rows),
+                          ],
+                        ),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // Column widths shared by header + rows so the cells line up. A gap is inserted
+  // between adjacent columns (see _gap) so right-aligned numbers / pills never
+  // butt up against the next column's text. Total fixed widths + gaps stay well
+  // under 900px; the Vehicle column is the lone Expanded that absorbs the slack.
+  static const _wSupplier = 220.0;
+  static const _wQty = 124.0;
+  static const _wStatus = 116.0;
+  static const _wAction = 176.0;
+  static const _gap = SizedBox(width: 16);
+
+  /// Scale-to-fit wrapper so numeric / status cells never overflow their fixed
+  /// column, whatever the font metrics.
+  Widget _fit(Widget child, {Alignment align = Alignment.centerRight}) =>
+      FittedBox(fit: BoxFit.scaleDown, alignment: align, child: child);
+
+  Widget _table(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _th(S.t('Vehicle', 'वाहन'))),
+                _gap,
+                SizedBox(
+                    width: _wSupplier,
+                    child: _th(S.t('Supplier · material', 'पुरवठादार · माल'))),
+                _gap,
+                SizedBox(
+                    width: _wQty,
+                    child: _th(S.t('Expected', 'अपेक्षित'), right: true)),
+                _gap,
+                SizedBox(width: _wStatus, child: _th(S.t('Status', 'स्थिती'))),
+                _gap,
+                SizedBox(width: _wAction, child: _th(S.t('Action', 'कृती'))),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _tableRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(String s, {bool right = false}) => Text(s,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  Widget _tableRow(Json row, bool last) {
+    final vehicle =
+        '${row['vehicle'] ?? S.t('Unknown vehicle', 'अज्ञात वाहन')}';
+    final supplier = '${row['supplier'] ?? '—'}';
+    final material = '${row['material'] ?? '—'}';
+    final qty = row['qty_expected'];
+    final isComponent = '${row['category'] ?? 'rm'}' == 'component';
+    final unit = isComponent ? S.t('pcs', 'नग') : 'kg';
+    return Pressable2(
+      scale: 0.99,
+      onTap: () => _startQc(row),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+        decoration: BoxDecoration(
+          border: last
+              ? null
+              : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Vehicle (lone Expanded — absorbs the slack).
+            Expanded(
+              child: Text(vehicle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
+            ),
+            _gap,
+            // Supplier + material.
+            SizedBox(
+              width: _wSupplier,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(supplier,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: F.hind(13, w: FontWeight.w600, color: Y2.ink)),
+                  Text(material,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: F.hind(11, color: Y2.muted)),
+                ],
+              ),
+            ),
+            _gap,
+            // Expected qty (numeric, right-aligned).
+            SizedBox(
+              width: _wQty,
+              child: _fit(Text(
+                  qty == null ? '—' : '$qty $unit',
+                  maxLines: 1,
+                  style: F.mono(13, w: FontWeight.w700, color: Y2.body))),
+            ),
+            _gap,
+            // Status pill.
+            SizedBox(
+              width: _wStatus,
+              child: _fit(
+                Pill2(
+                    text: S.t('matched', 'जुळले'),
+                    fg: Y2.green,
+                    bg: Y2.greenTint,
+                    borderColor: Y2.greenLine),
+                align: Alignment.centerLeft,
+              ),
+            ),
+            _gap,
+            // Start inward QC affordance.
+            SizedBox(
+              width: _wAction,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  const Icon(Icons.science_outlined,
+                      size: 15, color: Y2.accent),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(S.t('Start inward QC', 'आवक QC सुरू करा'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style:
+                            F.hind(13, w: FontWeight.w600, color: Y2.accent)),
+                  ),
+                  const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

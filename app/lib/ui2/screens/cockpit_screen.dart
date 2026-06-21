@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -95,56 +96,20 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged) -------------------------------------------
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Y2.line))),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Flexible(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                              S.t('${_lineName.toUpperCase()} · COCKPIT',
-                                  '$_lineName · कॉकपिट'),
-                              style: F.khand(19, ls: 0.3, color: Y2.ink),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false),
-                        ),
-                        if (_demo) ...[
-                          const SizedBox(width: 8),
-                          const DemoChip(),
-                        ],
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Pill2(
-                      text: S.t('RUNNING', 'सुरू'),
-                      fg: Y2.green,
-                      bg: Y2.greenTint,
-                      borderColor: Y2.greenLine),
-                ],
-              ),
-              const SizedBox(height: 9),
-              Row(children: [
-                _seg(S.t('Now', 'आता'), 0),
-                const SizedBox(width: 18),
-                _seg(S.t('Team', 'टीम'), 1),
-              ]),
-            ],
-          ),
-        ),
+        _header(),
         Expanded(
           child: (_tab == 0 && _loading)
               ? const SkeletonRows(count: 4)
@@ -156,6 +121,124 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
       ],
     );
   }
+
+  // ---- shared header (line name · COCKPIT, RUNNING pill, Now/Team tabs) -----
+  // padded so it works for both the 336px phone frame and the desktop shell.
+
+  Widget _header({EdgeInsets padding = const EdgeInsets.fromLTRB(16, 6, 16, 10)}) {
+    return Container(
+      padding: padding,
+      decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: Y2.line))),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(
+                          S.t('${_lineName.toUpperCase()} · COCKPIT',
+                              '$_lineName · कॉकपिट'),
+                          style: F.khand(19, ls: 0.3, color: Y2.ink),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false),
+                    ),
+                    if (_demo) ...[
+                      const SizedBox(width: 8),
+                      const DemoChip(),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Pill2(
+                  text: S.t('RUNNING', 'सुरू'),
+                  fg: Y2.green,
+                  bg: Y2.greenTint,
+                  borderColor: Y2.greenLine),
+            ],
+          ),
+          const SizedBox(height: 9),
+          Row(children: [
+            _seg(S.t('Now', 'आता'), 0),
+            const SizedBox(width: 18),
+            _seg(S.t('Team', 'टीम'), 1),
+          ]),
+        ],
+      ),
+    );
+  }
+
+  // ---- desktop layout ------------------------------------------------------
+  // No StatusBar2 (desktop has no phone device chrome). Same header + tabs, then
+  // the KPI/stat cards laid out in a width-aware grid, centered + width-capped.
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(padding: const EdgeInsets.fromLTRB(20, 10, 20, 12)),
+        Expanded(
+          child: (_tab == 0 && _loading)
+              ? const SkeletonRows(count: 4)
+              : ResponsiveContent(
+                  maxWidth: 1200,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
+                    children:
+                        _tab == 0 ? _nowDesktop() : _teamDesktop(),
+                  ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  // "Now" tab on desktop: the shift-plan banner full width, then the yield /
+  // rejects KPI tiles in a 2-4 column CardGrid2 (same tiles, same data), the
+  // approval banner, and the record-output CTA on its own row (kept narrow so
+  // it does not stretch to a full-width slab on a wide monitor).
+  List<Widget> _nowDesktop() => [
+        _shiftPlanCard(),
+        const SizedBox(height: 14),
+        // Two KPI tiles share the row evenly (2-up) so they fill the width
+        // instead of floating with empty space to the right.
+        CardGrid2(
+          minTileWidth: 260,
+          maxColumns: 2,
+          gap: 14,
+          children: [
+            _yieldStat(),
+            _bigStat(_reject.round().toString(), null,
+                const Glyph(GlyphShape.triangle, Y2.red, size: 11),
+                S.t('rejects', 'नापास')),
+          ],
+        ),
+        ..._approvalBanner(),
+        const SizedBox(height: 14),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: _recordOutputCta(),
+          ),
+        ),
+      ];
+
+  // "Team" tab on desktop: members in a multi-column grid instead of one column.
+  List<Widget> _teamDesktop() => [
+        CardGrid2(
+          minTileWidth: 300,
+          maxColumns: 3,
+          gap: 12,
+          children: _members(),
+        ),
+      ];
 
   Widget _seg(String label, int i) => GestureDetector(
         behavior: HitTestBehavior.opaque,
@@ -175,41 +258,7 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
       );
 
   List<Widget> _now() => [
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-          decoration: BoxDecoration(
-            color: Y2.card,
-            borderRadius: BorderRadius.circular(Y2.rCard),
-            border: Border.all(color: Y2.line),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(S.t('SHIFT PLAN', 'शिफ्ट प्लॅन'),
-                      style: F.hind(11,
-                          w: FontWeight.w600, ls: 0.5, color: Y2.muted)),
-                  // Count-up ticker on the plan position so the cockpit reads live.
-                  Ticker2(_good.round(),
-                      style: F.mono(14, color: Y2.navy),
-                      suffix: '/${_planned.round()}'),
-                ],
-              ),
-              const SizedBox(height: 7),
-              // Animated fill (0 → good/planned) on mount.
-              AnimatedBar2(
-                  fraction:
-                      _planned > 0 ? (_good / _planned).clamp(0.0, 1.0) : 0.0),
-              const SizedBox(height: 8),
-              Text(
-                  S.t('$_pct% done · ${_remaining.round()} remaining',
-                      '$_pct% पूर्ण · ${_remaining.round()} शिल्लक'),
-                  style: F.hind(12, color: Y2.body)),
-            ],
-          ),
-        ),
+        _shiftPlanCard(),
         const SizedBox(height: 11),
         IntrinsicHeight(
           child: Row(
@@ -226,28 +275,68 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
         ),
         ..._approvalBanner(),
         const SizedBox(height: 11),
-        Pressable2(
-          onTap: () => nav.go(ScreenId.confirmForm),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
-            decoration: BoxDecoration(
-                color: Y2.accent, borderRadius: BorderRadius.circular(12)),
-            child: Row(
+        _recordOutputCta(),
+      ];
+
+  // Shift-plan banner — count-up ticker on the plan position + animated fill.
+  Widget _shiftPlanCard() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+        decoration: BoxDecoration(
+          color: Y2.card,
+          borderRadius: BorderRadius.circular(Y2.rCard),
+          border: Border.all(color: Y2.line),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded(
-                  child: Text(S.t('Record output now', 'आता आउटपुट नोंदवा'),
-                      style: F.hind(16, w: FontWeight.w600, color: Colors.white),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: false),
-                ),
-                const SizedBox(width: 8),
-                const Icon(I2.arrowForward, size: 18, color: Colors.white),
+                Text(S.t('SHIFT PLAN', 'शिफ्ट प्लॅन'),
+                    style: F.hind(11,
+                        w: FontWeight.w600, ls: 0.5, color: Y2.muted)),
+                // Count-up ticker on the plan position so the cockpit reads live.
+                Ticker2(_good.round(),
+                    style: F.mono(14, color: Y2.navy),
+                    suffix: '/${_planned.round()}'),
               ],
             ),
+            const SizedBox(height: 7),
+            // Animated fill (0 → good/planned) on mount.
+            AnimatedBar2(
+                fraction:
+                    _planned > 0 ? (_good / _planned).clamp(0.0, 1.0) : 0.0),
+            const SizedBox(height: 8),
+            Text(
+                S.t('$_pct% done · ${_remaining.round()} remaining',
+                    '$_pct% पूर्ण · ${_remaining.round()} शिल्लक'),
+                style: F.hind(12, color: Y2.body)),
+          ],
+        ),
+      );
+
+  // Primary CTA — record output now.
+  Widget _recordOutputCta() => Pressable2(
+        onTap: () => nav.go(ScreenId.confirmForm),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 14),
+          decoration: BoxDecoration(
+              color: Y2.accent, borderRadius: BorderRadius.circular(12)),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(S.t('Record output now', 'आता आउटपुट नोंदवा'),
+                    style: F.hind(16, w: FontWeight.w600, color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false),
+              ),
+              const SizedBox(width: 8),
+              const Icon(I2.arrowForward, size: 18, color: Colors.white),
+            ],
           ),
         ),
-      ];
+      );
 
   // Approval banner — driven by approvalsInbox. Renders nothing when the inbox
   // is empty; otherwise a tappable red card with the open-approval count and the
@@ -425,13 +514,23 @@ class _Ui2CockpitScreenState extends State<Ui2CockpitScreen> {
         ),
       );
 
-  List<Widget> _team() => [
+  List<Widget> _team() {
+    final cards = _members();
+    return [
+      for (var i = 0; i < cards.length; i++) ...[
+        if (i > 0) const SizedBox(height: 9),
+        cards[i],
+      ],
+    ];
+  }
+
+  // The team member cards — shared between phone (single column) and desktop
+  // (multi-column grid). Same data, same card.
+  List<Widget> _members() => [
         _member('SP', 'Sunita P.', S.t('Operator · Press 3', 'ऑपरेटर · प्रेस 3'),
             S.t('on station', 'स्थानावर'), Y2.green, true),
-        const SizedBox(height: 9),
         _member('VM', 'Vijay M.', S.t('Operator · Press 1', 'ऑपरेटर · प्रेस 1'),
             S.t('on station', 'स्थानावर'), Y2.green, true),
-        const SizedBox(height: 9),
         _member('AK', 'Asha K.', S.t('QC · roving', 'QC · फिरते'),
             S.t('break', 'ब्रेक'), Y2.muted, false),
       ];

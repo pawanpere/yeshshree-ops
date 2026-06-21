@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/auth_state.dart';
 import '../core/strings.dart';
+import 'data/flow.dart';
 import 'nav.dart';
+import 'responsive.dart';
 import 'roles.dart';
 import 'screen_registry.dart';
 import 'tokens.dart';
@@ -15,8 +17,12 @@ import 'widgets/lang_toggle.dart';
 /// (NOT inside the phone frame), reuses the ui2 design system. Implements
 /// [PhoneNav] so the same screens work here as in the phone shell.
 class OfficeShell extends ConsumerStatefulWidget {
-  const OfficeShell({super.key, required this.spec});
+  const OfficeShell({super.key, required this.spec, this.initial});
   final RoleSpec spec;
+
+  /// Optional deep-link target (dev `?screen=`). A section root selects its
+  /// section; anything else is pushed on top of the first section so back works.
+  final ScreenId? initial;
 
   @override
   ConsumerState<OfficeShell> createState() => _OfficeShellState();
@@ -34,6 +40,22 @@ class _OfficeShellState extends ConsumerState<OfficeShell>
   Widget? _overlay;
 
   List<ScreenId> get _stack => _stacks[_section];
+
+  @override
+  void initState() {
+    super.initState();
+    // Deep-link (?screen=): land a section root on its section, or push a
+    // drill-down on top of the first section so back has somewhere to go.
+    final init = widget.initial;
+    if (init != null) {
+      final si = _roots.indexOf(init);
+      if (si >= 0) {
+        _section = si;
+      } else {
+        _stacks[0] = [_roots[0], init];
+      }
+    }
+  }
 
   // ---- PhoneNav ----
   @override
@@ -59,6 +81,11 @@ class _OfficeShellState extends ConsumerState<OfficeShell>
         _section = index.clamp(0, _roots.length - 1);
         _stacks[_section] = [_roots[_section]];
         _sheet = null;
+        _overlay = null;
+        // A section is an independent task root: switching ends the current flow,
+        // so reset the process-global flow bag (parity with PhoneShell.tab) — else
+        // staged context (e.g. a consumed gate.entryId) leaks across sections.
+        Ui2Flow.clear('');
       });
   @override
   void home() => tab(0);
@@ -119,7 +146,11 @@ class _OfficeShellState extends ConsumerState<OfficeShell>
 
   Widget _content() => Stack(
         children: [
-          Positioned.fill(child: buildScreen(_stack.last, this)),
+          // Cap content width on very wide monitors so screens don't stretch
+          // edge-to-edge; pass-through on narrow boxes (preserves height contract).
+          Positioned.fill(
+            child: ResponsiveContent(child: buildScreen(_stack.last, this)),
+          ),
           if (_sheet != null) ...[
             Positioned.fill(
               child: GestureDetector(

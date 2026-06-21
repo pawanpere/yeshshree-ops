@@ -6,6 +6,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/frame.dart';
@@ -95,7 +96,15 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canSave = _canSave;
+    return Responsive(
+      phone: (_) => _phone(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
@@ -110,168 +119,222 @@ class _Ui2OfflineGateScreenState extends ConsumerState<Ui2OfflineGateScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Quick manual-entry notice (walk-in / no-scan arrival). Works
-                // online or offline — the entry syncs automatically either way.
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: const Color(0x12C2410C), // rgba(194,65,12,0.07)
-                    border: Border.all(color: const Color(0xFFF0B89A)),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 5),
-                        decoration: const BoxDecoration(
-                            color: Y2.orange, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 9),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                S.t('Quick gate entry',
-                                    'झटपट गेट नोंद'),
-                                style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
-                            Text(
-                                S.t(
-                                    'For a walk-in or no-scan arrival. Let the truck through now; type what you can and it matches to an order automatically.',
-                                    'वॉक-इन किंवा स्कॅन नसलेल्या आवकसाठी. ट्रक आता आत येऊ द्या; जे शक्य आहे ते टाइप करा आणि ते आपोआप ऑर्डरशी जुळते.'),
-                                style: F.hind(12, color: Y2.body, height: 1.35)),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                _notice(),
                 const SizedBox(height: 11),
-                // Vehicle number field (real TextField).
-                _field(
-                  S.t('Vehicle number', 'वाहन क्रमांक'),
-                  Icons.local_shipping_outlined,
-                  TextField(
-                    controller: _vehicle,
-                    textCapitalization: TextCapitalization.characters,
-                    inputFormatters: V.plateInput,
-                    style: F.mono(18, color: Y2.ink),
-                    cursorColor: Y2.accent,
-                    decoration: _inputDeco('MH __ __ ____',
-                        F.mono(18, color: Y2.muted)),
-                  ),
-                  // Show the format hint only once they've typed something invalid.
-                  error: _vehicle.text.trim().isNotEmpty && !_vehicleValid
-                      ? S.t('Enter a full plate, e.g. MH12 AB 4421',
-                          'पूर्ण क्रमांक भरा, उदा. MH12 AB 4421')
-                      : null,
-                ),
+                _vehicleField(),
                 const SizedBox(height: 11),
-                // Driver name field (real TextField).
-                _field(
-                  S.t('Driver name', 'चालकाचे नाव'),
-                  Icons.person_outline_rounded,
-                  TextField(
-                    controller: _driver,
-                    textCapitalization: TextCapitalization.words,
-                    style: F.hind(15, color: Y2.ink),
-                    cursorColor: Y2.accent,
-                    decoration: _inputDeco(S.t('Type name…', 'नाव टाइप करा…'),
-                        F.hind(15, color: Y2.muted)),
-                  ),
-                  error: _driver.text.trim().isNotEmpty && !_driverValid
-                      ? S.t('Enter the driver’s name (min 3 letters)',
-                          'चालकाचे नाव भरा (किमान ३ अक्षरे)')
-                      : null,
-                ),
+                _driverField(),
                 const SizedBox(height: 11),
-                // Vendor field (real free-text TextField).
-                _field(
-                  S.t('Vendor (free text)', 'विक्रेता (मुक्त मजकूर)'),
-                  Icons.store_outlined,
-                  TextField(
-                    controller: _vendor,
-                    textCapitalization: TextCapitalization.words,
-                    style: F.hind(15, color: Y2.ink),
-                    cursorColor: Y2.accent,
-                    decoration: _inputDeco(
-                        S.t('e.g. Sandhar Steel', 'उदा. Sandhar Steel'),
-                        F.hind(15, color: Y2.muted)),
-                  ),
-                  error: _vendor.text.trim().isNotEmpty && !_vendorValid
-                      ? S.t('Enter the vendor name (min 3 letters)',
-                          'विक्रेत्याचे नाव भरा (किमान ३ अक्षरे)')
-                      : null,
-                ),
+                _vendorField(),
                 const SizedBox(height: 11),
-                // Gate time row — real current time.
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF6F8FB),
-                    border: Border.all(color: Y2.line),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Flexible(
-                        child: Text(S.t('Gate time (now)', 'गेट वेळ (आता)'),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            style: F.hind(13, color: Y2.body)),
-                      ),
-                      const SizedBox(width: 8),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Y2.lineSoft,
-                              borderRadius: BorderRadius.circular(5),
-                            ),
-                            child: Text(S.t('auto', 'स्वयं'),
-                                style: F.hind(9,
-                                    w: FontWeight.w600,
-                                    ls: 0.3,
-                                    color: Y2.muted)),
-                          ),
-                          const SizedBox(width: 7),
-                          Text(_gateTime,
-                              style: F.mono(13,
-                                  w: FontWeight.w700, color: Y2.ink)),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _gateTimeRow(),
               ],
             ),
           ),
         ),
-        // Footer CTA.
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: PrimaryButton2(
-            label: S.t('Let in & save', 'आत घ्या आणि जतन करा'),
-            busy: _busy,
-            enabled: canSave,
-            onTap: _save,
-          ),
-        ),
+        _footer(),
       ],
     );
   }
+
+  // ---- desktop layout ----
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        // No StatusBar2 on desktop — start at the screen header.
+        ScreenHeader2(
+          title: S.t('ADD GATE ENTRY', 'गेट नोंद जोडा'),
+          onBack: nav.pop,
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 20),
+            child: ResponsiveContent(
+              maxWidth: 720,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _notice(),
+                  const SizedBox(height: 14),
+                  _vehicleField(),
+                  const SizedBox(height: 14),
+                  // Driver + vendor share a row at a comfortable reading width.
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _driverField()),
+                      const SizedBox(width: 14),
+                      Expanded(child: _vendorField()),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _gateTimeRow(),
+                ],
+              ),
+            ),
+          ),
+        ),
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- shared body pieces ----
+
+  // Quick manual-entry notice (walk-in / no-scan arrival). Works online or
+  // offline — the entry syncs automatically either way.
+  Widget _notice() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0x12C2410C), // rgba(194,65,12,0.07)
+          border: Border.all(color: const Color(0xFFF0B89A)),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              margin: const EdgeInsets.only(top: 5),
+              decoration: const BoxDecoration(
+                  color: Y2.orange, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 9),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                      S.t('Quick gate entry',
+                          'झटपट गेट नोंद'),
+                      style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+                  Text(
+                      S.t(
+                          'For a walk-in or no-scan arrival. Let the truck through now; type what you can and it matches to an order automatically.',
+                          'वॉक-इन किंवा स्कॅन नसलेल्या आवकसाठी. ट्रक आता आत येऊ द्या; जे शक्य आहे ते टाइप करा आणि ते आपोआप ऑर्डरशी जुळते.'),
+                      style: F.hind(12, color: Y2.body, height: 1.35)),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+
+  // Vehicle number field (real TextField).
+  Widget _vehicleField() => _field(
+        S.t('Vehicle number', 'वाहन क्रमांक'),
+        Icons.local_shipping_outlined,
+        TextField(
+          controller: _vehicle,
+          textCapitalization: TextCapitalization.characters,
+          inputFormatters: V.plateInput,
+          style: F.mono(18, color: Y2.ink),
+          cursorColor: Y2.accent,
+          decoration:
+              _inputDeco('MH __ __ ____', F.mono(18, color: Y2.muted)),
+        ),
+        // Show the format hint only once they've typed something invalid.
+        error: _vehicle.text.trim().isNotEmpty && !_vehicleValid
+            ? S.t('Enter a full plate, e.g. MH12 AB 4421',
+                'पूर्ण क्रमांक भरा, उदा. MH12 AB 4421')
+            : null,
+      );
+
+  // Driver name field (real TextField).
+  Widget _driverField() => _field(
+        S.t('Driver name', 'चालकाचे नाव'),
+        Icons.person_outline_rounded,
+        TextField(
+          controller: _driver,
+          textCapitalization: TextCapitalization.words,
+          style: F.hind(15, color: Y2.ink),
+          cursorColor: Y2.accent,
+          decoration: _inputDeco(S.t('Type name…', 'नाव टाइप करा…'),
+              F.hind(15, color: Y2.muted)),
+        ),
+        error: _driver.text.trim().isNotEmpty && !_driverValid
+            ? S.t('Enter the driver’s name (min 3 letters)',
+                'चालकाचे नाव भरा (किमान ३ अक्षरे)')
+            : null,
+      );
+
+  // Vendor field (real free-text TextField).
+  Widget _vendorField() => _field(
+        S.t('Vendor (free text)', 'विक्रेता (मुक्त मजकूर)'),
+        Icons.store_outlined,
+        TextField(
+          controller: _vendor,
+          textCapitalization: TextCapitalization.words,
+          style: F.hind(15, color: Y2.ink),
+          cursorColor: Y2.accent,
+          decoration: _inputDeco(
+              S.t('e.g. Sandhar Steel', 'उदा. Sandhar Steel'),
+              F.hind(15, color: Y2.muted)),
+        ),
+        error: _vendor.text.trim().isNotEmpty && !_vendorValid
+            ? S.t('Enter the vendor name (min 3 letters)',
+                'विक्रेत्याचे नाव भरा (किमान ३ अक्षरे)')
+            : null,
+      );
+
+  // Gate time row — real current time.
+  Widget _gateTimeRow() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF6F8FB),
+          border: Border.all(color: Y2.line),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Flexible(
+              child: Text(S.t('Gate time (now)', 'गेट वेळ (आता)'),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: F.hind(13, color: Y2.body)),
+            ),
+            const SizedBox(width: 8),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Y2.lineSoft,
+                    borderRadius: BorderRadius.circular(5),
+                  ),
+                  child: Text(S.t('auto', 'स्वयं'),
+                      style: F.hind(9,
+                          w: FontWeight.w600, ls: 0.3, color: Y2.muted)),
+                ),
+                const SizedBox(width: 7),
+                Text(_gateTime,
+                    style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  // Footer CTA.
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: PrimaryButton2(
+          label: S.t('Let in & save', 'आत घ्या आणि जतन करा'),
+          busy: _busy,
+          enabled: _canSave,
+          onTap: _save,
+        ),
+      );
 
   InputDecoration _inputDeco(String hint, TextStyle hintStyle) =>
       InputDecoration(

@@ -166,6 +166,23 @@ class Data {
           query: {'line_id': lineId, 'date': todayIso()},
           demo: demoSupervisorRows, demoIfEmpty: true);
 
+  /// Production routings — the ordered operations a part runs through (press →
+  /// weld → assembly …) with the qty completed at each. Source of truth is SAP
+  /// routing; here it falls back to demo data shaped like the SAP feed so the
+  /// WIP board works without a backend. `done` per op derives WIP between stations.
+  static Future<Loaded<List<Json>>> productionRoutings({int? lineId}) =>
+      _list('/production/routings',
+          query: {if (lineId != null) 'line_id': lineId},
+          demo: demoRoutings, demoIfEmpty: true);
+
+  /// Record completion AFTER a single operation (mid-operation confirmation) so
+  /// WIP advances one station. Posts to WIP-at-operation on the backend; a normal
+  /// transactional write (client_ref + retry queue).
+  static Future<WriteResult> submitOperationConfirmation(
+          WidgetRef ref, Map<String, dynamic> body) =>
+      submit(ref, '/operation-confirmations', body,
+          label: 'Operation ${body['operation_name'] ?? ''}');
+
   /// Open approvals the signed-in user can act on (drives the approval card).
   static Future<Loaded<List<Json>>> approvalsInbox() =>
       _list('/approvals/inbox', demo: demoApprovals, demoIfEmpty: true);
@@ -386,23 +403,47 @@ class Data {
   // and `challan` are bare numbers; the unit is derived from `category`
   // (rm → kg, component → pcs). One RM row is short vs its PO to exercise the
   // tolerance chip.
+  // Each OPEN row carries `arrived_hours_ago` so the screen derives a live GRN
+  // deadline (arrival + 3 days; P-T) — a spread that exercises ok / due-soon /
+  // overdue states. Items carry `on_hand`/`stock_max`/`stock_min` so the receive
+  // screen can enforce the max stock limit (P-L): CR coil + Fasteners are near
+  // their max, so their full challan can't be accepted.
   static const demoGateArrivals = <Json>[
+    // Multi-item invoices (P-G): one challan carrying several materials, whose
+    // lines sit against DIFFERENT POs. Tapping one opens the Receive Invoice
+    // screen where every line is entered together.
+    {'vehicle': 'MH40 PQ 8833', 'supplier': 'Sandhar Steel', 'eta': '11:30',
+     'status': 'new', 'invoice': 'INV-9931002', 'arrived_hours_ago': 6, 'items': [
+       {'material': 'CR coil 2.5mm', 'category': 'rm', 'po': '77-2291', 'ordered': '4000', 'challan': '4000', 'on_hand': '2800', 'stock_max': '3000', 'stock_min': '500'},
+       {'material': 'HR coil 3.0mm', 'category': 'rm', 'po': '77-2304', 'ordered': '6000', 'challan': '5860', 'on_hand': '1000', 'stock_max': '12000', 'stock_min': '800'},
+       {'material': 'Mounting bracket 7782', 'category': 'component', 'po': '88-4419', 'ordered': '1500', 'challan': '1500', 'on_hand': '200', 'stock_max': '5000', 'stock_min': '300'},
+       {'material': 'Fasteners M8 hex', 'category': 'component', 'po': '88-4631', 'ordered': '8000', 'challan': '8000', 'on_hand': '7950', 'stock_max': '8000', 'stock_min': '1000'},
+     ]},
+    {'vehicle': 'MH43 RS 2207', 'supplier': 'Precision Fasteners', 'eta': '12:30',
+     'status': 'new', 'invoice': 'INV-7740999', 'arrived_hours_ago': 65, 'items': [
+       {'material': 'Spacer clip 12mm', 'category': 'component', 'po': '88-4631', 'ordered': '20000', 'challan': '20000', 'on_hand': '9600', 'stock_max': '40000', 'stock_min': '5000'},
+       {'material': 'Forged lever arm 5519', 'category': 'component', 'po': '88-5001', 'ordered': '1200', 'challan': '1180', 'on_hand': '300', 'stock_max': '4000', 'stock_min': '400'},
+     ]},
     {'vehicle': 'MH12 AB 4421', 'supplier': 'Tata Steel BSL', 'eta': '11:00',
      'status': 'new', 'category': 'rm', 'material': 'CR coil 2.5mm',
-     'po': '77-2291', 'ordered': '4000', 'challan': '4000',
+     'po': '77-2291', 'ordered': '4000', 'challan': '4000', 'arrived_hours_ago': 30,
+     'on_hand': '2800', 'stock_max': '3000', 'stock_min': '500',
      'invoice': 'INV-3131079408'},
     {'vehicle': 'MH14 CD 9032', 'supplier': 'Mahalaxmi Components', 'eta': '11:20',
      'status': 'new', 'category': 'component', 'material': 'Mounting bracket 7782',
-     'po': '88-4419', 'ordered': '1500', 'challan': '1500',
+     'po': '88-4419', 'ordered': '1500', 'challan': '1500', 'arrived_hours_ago': 50,
+     'on_hand': '200', 'stock_max': '5000', 'stock_min': '300',
      'invoice': 'INV-7740221'},
     {'vehicle': 'MH09 KL 2210', 'supplier': '—', 'eta': '—', 'status': 'unmatched'},
     {'vehicle': 'MH04 GT 7788', 'supplier': 'Sandhar Steel', 'eta': '11:45',
      'status': 'new', 'category': 'rm', 'material': 'HR coil 3.0mm',
-     'po': '77-2304', 'ordered': '6000', 'challan': '5860',
+     'po': '77-2304', 'ordered': '6000', 'challan': '5860', 'arrived_hours_ago': 70,
+     'on_hand': '1000', 'stock_max': '12000', 'stock_min': '800',
      'invoice': 'INV-5521003'},
     {'vehicle': 'MH12 ZX 1190', 'supplier': 'Precision Fasteners', 'eta': '12:10',
      'status': 'new', 'category': 'component', 'material': 'Fasteners M8 hex',
-     'po': '88-4631', 'ordered': '8000', 'challan': '8000',
+     'po': '88-4631', 'ordered': '8000', 'challan': '8000', 'arrived_hours_ago': 74,
+     'on_hand': '7950', 'stock_max': '8000', 'stock_min': '1000',
      'invoice': 'INV-7740555'},
     {'vehicle': 'MH02 BR 5521', 'supplier': 'Bharat Forge', 'eta': '—',
      'status': 'done', 'category': 'component', 'material': 'Forged lever arm 5519',
@@ -427,6 +468,25 @@ class Data {
      'sap_code': '1402010035', 'description': 'Front fork 4521', 'revision': 1,
      'planned_qty': '200', 'confirmed_good': '132', 'confirmed_reject': '6',
      'remaining': '68', 'sap_order_no': '100482'},
+  ];
+  // Production routings (P-W) — each part's ordered operations with the qty that
+  // has CLEARED each one. WIP between two stations = done[i] − done[i+1]; the last
+  // op's output is finished goods. Mirrors the SAP routing feed shape.
+  static const demoRoutings = <Json>[
+    {'material_id': 10, 'material': 'Front fork 4521', 'line': 'Line A', 'plan': '200',
+     'operations': [
+       {'seq': 10, 'name': 'Blanking', 'wc': 'Press 250T', 'done': '200'},
+       {'seq': 20, 'name': 'Forming', 'wc': 'Press 160T', 'done': '170'},
+       {'seq': 30, 'name': 'Welding', 'wc': 'Weld cell 2', 'done': '150'},
+       {'seq': 40, 'name': 'Assembly', 'wc': 'Assy line 1', 'done': '132'},
+     ]},
+    {'material_id': 11, 'material': 'Mounting bracket 7782', 'line': 'Line B', 'plan': '300',
+     'operations': [
+       {'seq': 10, 'name': 'Blanking', 'wc': 'Press 200T', 'done': '300'},
+       {'seq': 20, 'name': 'Piercing', 'wc': 'Press 120T', 'done': '286'},
+       {'seq': 30, 'name': 'Bending', 'wc': 'Press brake 1', 'done': '270'},
+       {'seq': 40, 'name': 'Welding', 'wc': 'Weld cell 1', 'done': '252'},
+     ]},
   ];
   // ---- Phase 6 demos ----
   // 7-day achievement % trend (for the management dashboard sparkline/chart).

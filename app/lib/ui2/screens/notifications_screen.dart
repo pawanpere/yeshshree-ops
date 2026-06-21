@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -108,52 +109,69 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared header bar (ALERTS title + Unread/All segments) ----
+  // Not device chrome — kept in BOTH layouts. The phone branch adds StatusBar2
+  // above it; the desktop branch does not (CHROME RULE).
+  Widget _header({required bool demo}) => Container(
+        padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
+        decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Y2.line))),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(S.t('ALERTS', 'सूचना'),
+                    style: F.khand(17, ls: 0.3, color: Y2.ink)),
+                if (demo) ...[
+                  const SizedBox(width: 8),
+                  const DemoChip(),
+                ],
+              ],
+            ),
+            const SizedBox(height: 9),
+            Row(children: [
+              _seg(S.t('Unread $_unreadCount', 'न वाचलेले $_unreadCount'), 0),
+              const SizedBox(width: 18),
+              _seg(S.t('All', 'सर्व'), 1),
+            ]),
+          ],
+        ),
+      );
+
+  // Shared empty state (same copy in both layouts).
+  Widget _empty() => EmptyState2(
+        icon: I2.allClear,
+        title: _tab == 0
+            ? S.t("You're all caught up", 'सर्व पाहून झाले')
+            : S.t('No alerts yet', 'अद्याप सूचना नाहीत'),
+        subtitle: _tab == 0
+            ? S.t('No unread alerts', 'न वाचलेल्या सूचना नाहीत')
+            : S.t('New alerts appear here.', 'नवीन सूचना इथे दिसतील.'),
+      );
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     final loading = _data == null || _approvals == null;
     final demo = (_data?.demo ?? false) || (_approvals?.demo ?? false);
     final cards = loading ? const <Widget>[] : _cards();
     return Column(
       children: [
         const StatusBar2(),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 6, 16, 10),
-          decoration: const BoxDecoration(
-              border: Border(bottom: BorderSide(color: Y2.line))),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(S.t('ALERTS', 'सूचना'),
-                      style: F.khand(17, ls: 0.3, color: Y2.ink)),
-                  if (demo) ...[
-                    const SizedBox(width: 8),
-                    const DemoChip(),
-                  ],
-                ],
-              ),
-              const SizedBox(height: 9),
-              Row(children: [
-                _seg(S.t('Unread $_unreadCount', 'न वाचलेले $_unreadCount'), 0),
-                const SizedBox(width: 18),
-                _seg(S.t('All', 'सर्व'), 1),
-              ]),
-            ],
-          ),
-        ),
+        _header(demo: demo),
         Expanded(
           child: loading
               ? const SkeletonRows(count: 3)
               : cards.isEmpty
-                  ? EmptyState2(
-                      icon: I2.allClear,
-                      title: _tab == 0
-                          ? S.t("You're all caught up", 'सर्व पाहून झाले')
-                          : S.t('No alerts yet', 'अद्याप सूचना नाहीत'),
-                      subtitle: _tab == 0
-                          ? S.t('No unread alerts', 'न वाचलेल्या सूचना नाहीत')
-                          : S.t('New alerts appear here.',
-                              'नवीन सूचना इथे दिसतील.'),
-                    )
+                  ? _empty()
                   : ListView(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                       children: cards,
@@ -161,6 +179,84 @@ class _Ui2NotificationsScreenState extends State<Ui2NotificationsScreen> {
         ),
       ],
     );
+  }
+
+  // ---- desktop layout (no StatusBar2; same header, centered wide body) ----
+
+  Widget _desktop() {
+    final loading = _data == null || _approvals == null;
+    final demo = (_data?.demo ?? false) || (_approvals?.demo ?? false);
+    return Column(
+      children: [
+        _header(demo: demo),
+        Expanded(
+          child: loading
+              ? const SkeletonRows(count: 3)
+              : ResponsiveContent(
+                  maxWidth: 1200,
+                  child: _desktopBody(),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _desktopBody() {
+    // The approval/resolved card and the alert rows are card-shaped, so the
+    // desktop view lays them out centered and capped: the actionable approval
+    // card spans full width on top, the alert rows flow in a 2-up grid below.
+    final approvalCard = _desktopApprovalCard();
+    final alerts = _alertCards();
+    if (approvalCard == null && alerts.isEmpty) return _empty();
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (approvalCard != null) ...[
+            approvalCard,
+            const SizedBox(height: 14),
+          ],
+          if (alerts.isNotEmpty) CardGrid2(minTileWidth: 360, children: alerts),
+        ],
+      ),
+    );
+  }
+
+  /// The approval card for the desktop layout (permission card when pending, the
+  /// resolved chip in the All tab) or null when there is nothing to show — same
+  /// logic as the phone [_cards] head, just without the trailing spacer.
+  Widget? _desktopApprovalCard() {
+    if (_approval == null) return null;
+    if (_approvalDecision == null) return _permissionCard();
+    if (_tab == 1) return _resolvedCard();
+    return null;
+  }
+
+  /// The alert rows (without the approval card) for the desktop grid. Mirrors
+  /// the alert section of [_cards] but yields bare cards (no spacers).
+  List<Widget> _alertCards() {
+    final cards = <Widget>[
+      _alert(
+        const Glyph(GlyphShape.triangle, Y2.orange, size: 11),
+        S.t('Line B behind plan', 'लाइन B प्लॅनमागे'),
+        S.t('84% at 2 pm · tap to view', '2 pm ला 84% · पाहण्यासाठी टॅप करा'),
+        () => nav.go(ScreenId.cockpit),
+        unread: true,
+        time: S.t('12m ago', '12 मि पूर्वी'),
+      ),
+    ];
+    if (_tab == 1) {
+      cards.add(_alert(
+        const Glyph(GlyphShape.ring, Y2.muted, size: 11),
+        S.t('Schedule wk-25 released', 'wk-25 शेड्यूल जारी झाले'),
+        S.t('by Anil · 1:10 pm', 'अनिल कडून · 1:10 pm'),
+        () {},
+        unread: false,
+        time: S.t('1h ago', '1 ता पूर्वी'),
+      ));
+    }
+    return cards;
   }
 
   List<Widget> _cards() {

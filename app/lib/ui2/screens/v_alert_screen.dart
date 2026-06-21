@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../core/strings.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -76,23 +77,203 @@ class _Ui2VAlertScreenState extends State<Ui2VAlertScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared header chip (doc code) ----
+
+  Widget _codeChip() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+        decoration: BoxDecoration(
+          color: Y2.lineSoft,
+          border: Border.all(color: const Color(0xFFD2DAE6)),
+          borderRadius: BorderRadius.circular(5),
+        ),
+        child: Text('CO-7782', style: F.mono(12, color: Y2.accent)),
+      );
+
+  ScreenHeader2 _header() => ScreenHeader2(
+        title: S.t('CALL-OFF', 'कॉल-ऑफ'),
+        onBack: nav.pop,
+        chip: _codeChip(),
+      );
+
+  // ---- shared body pieces ----
+
+  /// Accent-tinted "Yeshshree needs" card.
+  Widget _needCard() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
+        decoration: BoxDecoration(
+          color: const Color(0x0F1D4ED8), // rgba(29,78,216,.06)
+          border: Border.all(color: const Color(0xFFBCD0F5)),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Text.rich(
+          TextSpan(
+            style: F.hind(13, color: Y2.ink, height: 1.45),
+            children: [
+              TextSpan(
+                  text: S.t('Yeshshree needs:', 'येशश्रीला हवे:'),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              TextSpan(
+                  text: S.t(
+                      ' 2,000 kg CR coil 2.5 mm by ',
+                      ' 2,000 kg CR कॉइल 2.5 mm — ')),
+              TextSpan(
+                  text: S.t('Thu 19 Jun', 'गुरु 19 जून'),
+                  style: const TextStyle(fontWeight: FontWeight.w700)),
+              TextSpan(text: S.t('.', 'पर्यंत.')),
+            ],
+          ),
+        ),
+      );
+
+  /// PO number + vendor stock card.
+  Widget _poStockCard() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+        decoration: BoxDecoration(
+          color: Y2.card,
+          border: Border.all(color: Y2.line),
+          borderRadius: BorderRadius.circular(11),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(S.t('Against PO', 'PO नुसार'),
+                      style: F.hind(13, color: Y2.ink),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false),
+                ),
+                const SizedBox(width: 8),
+                Text('77-2291',
+                    style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Text(S.t('Your stock', 'तुमचा स्टॉक'),
+                      style: F.hind(13, color: Y2.ink),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: false),
+                ),
+                const SizedBox(width: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('2,400 kg',
+                        style: F.mono(13,
+                            w: FontWeight.w700, color: Y2.green)),
+                    const SizedBox(width: 5),
+                    const Glyph(GlyphShape.dot, Y2.green, size: 8),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  /// "Can you commit?" prompt label.
+  Widget _prompt() => Padding(
+        padding: const EdgeInsets.only(top: 2),
+        child: Text(S.t('Can you commit?', 'तुम्ही वचन देऊ शकता?'),
+            style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+      );
+
+  /// Promise date card (reads as an editable select).
+  Widget _promiseDateSelect() => Pressable2(
+        onTap: _pickDate,
+        child: Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
+          decoration: BoxDecoration(
+            color: Y2.card,
+            border: Border.all(color: Y2.line),
+            borderRadius: BorderRadius.circular(11),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Flexible(
+                child: Text(S.t('Promise date', 'वचन तारीख'),
+                    style: F.hind(13, color: Y2.muted),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    softWrap: false),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(
+                      child: Text(_dateLabel,
+                          style: F.hind(13,
+                              w: FontWeight.w700, color: Y2.ink),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(I2.chevronDown,
+                        size: 20, color: Y2.muted),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  /// Footer action buttons (Confirm / Propose change).
+  Widget _actions() => Row(
+        children: [
+          Expanded(
+            child: PrimaryButton2(
+              label: S.t('Confirm', 'पुष्टी करा'),
+              busy: _busy,
+              onTap: _confirm,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: OutlineButton2(
+              label: S.t('Propose change', 'बदल सुचवा'),
+              onTap: nav.pop,
+            ),
+          ),
+        ],
+      );
+
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: _actions(),
+      );
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
         // ---- Header: back + code pill + title ----
-        ScreenHeader2(
-          title: S.t('CALL-OFF', 'कॉल-ऑफ'),
-          onBack: nav.pop,
-          chip: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-            decoration: BoxDecoration(
-              color: Y2.lineSoft,
-              border: Border.all(color: const Color(0xFFD2DAE6)),
-              borderRadius: BorderRadius.circular(5),
-            ),
-            child: Text('CO-7782', style: F.mono(12, color: Y2.accent)),
-          ),
-        ),
+        _header(),
         // ---- Body ----
         Expanded(
           child: SingleChildScrollView(
@@ -100,166 +281,88 @@ class _Ui2VAlertScreenState extends State<Ui2VAlertScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Accent-tinted need card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0x0F1D4ED8), // rgba(29,78,216,.06)
-                    border: Border.all(color: const Color(0xFFBCD0F5)),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Text.rich(
-                    TextSpan(
-                      style: F.hind(13, color: Y2.ink, height: 1.45),
-                      children: [
-                        TextSpan(
-                            text: S.t('Yeshshree needs:', 'येशश्रीला हवे:'),
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(
-                            text: S.t(
-                                ' 2,000 kg CR coil 2.5 mm by ',
-                                ' 2,000 kg CR कॉइल 2.5 mm — ')),
-                        TextSpan(
-                            text: S.t('Thu 19 Jun', 'गुरु 19 जून'),
-                            style: const TextStyle(fontWeight: FontWeight.w700)),
-                        TextSpan(text: S.t('.', 'पर्यंत.')),
-                      ],
-                    ),
-                  ),
-                ),
+                _needCard(),
                 const SizedBox(height: 11),
-                // PO / stock card
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: Y2.card,
-                    border: Border.all(color: Y2.line),
-                    borderRadius: BorderRadius.circular(11),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(S.t('Against PO', 'PO नुसार'),
-                                style: F.hind(13, color: Y2.ink),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false),
-                          ),
-                          const SizedBox(width: 8),
-                          Text('77-2291',
-                              style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(S.t('Your stock', 'तुमचा स्टॉक'),
-                                style: F.hind(13, color: Y2.ink),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false),
-                          ),
-                          const SizedBox(width: 8),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text('2,400 kg',
-                                  style: F.mono(13,
-                                      w: FontWeight.w700, color: Y2.green)),
-                              const SizedBox(width: 5),
-                              const Glyph(GlyphShape.dot, Y2.green, size: 8),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+                _poStockCard(),
                 const SizedBox(height: 11),
-                // Prompt
-                Padding(
-                  padding: const EdgeInsets.only(top: 2),
-                  child: Text(S.t('Can you commit?', 'तुम्ही वचन देऊ शकता?'),
-                      style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
-                ),
+                _prompt(),
                 const SizedBox(height: 11),
-                // Promise date card (reads as an editable select)
-                Pressable2(
-                  onTap: _pickDate,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 13, vertical: 11),
-                    decoration: BoxDecoration(
-                      color: Y2.card,
-                      border: Border.all(color: Y2.line),
-                      borderRadius: BorderRadius.circular(11),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Flexible(
-                          child: Text(S.t('Promise date', 'वचन तारीख'),
-                              style: F.hind(13, color: Y2.muted),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false),
-                        ),
-                        const SizedBox(width: 8),
-                        Flexible(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Flexible(
-                                child: Text(_dateLabel,
-                                    style: F.hind(13,
-                                        w: FontWeight.w700, color: Y2.ink),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false),
-                              ),
-                              const SizedBox(width: 4),
-                              const Icon(I2.chevronDown,
-                                  size: 20, color: Y2.muted),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                _promiseDateSelect(),
               ],
             ),
           ),
         ),
         // ---- Footer actions ----
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: PrimaryButton2(
-                  label: S.t('Confirm', 'पुष्टी करा'),
-                  busy: _busy,
-                  onTap: _confirm,
-                ),
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- desktop layout ----
+  //
+  // Centered detail (max 900) with the situation summary (need + PO/stock) on
+  // the left and the commit panel (prompt + promise date + actions) on the
+  // right, so the vendor sees the request and the response side-by-side.
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 900,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _needCard(),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Left: the situation (against which PO, vendor stock).
+                      Expanded(
+                        flex: 5,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(left: 2, bottom: 8),
+                              child: Text(
+                                  S.t('Situation', 'परिस्थिती'),
+                                  style: F.hind(11,
+                                      w: FontWeight.w600,
+                                      ls: 0.4,
+                                      color: Y2.muted)),
+                            ),
+                            _poStockCard(),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Right: the commit panel.
+                      Expanded(
+                        flex: 6,
+                        child: Card2(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _prompt(),
+                              const SizedBox(height: 12),
+                              _promiseDateSelect(),
+                              const SizedBox(height: 16),
+                              _actions(),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: OutlineButton2(
-                  label: S.t('Propose change', 'बदल सुचवा'),
-                  onTap: nav.pop,
-                ),
-              ),
-            ],
+            ),
           ),
         ),
       ],

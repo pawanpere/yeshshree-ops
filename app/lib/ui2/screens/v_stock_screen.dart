@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/strings.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -45,14 +46,35 @@ class _Ui2VStockScreenState extends State<Ui2VStockScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared bits ----
+
+  ScreenHeader2 _header() => ScreenHeader2(
+        title: S.t('STOCK AT YESHSHREE', 'येशश्रीकडील स्टॉक'),
+        onBack: widget.nav.pop,
+        demo: true,
+      );
+
+  Widget _footnote() => Text(
+        S.t(
+            "Cover = stock ÷ Yeshshree's daily usage. Low items are flagged for you to top up.",
+            'कव्हर = स्टॉक ÷ येशश्रीचा रोजचा वापर. कमी असलेल्या वस्तू भरून काढण्यासाठी खुणावल्या जातात.'),
+        style: F.hind(12, color: Y2.muted, height: 1.5),
+      );
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
-        ScreenHeader2(
-          title: S.t('STOCK AT YESHSHREE', 'येशश्रीकडील स्टॉक'),
-          onBack: widget.nav.pop,
-          demo: true,
-        ),
+        _header(),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
@@ -63,13 +85,43 @@ class _Ui2VStockScreenState extends State<Ui2VStockScreen> {
                 const SizedBox(height: 11),
                 _lowItem(),
                 const SizedBox(height: 11),
-                Text(
-                  S.t(
-                      "Cover = stock ÷ Yeshshree's daily usage. Low items are flagged for you to top up.",
-                      'कव्हर = स्टॉक ÷ येशश्रीचा रोजचा वापर. कमी असलेल्या वस्तू भरून काढण्यासाठी खुणावल्या जातात.'),
-                  style: F.hind(12, color: Y2.muted, height: 1.5),
-                ),
+                _footnote(),
               ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // ---- desktop layout (no StatusBar2; cards side-by-side, capped width) ----
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+            child: ResponsiveContent(
+              maxWidth: 1200,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  CardGrid2(
+                    minTileWidth: 340,
+                    maxColumns: 2,
+                    gap: 16,
+                    children: [
+                      // Items are self-sizing card rows -> sit one per column.
+                      _okItem(),
+                      _lowItem(),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _footnote(),
+                ],
+              ),
             ),
           ),
         ),

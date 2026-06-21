@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/bits.dart';
@@ -147,6 +148,51 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // The Add CTA in the header (hidden while the add form is open). Shared by both
+  // form factors.
+  Widget? _addTrailing() => _adding
+      ? null
+      : Pressable2(
+          onTap: _openAdd,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
+            decoration: BoxDecoration(
+              color: Y2.accent,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.add, size: 16, color: Colors.white),
+                const SizedBox(width: 4),
+                Text(S.t('Add', 'जोडा'),
+                    style: F.hind(13, w: FontWeight.w600, color: Colors.white)),
+              ],
+            ),
+          ),
+        );
+
+  Widget _emptyState() => EmptyState2(
+        icon: Icons.devices_outlined,
+        title: S.t('No devices yet', 'अद्याप उपकरणे नाहीत'),
+        subtitle: S.t('Register a station device to get started.',
+            'सुरू करण्यासाठी स्टेशन उपकरण नोंदवा.'),
+        action: OutlineButton2(
+          label: S.t('Add device', 'उपकरण जोडा'),
+          onTap: _openAdd,
+        ),
+      );
+
+  // ---- phone layout (vertical list of cards) ----
+
+  Widget _phone() {
     final loaded = _data;
     final rows = loaded?.data ?? const <Json>[];
     return Column(
@@ -154,29 +200,7 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
         ScreenHeader2(
           title: S.t('DEVICES', 'उपकरणे'),
           demo: loaded?.demo ?? false,
-          trailing: _adding
-              ? null
-              : Pressable2(
-                  onTap: _openAdd,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 11, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: Y2.accent,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.add, size: 16, color: Colors.white),
-                        const SizedBox(width: 4),
-                        Text(S.t('Add', 'जोडा'),
-                            style: F.hind(13,
-                                w: FontWeight.w600, color: Colors.white)),
-                      ],
-                    ),
-                  ),
-                ),
+          trailing: _addTrailing(),
         ),
         Expanded(
           child: _adding
@@ -184,17 +208,7 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
               : loaded == null
                   ? const SkeletonRows(count: 4)
                   : rows.isEmpty
-                      ? EmptyState2(
-                          icon: Icons.devices_outlined,
-                          title: S.t('No devices yet', 'अद्याप उपकरणे नाहीत'),
-                          subtitle: S.t(
-                              'Register a station device to get started.',
-                              'सुरू करण्यासाठी स्टेशन उपकरण नोंदवा.'),
-                          action: OutlineButton2(
-                            label: S.t('Add device', 'उपकरण जोडा'),
-                            onTap: _openAdd,
-                          ),
-                        )
+                      ? _emptyState()
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                           itemCount: rows.length + 1,
@@ -215,6 +229,239 @@ class _Ui2AdminDevicesScreenState extends State<Ui2AdminDevicesScreen> {
                         ),
         ),
       ],
+    );
+  }
+
+  // ---- desktop layout (data table inside a capped content column) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return Column(
+      children: [
+        ScreenHeader2(
+          title: S.t('DEVICES', 'उपकरणे'),
+          demo: loaded?.demo ?? false,
+          trailing: _addTrailing(),
+        ),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: _adding
+                ? _addForm()
+                : loaded == null
+                    ? const SkeletonRows(count: 6)
+                    : rows.isEmpty
+                        ? _emptyState()
+                        : SingleChildScrollView(
+                            padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Text(
+                                      S.t('${rows.length} registered',
+                                          '${rows.length} नोंदवलेले'),
+                                      style: F.hind(12, color: Y2.muted)),
+                                ),
+                                _deviceTable(rows),
+                              ],
+                            ),
+                          ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Column widths shared by header + rows so the cells line up. A consistent gap
+  // (see _gap) is inserted between EVERY pair of adjacent columns in both the
+  // header and the data rows, so right-aligned values (the online word, the
+  // "Last seen HH:mm" stamp) never butt up against the next column's text.
+  // Sum of fixed widths + gaps + the Row's horizontal padding is kept well
+  // ≤ 900px so a row can never overflow at the desktop content width; the
+  // Expanded Device column absorbs the remainder.
+  // 64 + 96 + 132 + 116 (fixed) + 5×16 (gaps) + 32 (padding) = 520.
+  static const _wStatus = 64.0;
+  static const _wStation = 96.0;
+  static const _wSeen = 132.0;
+  static const _wAction = 116.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _deviceTable(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                _th(_wStatus, S.t('Status', 'स्थिती')),
+                _gap,
+                Expanded(child: _th(null, S.t('Device', 'उपकरण'))),
+                _gap,
+                _th(_wStation, S.t('Station', 'स्टेशन')),
+                _gap,
+                _th(_wSeen, S.t('Last seen', 'शेवटचे'), right: true),
+                _gap,
+                _th(_wAction, ''),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _deviceRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(double? w, String label, {bool right = false}) {
+    final t = Text(label,
+        textAlign: right ? TextAlign.right : TextAlign.left,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+    // The Expanded primary-text column (w == null) ellipsises; every fixed
+    // column shrinks its label via FittedBox so it can never overflow.
+    if (w == null) return t;
+    return SizedBox(
+      width: w,
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: right ? Alignment.centerRight : Alignment.centerLeft,
+        child: t,
+      ),
+    );
+  }
+
+  Widget _deviceRow(Json d, bool last) {
+    final label = '${d['label'] ?? S.t('Unnamed device', 'विनानाव उपकरण')}';
+    final key = '${d['device_key'] ?? '—'}';
+    final station = '${d['station'] ?? ''}';
+    final online = _seenToday(d['last_seen_at']);
+    final busy = _busyId == d['id'];
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        border:
+            last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Status dot + online/offline word.
+          SizedBox(
+            width: _wStatus,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Glyph(GlyphShape.dot, online ? Y2.green : Y2.muted2, size: 8),
+                  const SizedBox(width: 7),
+                  Text(
+                      online
+                          ? S.t('Online', 'ऑनलाइन')
+                          : S.t('Offline', 'ऑफलाइन'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: F.hind(11,
+                          w: FontWeight.w600,
+                          color: online ? Y2.green : Y2.muted)),
+                ],
+              ),
+            ),
+          ),
+          _gap,
+          // Label + device key.
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.hind(14, w: FontWeight.w600, color: Y2.ink)),
+                const SizedBox(height: 1),
+                Text(key,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.mono(12, color: Y2.muted)),
+              ],
+            ),
+          ),
+          _gap,
+          // Station pill.
+          SizedBox(
+            width: _wStation,
+            child: station.isEmpty
+                ? const SizedBox.shrink()
+                : FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Pill2(
+                        text: station.toUpperCase(),
+                        fg: Y2.accent,
+                        bg: const Color(0x141D4ED8),
+                        borderColor: const Color(0x331D4ED8),
+                        dot: false),
+                  ),
+          ),
+          _gap,
+          // Last seen.
+          SizedBox(
+            width: _wSeen,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Text(
+                  S.t('Last seen ${_lastSeen(d['last_seen_at'])}',
+                      'शेवटचे ${_lastSeen(d['last_seen_at'])}'),
+                  maxLines: 1,
+                  style: F.hind(12, color: Y2.muted)),
+            ),
+          ),
+          _gap,
+          // Deactivate action.
+          SizedBox(
+            width: _wAction,
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerRight,
+              child: Pressable2(
+                onTap: busy ? null : () => _deactivate(d),
+                child: Opacity(
+                  opacity: busy ? 0.5 : 1,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (busy) ...[
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Y2.red),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
+                      Text(S.t('Deactivate', 'निष्क्रिय करा'),
+                          style:
+                              F.hind(13, w: FontWeight.w600, color: Y2.red)),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

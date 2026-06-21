@@ -67,6 +67,7 @@ const Map<Role, RoleSpec> kRoles = {
     tabs: [
       RoleTab(ScreenId.cockpit, I2.factory, 'Cockpit', 'कॉकपिट'),
       RoleTab(ScreenId.confirmForm, I2.edit, 'Record', 'नोंदवा'),
+      RoleTab(ScreenId.prodWip, Icons.account_tree_outlined, 'WIP', 'WIP'),
       RoleTab(ScreenId.productionHolds, I2.warning, 'Holds', 'होल्ड'),
       RoleTab(ScreenId.confHistory, Icons.history, 'History', 'इतिहास'),
     ],

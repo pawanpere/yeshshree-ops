@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../validators.dart';
 import '../widgets/bits.dart';
@@ -104,28 +105,45 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  ScreenHeader2 _header(Loaded<List<Json>>? loaded, List<Json> rows) =>
+      ScreenHeader2(
+        title: S.t('RESOLVE HOLDS', 'होल्ड सोडवा'),
+        demo: loaded?.demo ?? false,
+        trailing: rows.isEmpty
+            ? null
+            : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
+      );
+
+  Widget _emptyState() => EmptyState2(
+        icon: Icons.task_alt_outlined,
+        title: S.t('No holds waiting', 'कोणतेही होल्ड प्रतीक्षेत नाहीत'),
+        subtitle: S.t('Confirmations on hold for a SAP order appear here.',
+            'SAP ऑर्डरसाठी होल्डवरील पुष्ट्या इथे दिसतील.'),
+      );
+
+  String _countLabel(int n) =>
+      S.t('$n waiting for a SAP order', '$n SAP ऑर्डरच्या प्रतीक्षेत');
+
+  // ---- phone layout (unchanged from the original single-column list) ----
+
+  Widget _phone() {
     final loaded = _data;
     final rows = loaded?.data ?? const <Json>[];
     return Column(
       children: [
-        ScreenHeader2(
-          title: S.t('RESOLVE HOLDS', 'होल्ड सोडवा'),
-          demo: loaded?.demo ?? false,
-          trailing: rows.isEmpty
-              ? null
-              : Text('${rows.length}', style: F.mono(12, color: Y2.muted)),
-        ),
+        _header(loaded, rows),
         Expanded(
           child: loaded == null
               ? const SkeletonRows(count: 4)
               : rows.isEmpty
-                  ? EmptyState2(
-                      icon: Icons.task_alt_outlined,
-                      title: S.t('No holds waiting', 'कोणतेही होल्ड प्रतीक्षेत नाहीत'),
-                      subtitle: S.t(
-                          'Confirmations on hold for a SAP order appear here.',
-                          'SAP ऑर्डरसाठी होल्डवरील पुष्ट्या इथे दिसतील.'),
-                    )
+                  ? _emptyState()
                   : ListView.separated(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                       itemCount: rows.length + 1,
@@ -134,9 +152,7 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
                         if (i == 0) {
                           return Padding(
                             padding: const EdgeInsets.only(bottom: 4),
-                            child: Text(
-                                S.t('${rows.length} waiting for a SAP order',
-                                    '${rows.length} SAP ऑर्डरच्या प्रतीक्षेत'),
+                            child: Text(_countLabel(rows.length),
                                 style: F.hind(12, color: Y2.muted)),
                           );
                         }
@@ -147,6 +163,211 @@ class _Ui2PlanHoldsScreenState extends State<Ui2PlanHoldsScreen> {
       ],
     );
   }
+
+  // ---- desktop layout (capped width; holds rendered as a data table) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return Column(
+      children: [
+        _header(loaded, rows),
+        Expanded(
+          child: loaded == null
+              ? const SkeletonRows(count: 4)
+              : rows.isEmpty
+                  ? _emptyState()
+                  : ResponsiveContent(
+                      maxWidth: 1200,
+                      child: ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: Text(_countLabel(rows.length),
+                                style: F.hind(12, color: Y2.muted)),
+                          ),
+                          _table(rows),
+                        ],
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  // Column widths shared by header + rows so the cells line up. A consistent gap
+  // (see _gap) is inserted between every pair of adjacent columns — in both the
+  // header and the data rows — so right-aligned numbers never butt up against the
+  // next column's text. Total fixed widths + gaps stay well under 900px; the SAP
+  // order column is Expanded and absorbs the slack.
+  static const _wMaterial = 220.0;
+  static const _wMeta = 140.0;
+  static const _wGood = 84.0;
+  static const _wRej = 84.0;
+  static const _wAction = 160.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _table(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: _wMaterial, child: _th(S.t('Material', 'माल'))),
+                _gap,
+                SizedBox(width: _wMeta, child: _th(S.t('Line · Shift', 'लाइन · शिफ्ट'))),
+                _gap,
+                SizedBox(
+                    width: _wGood, child: _th(S.t('Good', 'चांगले'), right: true)),
+                _gap,
+                SizedBox(
+                    width: _wRej, child: _th(S.t('Rejected', 'नापास'), right: true)),
+                _gap,
+                Expanded(child: _th(S.t('SAP order no.', 'SAP ऑर्डर क्र.'))),
+                _gap,
+                SizedBox(width: _wAction, child: _th('')),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _tableRow(rows[i], last: i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(String s, {bool right = false}) => Text(s,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  Widget _tableRow(Json row, {required bool last}) {
+    final id = row['id'];
+    final payload = (row['payload'] as Json?) ?? const <String, dynamic>{};
+    final line = payload['line_id'] ?? row['line_id'];
+    final shift = payload['shift'];
+    final material = payload['material'] ??
+        (payload['material_id'] != null || row['material_id'] != null
+            ? 'Material #${payload['material_id'] ?? row['material_id']}'
+            : '—');
+    final goodQty = double.tryParse('${payload['good_qty']}') ?? 0;
+    final rejectedQty = double.tryParse('${payload['rejected_qty']}') ?? 0;
+    final busy = id is int && _resolving == id;
+    final resolvable = id is int;
+
+    final metaBits = <String>[
+      if (line != null) S.t('Line $line', 'लाइन $line'),
+      if (shift != null) S.t('Shift $shift', 'शिफ्ट $shift'),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+      decoration: BoxDecoration(
+        border: last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Material + on-hold pill.
+          SizedBox(
+            width: _wMaterial,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('$material',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.hind(13, w: FontWeight.w600, color: Y2.ink)),
+                const SizedBox(height: 5),
+                Pill2(
+                    text: S.t('on hold', 'होल्डवर'),
+                    fg: Y2.orange,
+                    bg: Y2.orangeTint,
+                    borderColor: Y2.orangeLine),
+              ],
+            ),
+          ),
+          _gap,
+          // Line · Shift.
+          SizedBox(
+            width: _wMeta,
+            child: Text(metaBits.isEmpty ? '—' : metaBits.join(' · '),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: F.hind(12, color: Y2.muted)),
+          ),
+          _gap,
+          // Good qty.
+          SizedBox(
+            width: _wGood,
+            child: _fit(Text(_n(goodQty),
+                maxLines: 1,
+                style: F.mono(13, w: FontWeight.w600, color: Y2.body))),
+          ),
+          _gap,
+          // Rejected qty.
+          SizedBox(
+            width: _wRej,
+            child: _fit(Text(rejectedQty > 0 ? _n(rejectedQty) : '—',
+                maxLines: 1,
+                style: F.mono(13,
+                    w: FontWeight.w600,
+                    color: rejectedQty > 0 ? Y2.red : Y2.muted))),
+          ),
+          _gap,
+          // SAP order field (or demo note).
+          Expanded(
+            child: resolvable
+                ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _field(_ctl(id),
+                          hint: '100482',
+                          enabled: !busy,
+                          onSubmit: () => _resolve(id)),
+                      if (_ctl(id).text.trim().isNotEmpty && !_orderValid(id))
+                        FieldHint(
+                            S.t('6+ digit SAP order', '६+ अंकी SAP ऑर्डर')),
+                    ],
+                  )
+                : Text(
+                    S.t('Demo hold — connect to resolve',
+                        'डेमो होल्ड — सोडवण्यासाठी कनेक्ट करा'),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.hind(12, color: Y2.muted)),
+          ),
+          _gap,
+          // Resolve action.
+          SizedBox(
+            width: _wAction,
+            child: resolvable
+                ? PrimaryButton2(
+                    label: S.t('Resolve', 'सोडवा'),
+                    busy: busy,
+                    enabled: !busy && _orderValid(id),
+                    onTap: () => _resolve(id),
+                  )
+                : const SizedBox.shrink(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Scale-to-fit wrapper so numeric cells never overflow their fixed column,
+  /// whatever the font metrics (matches the repo's big-number tiles).
+  Widget _fit(Widget child) => FittedBox(
+      fit: BoxFit.scaleDown, alignment: Alignment.centerRight, child: child);
 
   Widget _card(Json row) {
     final id = row['id'];

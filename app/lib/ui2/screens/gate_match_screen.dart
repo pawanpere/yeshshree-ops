@@ -4,6 +4,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -170,109 +171,169 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- header (shared title / back / step counter) ----
+
+  Widget _header() => ScreenHeader2(
+        title: S.t('MATCH ORDER', 'ऑर्डर जुळवा'),
+        onBack: nav.pop,
+        trailing: Text('2/4', style: F.mono(12, color: Y2.muted)),
+      );
+
+  // ---- footer (shared send-to-quality action) ----
+
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: PrimaryButton2(
+          label: S.t('Send to quality', 'गुणवत्तेकडे पाठवा'),
+          onTap: _sendToQuality,
+        ),
+      );
+
+  // ---- shared body pieces ----
+
+  // Success banner: matching order found.
+  Widget _matchBanner() => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: Y2.greenTint,
+          border: Border.all(color: const Color(0xFFA8DEC4)),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                  color: Y2.green, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                  S.t('1 matching order found', '1 जुळणारी ऑर्डर सापडली'),
+                  style: F.hind(13, w: FontWeight.w600, color: Y2.green)),
+            ),
+          ],
+        ),
+      );
+
+  // Matched order card (accent-bordered). Tappable to confirm.
+  Widget _matchedOrderCard() => Pressable2(
+        onTap: _sendToQuality,
+        child: Container(
+          padding: const EdgeInsets.all(13),
+          decoration: BoxDecoration(
+            color: Y2.card,
+            border: Border.all(color: Y2.accent, width: 1.5),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text('PO $_poNo',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: F.mono(15, color: Y2.ink)),
+                  ),
+                  const SizedBox(width: 8),
+                  _matchPill(),
+                ],
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(0, 5, 0, 10),
+                child: Text('$_poSupplier · $_poMaterial',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: F.hind(12, color: Y2.muted)),
+              ),
+              _specRow(S.t('Ordered', 'ऑर्डर केले'), _poOrdered),
+              const SizedBox(height: 6),
+              _specRow(S.t('On challan', 'चलनावर'), _onChallan),
+              const SizedBox(height: 8),
+              Align(alignment: Alignment.centerRight, child: _deltaChip()),
+            ],
+          ),
+        ),
+      );
+
+  Widget _manualSearchButton() => OutlineButton2(
+        label:
+            S.t('Wrong order? Search manually', 'चुकीची ऑर्डर? स्वतः शोधा'),
+        onTap: _searchManually,
+      );
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     return Column(
       children: [
         const StatusBar2(),
         // Header: back chevron + title + step counter.
-        ScreenHeader2(
-          title: S.t('MATCH ORDER', 'ऑर्डर जुळवा'),
-          onBack: nav.pop,
-          trailing: Text('2/4', style: F.mono(12, color: Y2.muted)),
-        ),
+        _header(),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Success banner: matching order found.
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Y2.greenTint,
-                    border: Border.all(color: const Color(0xFFA8DEC4)),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                            color: Y2.green, shape: BoxShape.circle),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                            S.t('1 matching order found',
-                                '1 जुळणारी ऑर्डर सापडली'),
-                            style: F.hind(13,
-                                w: FontWeight.w600, color: Y2.green)),
-                      ),
-                    ],
-                  ),
-                ),
+                _matchBanner(),
                 const SizedBox(height: 11),
-                // Matched order card (accent-bordered). Tappable to confirm.
-                Pressable2(
-                  onTap: _sendToQuality,
-                  child: Container(
-                    padding: const EdgeInsets.all(13),
-                    decoration: BoxDecoration(
-                      color: Y2.card,
-                      border: Border.all(color: Y2.accent, width: 1.5),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text('PO $_poNo',
-                                style: F.mono(15, color: Y2.ink)),
-                            _matchPill(),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(0, 5, 0, 10),
-                          child: Text('$_poSupplier · $_poMaterial',
-                              style: F.hind(12, color: Y2.muted)),
-                        ),
-                        _specRow(S.t('Ordered', 'ऑर्डर केले'), _poOrdered),
-                        const SizedBox(height: 6),
-                        _specRow(S.t('On challan', 'चलनावर'), _onChallan),
-                        const SizedBox(height: 8),
-                        Align(
-                            alignment: Alignment.centerRight,
-                            child: _deltaChip()),
-                      ],
-                    ),
-                  ),
-                ),
+                _matchedOrderCard(),
                 const SizedBox(height: 11),
-                // Wrong order? Search manually.
-                OutlineButton2(
-                  label: S.t('Wrong order? Search manually',
-                      'चुकीची ऑर्डर? स्वतः शोधा'),
-                  onTap: _searchManually,
-                ),
+                _manualSearchButton(),
               ],
             ),
           ),
         ),
         // Footer: send to quality.
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- desktop layout (centered reading column, no phone chrome) ----
+
+  Widget _desktop() {
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 720,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 22),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _matchBanner(),
+                  const SizedBox(height: 14),
+                  _matchedOrderCard(),
+                  const SizedBox(height: 14),
+                  _manualSearchButton(),
+                ],
+              ),
+            ),
           ),
-          child: PrimaryButton2(
-            label: S.t('Send to quality', 'गुणवत्तेकडे पाठवा'),
-            onTap: _sendToQuality,
-          ),
+        ),
+        // Footer keeps its action centered to the same reading width.
+        ResponsiveContent(
+          maxWidth: 720,
+          child: _footer(),
         ),
       ],
     );

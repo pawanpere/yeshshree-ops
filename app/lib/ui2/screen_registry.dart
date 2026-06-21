@@ -31,11 +31,13 @@ import 'screens/plan_today_screen.dart';
 import 'screens/plan_holds_screen.dart';
 import 'screens/store_stock_screen.dart';
 import 'screens/production_holds_screen.dart';
+import 'screens/prod_wip_screen.dart';
 import 'screens/v_orders_screen.dart';
 import 'screens/v_finance_screen.dart';
 import 'screens/gate_qc_screen.dart';
 import 'screens/gate_grn_screen.dart';
 import 'screens/gate_received_screen.dart';
+import 'screens/gate_receive_items_screen.dart';
 import 'screens/dispatch_list_screen.dart';
 import 'screens/dispatch_detail_screen.dart';
 import 'screens/gate_pass_screen.dart';
@@ -77,6 +79,7 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.gateQc => Ui2GateQcScreen(nav: nav),
     ScreenId.gateGrn => Ui2GateGrnScreen(nav: nav),
     ScreenId.gateReceived => Ui2GateReceivedScreen(nav: nav),
+    ScreenId.gateReceiveItems => Ui2GateReceiveItemsScreen(nav: nav),
     ScreenId.dispatchList => Ui2DispatchListScreen(nav: nav),
     ScreenId.dispatchDetail => Ui2DispatchDetailScreen(nav: nav),
     ScreenId.gatePass => Ui2GatePassScreen(nav: nav),
@@ -96,6 +99,7 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     // ---- Role screens (Phase 3-6) ----
     ScreenId.qualityWorklist => Ui2QualityWorklistScreen(nav: nav),
     ScreenId.productionHolds => Ui2ProductionHoldsScreen(nav: nav),
+    ScreenId.prodWip => Ui2ProdWipScreen(nav: nav),
     ScreenId.storeStock => Ui2StoreStockScreen(nav: nav),
     ScreenId.planToday => Ui2PlanTodayScreen(nav: nav),
     ScreenId.planHolds => Ui2PlanHoldsScreen(nav: nav),
@@ -142,6 +146,7 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.gateQc, 'Gate QC', 'gate', null),
   ScreenEntry(ScreenId.gateGrn, 'Gate GRN', 'gate', null),
   ScreenEntry(ScreenId.gateReceived, 'Gate received', 'gate', null),
+  ScreenEntry(ScreenId.gateReceiveItems, 'Receive invoice (multi-item)', 'gate', null),
   ScreenEntry(ScreenId.dispatchList, 'Dispatch', 'dispatch', null),
   ScreenEntry(ScreenId.dispatchDetail, 'Dispatch detail', 'dispatch', null),
   ScreenEntry(ScreenId.gatePass, 'Gate pass', 'dispatch', null),
@@ -163,6 +168,7 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.planToday, 'Plan today', 'planning', null),
   ScreenEntry(ScreenId.planHolds, 'Plan holds', 'planning', null),
   ScreenEntry(ScreenId.productionHolds, 'Production holds', 'production', null),
+  ScreenEntry(ScreenId.prodWip, 'Operations & WIP', 'production', null),
   ScreenEntry(ScreenId.storeStock, 'Store stock', 'store', null),
   ScreenEntry(ScreenId.vOrders, 'Vendor orders', 'vendor', null),
   ScreenEntry(ScreenId.vFinance, 'Vendor finance', 'vendor', null),

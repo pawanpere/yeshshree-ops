@@ -4,6 +4,7 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -56,6 +57,16 @@ class _Ui2DispatchListScreenState extends State<Ui2DispatchListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
     final rows = _data?.data ?? const <Json>[];
     final demo = _data?.demo ?? false;
     return Column(
@@ -110,20 +121,176 @@ class _Ui2DispatchListScreenState extends State<Ui2DispatchListScreen> {
                       },
                     ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: PrimaryButton2(
-            label: S.t('Start a dispatch', 'डिस्पॅच सुरू करा'),
-            onTap: _startDispatch,
-          ),
-        ),
+        _footer(),
       ],
     );
   }
+
+  // ---- desktop layout (data table) ----
+
+  Widget _desktop() {
+    final rows = _data?.data ?? const <Json>[];
+    final demo = _data?.demo ?? false;
+    return Column(
+      children: [
+        ScreenHeader2(
+          title: S.t('DISPATCH', 'डिस्पॅच'),
+          subtitle: S.t('${rows.length} open', '${rows.length} खुले'),
+          onBack: nav.pop,
+          demo: demo,
+        ),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: _data == null
+                ? const SkeletonRows(count: 6)
+                : rows.isEmpty
+                    ? EmptyState2(
+                        icon: I2.truck,
+                        title: S.t(
+                            'No open dispatches', 'कोणतेही खुले डिस्पॅच नाहीत'),
+                        subtitle: S.t('New delivery orders will appear here',
+                            'नवीन डिलिव्हरी ऑर्डर येथे दिसतील'),
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                        children: [_table(rows)],
+                      ),
+          ),
+        ),
+        _footer(),
+      ],
+    );
+  }
+
+  // Column widths shared by the desktop header + rows so the cells line up. A gap
+  // is inserted between adjacent columns (see _gap) so the right-aligned status
+  // pill never butts up against the expanded customer text.
+  static const _wDo = 180.0;
+  static const _wStatus = 130.0;
+  static const _wChevron = 32.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _table(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                SizedBox(width: _wDo, child: _th(S.t('DO', 'DO'))),
+                _gap,
+                Expanded(child: _th(S.t('Customer · detail', 'ग्राहक · तपशील'))),
+                _gap,
+                SizedBox(
+                    width: _wStatus,
+                    child: _th(S.t('Status', 'स्थिती'), right: true)),
+                _gap,
+                const SizedBox(width: _wChevron),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _tableRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(String s, {bool right = false}) => Text(s,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  Widget _tableRow(Json row, bool last) {
+    final code = '${row['do'] ?? ''}';
+    final ready = '${row['status']}' == 'ready';
+    return Pressable2(
+      scale: 0.99,
+      onTap: () => _open(row),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+        decoration: BoxDecoration(
+          border:
+              last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: _wDo,
+              child: Text(code,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: F.mono(14, color: Y2.ink)),
+            ),
+            _gap,
+            Expanded(
+              child: Text(_sub(row),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: F.hind(13, color: Y2.body)),
+            ),
+            _gap,
+            SizedBox(
+              width: _wStatus,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: ready
+                      ? Pill2(
+                          text: S.t('READY', 'तयार'),
+                          fg: Y2.accent,
+                          bg: const Color(0x141D4ED8),
+                          borderColor: const Color(0x591D4ED8),
+                        )
+                      : Pill2(
+                          text: S.t('OPEN', 'खुले'),
+                          fg: Y2.body,
+                          bg: Y2.lineSoft,
+                          borderColor: Y2.line,
+                          dot: false,
+                        ),
+                ),
+              ),
+            ),
+            _gap,
+            const SizedBox(
+              width: _wChevron,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Icon(I2.chevronRight, size: 18, color: Y2.muted),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ---- shared footer ----
+
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: PrimaryButton2(
+          label: S.t('Start a dispatch', 'डिस्पॅच सुरू करा'),
+          onTap: _startDispatch,
+        ),
+      );
 
   /// Start a new dispatch — seed the flow with the first READY order (or the
   /// first row) so the detail screen opens against a real DO, then navigate.

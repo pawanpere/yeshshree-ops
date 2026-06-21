@@ -4,11 +4,13 @@ import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
+import '../responsive.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
 import '../widgets/icons2.dart';
 import '../widgets/polish2.dart';
+import '../widgets/sla.dart';
 
 /// Gate — Arrivals — prototype screen [11]. The gate inbox: open gate entries the
 /// gate scanner-watcher posted to the backend (plus unknown/no-pre-advice ones).
@@ -27,8 +29,76 @@ class Ui2GateArrivalsScreen extends StatefulWidget {
 
 class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
   Loaded<List<Json>>? _data;
+  // Stable reference for the GRN countdown, captured once so the deadlines tick
+  // down instead of re-anchoring to "now" on every rebuild.
+  final DateTime _loadTime = DateTime.now();
 
   PhoneNav get nav => widget.nav;
+
+  /// GRN deadline for an open, matched entry (arrival + 3 days); null for
+  /// unmatched / already-received rows or rows with no arrival time.
+  DateTime? _dueFor(Json row) {
+    if (_isUnmatched(row) || _isDone(row)) return null;
+    final h = row['arrived_hours_ago'];
+    if (h is! num) return null;
+    return grnDueFrom(_loadTime, h);
+  }
+
+  /// Overdue / due-soon alert banner — live (ticks), hidden when nothing is at
+  /// risk. This is the "which GRNs are not made" signal at the top of the inbox.
+  Widget _alertBanner(List<Json> rows) {
+    return SlaTick(
+      builder: (context) {
+        final now = DateTime.now();
+        var overdue = 0, soon = 0;
+        for (final r in rows) {
+          final due = _dueFor(r);
+          if (due == null) continue;
+          switch (slaStateFor(due.difference(now))) {
+            case SlaState.overdue:
+              overdue++;
+            case SlaState.soon:
+              soon++;
+            case SlaState.ok:
+              break;
+          }
+        }
+        if (overdue == 0 && soon == 0) return const SizedBox.shrink();
+        final bad = overdue > 0;
+        final c = bad ? Y2.red : Y2.orange;
+        final parts = <String>[
+          if (overdue > 0)
+            S.t('$overdue GRN overdue', '$overdue GRN मुदतबाह्य'),
+          if (soon > 0) S.t('$soon due within 24h', '$soon २४ तासांत देय'),
+        ];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 11),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            decoration: BoxDecoration(
+              color: bad ? Y2.redTint : Y2.orangeTint,
+              border: Border.all(color: bad ? Y2.redLine : Y2.orangeLine),
+              borderRadius: BorderRadius.circular(11),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded, size: 17, color: c),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    '${S.t('GRN deadline', 'GRN मुदत')} — ${parts.join(' · ')}',
+                    style: F.hind(12, w: FontWeight.w700, color: c),
+                  ),
+                ),
+                Text(S.t('3-day limit', '३-दिवस मर्यादा'),
+                    style: F.hind(10, w: FontWeight.w600, color: c)),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -52,38 +122,94 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final loaded = _data;
-    final rows = loaded?.data ?? const <Json>[];
+    return Responsive(
+      phone: (_) => _phone(),
+      tablet: (_) => _desktop(),
+      desktop: (_) => _desktop(),
+    );
+  }
+
+  // ---- shared header + footer ----
+
+  ScreenHeader2 _header() => ScreenHeader2(
+        title: S.t('GATE — ARRIVALS', 'गेट — आवक'),
+        onBack: nav.pop,
+        demo: _data?.demo ?? false,
+        trailing: Text('1/4', style: F.mono(12, color: Y2.muted)),
+      );
+
+  Widget _footer() => Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+        decoration: const BoxDecoration(
+          color: Color(0xFFF6F8FB),
+          border: Border(top: BorderSide(color: Y2.line)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Scanning happens at the gate scanner (the ScanJet folder-watcher
+            // posts entries to the backend); the app no longer captures with the
+            // camera — the operator works the inbox the scanner feeds, and adds a
+            // manual entry only for walk-ins / no-scan arrivals.
+            Row(
+              children: [
+                const Icon(Icons.document_scanner_outlined,
+                    size: 15, color: Y2.muted),
+                const SizedBox(width: 7),
+                Expanded(
+                  child: Text(
+                    S.t('Scanned challans appear here automatically.',
+                        'स्कॅन केलेली चलने इथे आपोआप दिसतात.'),
+                    style: F.hind(11, color: Y2.muted),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            PrimaryButton2(
+              label: S.t('Add a gate entry', 'गेट नोंद जोडा'),
+              onTap: () => nav.go(ScreenId.offlineGate),
+            ),
+          ],
+        ),
+      );
+
+  EmptyState2 _empty() => EmptyState2(
+        icon: I2.truck,
+        title: S.t('No vehicles waiting', 'प्रतीक्षेत वाहन नाही'),
+        subtitle: S.t(
+            'Scanned challans from the gate scanner appear here. Add one manually if needed.',
+            'गेट स्कॅनरमधील स्कॅन केलेली चलने इथे दिसतात. आवश्यक असल्यास स्वतः जोडा.'),
+      );
+
+  String _summaryLine(List<Json> rows) {
     final waiting = rows.where((r) => !_isUnmatched(r) && !_isDone(r)).length;
     final done = rows.where(_isDone).length;
+    return S.t('$waiting waiting · $done done today',
+        '$waiting प्रतीक्षेत · आज $done पूर्ण');
+  }
+
+  // ---- phone layout (unchanged) ----
+
+  Widget _phone() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
     return Column(
       children: [
         const StatusBar2(),
-        ScreenHeader2(
-          title: S.t('GATE — ARRIVALS', 'गेट — आवक'),
-          onBack: nav.pop,
-          demo: loaded?.demo ?? false,
-          trailing: Text('1/4', style: F.mono(12, color: Y2.muted)),
-        ),
+        _header(),
         Expanded(
           child: loaded == null
               ? const SkeletonRows(count: 4)
               : rows.isEmpty
-                  ? EmptyState2(
-                      icon: I2.truck,
-                      title: S.t('No vehicles waiting', 'प्रतीक्षेत वाहन नाही'),
-                      subtitle: S.t(
-                          'Scanned challans from the gate scanner appear here. Add one manually if needed.',
-                          'गेट स्कॅनरमधील स्कॅन केलेली चलने इथे दिसतात. आवश्यक असल्यास स्वतः जोडा.'),
-                    )
+                  ? _empty()
                   : SingleChildScrollView(
                       padding: const EdgeInsets.fromLTRB(16, 13, 16, 13),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text(
-                              S.t('$waiting waiting · $done done today',
-                                  '$waiting प्रतीक्षेत · आज $done पूर्ण'),
+                          _alertBanner(rows),
+                          Text(_summaryLine(rows),
                               style: F.hind(12, color: Y2.muted)),
                           const SizedBox(height: 9),
                           for (final row in rows) ...[
@@ -94,42 +220,240 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                       ),
                     ),
         ),
-        Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-          decoration: const BoxDecoration(
-            color: Color(0xFFF6F8FB),
-            border: Border(top: BorderSide(color: Y2.line)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Scanning happens at the gate scanner (the ScanJet folder-watcher
-              // posts entries to the backend); the app no longer captures with the
-              // camera — the operator works the inbox the scanner feeds, and adds a
-              // manual entry only for walk-ins / no-scan arrivals.
-              Row(
-                children: [
-                  const Icon(Icons.document_scanner_outlined,
-                      size: 15, color: Y2.muted),
-                  const SizedBox(width: 7),
-                  Expanded(
-                    child: Text(
-                      S.t('Scanned challans appear here automatically.',
-                          'स्कॅन केलेली चलने इथे आपोआप दिसतात.'),
-                      style: F.hind(11, color: Y2.muted),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              PrimaryButton2(
-                label: S.t('Add a gate entry', 'गेट नोंद जोडा'),
-                onTap: () => nav.go(ScreenId.offlineGate),
-              ),
-            ],
+        _footer(),
+      ],
+    );
+  }
+
+  // ---- desktop layout (data table) ----
+
+  Widget _desktop() {
+    final loaded = _data;
+    final rows = loaded?.data ?? const <Json>[];
+    return Column(
+      children: [
+        _header(),
+        Expanded(
+          child: ResponsiveContent(
+            maxWidth: 1200,
+            child: loaded == null
+                ? const SkeletonRows(count: 4)
+                : rows.isEmpty
+                    ? _empty()
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _alertBanner(rows),
+                            Text(_summaryLine(rows),
+                                style: F.hind(12, color: Y2.muted)),
+                            const SizedBox(height: 11),
+                            _table(rows),
+                          ],
+                        ),
+                      ),
           ),
         ),
+        _footer(),
       ],
+    );
+  }
+
+  // Column widths shared by header + rows so the cells line up. A gap is inserted
+  // between adjacent columns (see _gap) so right-aligned numbers never butt up
+  // against the next column's text.
+  static const _wSupplier = 200.0;
+  static const _wType = 120.0;
+  static const _wChallan = 110.0;
+  static const _wMeta = 176.0;
+  static const _wDue = 124.0;
+  static const _wChevron = 22.0;
+  static const _gap = SizedBox(width: 16);
+
+  Widget _fit(Widget child, {Alignment align = Alignment.centerRight}) =>
+      FittedBox(fit: BoxFit.scaleDown, alignment: align, child: child);
+
+  Widget _table(List<Json> rows) {
+    return Card2(
+      padding: EdgeInsets.zero,
+      child: Column(
+        children: [
+          // Header row.
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+            decoration: const BoxDecoration(
+              color: Color(0xFFF6F8FB),
+              border: Border(bottom: BorderSide(color: Y2.line)),
+            ),
+            child: Row(
+              children: [
+                Expanded(child: _th(S.t('Vehicle', 'वाहन'))),
+                _gap,
+                SizedBox(width: _wSupplier, child: _th(S.t('Supplier · material', 'पुरवठादार · माल'))),
+                _gap,
+                SizedBox(width: _wType, child: _th(S.t('Type', 'प्रकार'))),
+                _gap,
+                SizedBox(
+                    width: _wChallan,
+                    child: _th(S.t('On challan', 'चलनावर'), right: true)),
+                _gap,
+                SizedBox(width: _wMeta, child: _th(S.t('Status', 'स्थिती'))),
+                _gap,
+                SizedBox(width: _wDue, child: _th(S.t('GRN due', 'GRN मुदत'))),
+                const SizedBox(width: _wChevron),
+              ],
+            ),
+          ),
+          for (var i = 0; i < rows.length; i++) _tableRow(rows[i], i == rows.length - 1),
+        ],
+      ),
+    );
+  }
+
+  Widget _th(String s, {bool right = false}) => Text(s,
+      textAlign: right ? TextAlign.right : TextAlign.left,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: F.hind(11, w: FontWeight.w600, ls: 0.3, color: Y2.muted));
+
+  /// One arrival as a table row. Mirrors the phone card's branching (unmatched /
+  /// multi-item invoice / single item) so the tap target, nav destination, and
+  /// shown fields are identical — only the layout differs.
+  Widget _tableRow(Json row, bool last) {
+    final unmatched = _isUnmatched(row);
+    final due = _dueFor(row);
+
+    // Resolve the same per-branch values the phone card computes.
+    final String plate;
+    final TextStyle plateStyle;
+    final String supplierLine;
+    final Widget typeCell;
+    final String challanText;
+    final String meta;
+    final Color metaColor;
+    final VoidCallback onTap;
+
+    if (unmatched) {
+      plate = S.t('Unknown vehicle', 'अज्ञात वाहन');
+      plateStyle = F.hind(14, w: FontWeight.w600, color: Y2.ink);
+      supplierLine = '—';
+      typeCell = _fit(
+          const Glyph(GlyphShape.triangle, Y2.orange, size: 12),
+          align: Alignment.centerLeft);
+      challanText = '—';
+      meta = S.t('no pre-advice · tap to identify',
+          'पूर्वसूचना नाही · ओळखण्यासाठी टॅप करा');
+      metaColor = Y2.orange;
+      onTap = () => nav.go(ScreenId.unmatched);
+    } else {
+      final supplier = '${row['supplier'] ?? '—'}';
+      final eta = '${row['eta'] ?? '—'}';
+      final items = row['items'];
+      if (items is List && items.length > 1) {
+        plate = '${row['vehicle'] ?? S.t('Unknown vehicle', 'अज्ञात वाहन')}';
+        plateStyle = F.mono(14, color: Y2.ink);
+        supplierLine =
+            '$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}';
+        typeCell = _fit(_multiPill(items.length), align: Alignment.centerLeft);
+        challanText = '—';
+        meta = S.t('invoice ${row['invoice'] ?? '—'}',
+            'चलन ${row['invoice'] ?? '—'}');
+        metaColor = Y2.accent;
+        onTap = () {
+          _stashInvoice(row);
+          nav.go(ScreenId.gateReceiveItems);
+        };
+      } else {
+        final status = '${row['status'] ?? ''}'.toLowerCase();
+        final isNew = status == 'new';
+        final isDone = status == 'done';
+        final isComp = '${row['category'] ?? 'rm'}' == 'component';
+        final material = '${row['material'] ?? '—'}';
+        final unit = isComp ? S.t('pcs', 'नग') : 'kg';
+        final challan = _fmtNum('${row['challan'] ?? ''}');
+        plate = '${row['vehicle'] ?? S.t('Unknown vehicle', 'अज्ञात वाहन')}';
+        plateStyle = F.mono(14, color: Y2.ink);
+        supplierLine = '$supplier · $material';
+        typeCell = _fit(_categoryPill(isComp), align: Alignment.centerLeft);
+        challanText = challan.isEmpty ? '—' : '$challan $unit';
+        if (isDone) {
+          meta = S.t('received', 'मिळाले');
+          metaColor = Y2.muted;
+        } else {
+          meta = S.t('exp. $eta', 'अपे. $eta');
+          metaColor = isNew ? Y2.accent : Y2.muted;
+        }
+        onTap = () {
+          _stashEntry(row);
+          nav.go(ScreenId.gateMatch);
+        };
+      }
+    }
+
+    return Pressable2(
+      scale: 0.99,
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          border:
+              last ? null : const Border(bottom: BorderSide(color: Y2.lineSoft)),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // Vehicle / plate.
+            Expanded(
+              child: Text(plate,
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: plateStyle),
+            ),
+            _gap,
+            // Supplier · material.
+            SizedBox(
+              width: _wSupplier,
+              child: Text(supplierLine,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: F.hind(12, color: Y2.muted)),
+            ),
+            _gap,
+            // Type chip.
+            SizedBox(width: _wType, child: typeCell),
+            _gap,
+            // On challan (numeric, right-aligned).
+            SizedBox(
+              width: _wChallan,
+              child: _fit(Text(challanText,
+                  maxLines: 1,
+                  style: F.mono(13, w: FontWeight.w600, color: Y2.ink))),
+            ),
+            _gap,
+            // Status / meta.
+            SizedBox(
+              width: _wMeta,
+              child: Text(meta,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: F.hind(12, w: FontWeight.w600, color: metaColor)),
+            ),
+            _gap,
+            // GRN deadline countdown (live).
+            SizedBox(
+              width: _wDue,
+              child: due == null
+                  ? Text('—',
+                      style: F.mono(12, color: Y2.muted2))
+                  : _fit(SlaCountdown(due, dense: true),
+                      align: Alignment.centerLeft),
+            ),
+            const SizedBox(
+              width: _wChevron,
+              child: Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -146,6 +470,26 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
             'पूर्वसूचना नाही · ओळखण्यासाठी टॅप करा'),
         badge: const Glyph(GlyphShape.triangle, Y2.orange, size: 12),
         onTap: () => nav.go(ScreenId.unmatched),
+      );
+    }
+    // Multi-item invoice: one challan carrying several materials (possibly across
+    // POs). Tapping opens the Receive Invoice screen where all lines are entered
+    // together, rather than the single-item match → QC → GRN walk.
+    final items = row['items'];
+    if (items is List && items.length > 1) {
+      return _vehicle(
+        plate: plate,
+        plateStyle: F.mono(14, color: Y2.ink),
+        sub: '$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}',
+        meta: S.t('invoice ${row['invoice'] ?? '—'}',
+            'चलन ${row['invoice'] ?? '—'}'),
+        metaColor: Y2.accent,
+        badge: _multiPill(items.length),
+        slaDue: _dueFor(row),
+        onTap: () {
+          _stashInvoice(row);
+          nav.go(ScreenId.gateReceiveItems);
+        },
       );
     }
     final status = '${row['status'] ?? ''}'.toLowerCase();
@@ -177,6 +521,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
       // Category chip (raw material vs purchased component) so the kind of arrival
       // reads at a glance and the match/QC steps can branch correctly.
       badge: _categoryPill(isComp),
+      slaDue: _dueFor(row),
       // The arrival came in from the gate scanner; tapping reviews & matches it
       // to a PO (then on to quality), carrying *this* entry's details forward.
       onTap: () {
@@ -199,9 +544,34 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
     Ui2Flow.set('gate.ordered', '${row['ordered'] ?? ''}');
     Ui2Flow.set('gate.challan', '${row['challan'] ?? ''}');
     Ui2Flow.set('gate.invoice', '${row['invoice'] ?? ''}');
+    // Stock limits (P-L) + GRN deadline (P-T) for the receive/GRN step.
+    Ui2Flow.set('gate.onHand', '${row['on_hand'] ?? ''}');
+    Ui2Flow.set('gate.stockMax', '${row['stock_max'] ?? ''}');
+    Ui2Flow.set('gate.stockMin', '${row['stock_min'] ?? ''}');
+    Ui2Flow.set('gate.arrivedHoursAgo', row['arrived_hours_ago']);
     // A freshly-tapped challan, not a worklist receipt — let the GRN self-create.
     Ui2Flow.set('gate.entryId', null);
   }
+
+  /// Stash a whole multi-item invoice into the cross-screen flow so the Receive
+  /// Invoice screen can show every line. `items` carries each line's material /
+  /// category / po / ordered / challan.
+  void _stashInvoice(Json row) {
+    Ui2Flow.set('gate.items', row['items']);
+    Ui2Flow.set('gate.invoice', '${row['invoice'] ?? ''}');
+    Ui2Flow.set('gate.supplier', '${row['supplier'] ?? '—'}');
+    Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
+    Ui2Flow.set('gate.arrivedHoursAgo', row['arrived_hours_ago']);
+    Ui2Flow.set('gate.entryId', null);
+  }
+
+  Widget _multiPill(int n) => Pill2(
+        text: S.t('$n ITEMS', '$n वस्तू'),
+        fg: Y2.accent,
+        bg: Y2.accent.withValues(alpha: 0.10),
+        borderColor: Y2.accent.withValues(alpha: 0.30),
+        dot: false,
+      );
 
   /// Group thousands in a bare number string ("5860" → "5,860"); passes through
   /// anything that isn't a plain integer.
@@ -234,6 +604,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
     String? meta,
     Color metaColor = Y2.muted,
     Widget? badge,
+    DateTime? slaDue,
     required VoidCallback onTap,
   }) {
     return Pressable2(
@@ -267,12 +638,25 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: F.hind(12, color: Y2.muted)),
-                  if (meta != null) ...[
-                    const SizedBox(height: 2),
-                    Text(meta,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: F.hind(11, color: metaColor)),
+                  if (meta != null || slaDue != null) ...[
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        if (meta != null)
+                          Expanded(
+                            child: Text(meta,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: F.hind(11, color: metaColor)),
+                          )
+                        else
+                          const Spacer(),
+                        if (slaDue != null) ...[
+                          const SizedBox(width: 8),
+                          SlaCountdown(slaDue, dense: true),
+                        ],
+                      ],
+                    ),
                   ],
                 ],
               ),
