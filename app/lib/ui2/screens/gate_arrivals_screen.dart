@@ -166,7 +166,14 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
               ],
             ),
             const SizedBox(height: 10),
+            // Live-OCR front door: scan/upload an invoice, read the PO with Google
+            // Vision, pin the material, and generate the GRN (demo OCR service).
             PrimaryButton2(
+              label: S.t('Scan invoice — live OCR', 'इनव्हॉइस स्कॅन — लाइव्ह OCR'),
+              onTap: () => nav.go(ScreenId.gateScanOcr),
+            ),
+            const SizedBox(height: 8),
+            OutlineButton2(
               label: S.t('Add a gate entry', 'गेट नोंद जोडा'),
               onTap: () => nav.go(ScreenId.offlineGate),
             ),

@@ -10,3 +10,6 @@ pgdata/
 .DS_Store
 dev.db
 backend/filestore/
+.idea/
+demo/grn_out/*.xlsx
+demo/scans/*.png

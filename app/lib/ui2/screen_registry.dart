@@ -18,6 +18,7 @@ import 'screens/issue_waiting_screen.dart';
 import 'screens/issue_approved_screen.dart';
 import 'screens/issue_done_screen.dart';
 import 'screens/gate_arrivals_screen.dart';
+import 'screens/gate_scan_ocr_screen.dart';
 import 'screens/gate_match_screen.dart';
 import 'screens/quality_worklist_screen.dart';
 import 'screens/admin_users_screen.dart';
@@ -75,6 +76,7 @@ Widget buildScreen(ScreenId id, PhoneNav nav) => switch (id) {
     ScreenId.issueApproved => Ui2IssueApprovedScreen(nav: nav),
     ScreenId.issueDone => Ui2IssueDoneScreen(nav: nav),
     ScreenId.gateArrivals => Ui2GateArrivalsScreen(nav: nav),
+    ScreenId.gateScanOcr => Ui2GateScanOcrScreen(nav: nav),
     ScreenId.gateMatch => Ui2GateMatchScreen(nav: nav),
     ScreenId.gateQc => Ui2GateQcScreen(nav: nav),
     ScreenId.gateGrn => Ui2GateGrnScreen(nav: nav),
@@ -141,6 +143,7 @@ const List<ScreenEntry> kScreens = [
   ScreenEntry(ScreenId.issueApproved, 'Issue approved', 'store', null),
   ScreenEntry(ScreenId.issueDone, 'Issue done', 'store', null),
   ScreenEntry(ScreenId.gateArrivals, 'Gate arrivals', 'gate', null),
+  ScreenEntry(ScreenId.gateScanOcr, 'Scan invoice (live OCR)', 'gate', null),
   ScreenEntry(ScreenId.qualityWorklist, 'Quality worklist', 'gate', null),
   ScreenEntry(ScreenId.gateMatch, 'Gate match', 'gate', null),
   ScreenEntry(ScreenId.gateQc, 'Gate QC', 'gate', null),

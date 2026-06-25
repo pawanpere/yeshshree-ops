@@ -1,0 +1,18 @@
+# Reference pubspec. Easiest path: run `flutter create gate_app`, then just ADD the
+# webview_flutter line below to the generated pubspec.yaml and run `flutter pub get`.
+# (Adding the one dependency avoids any SDK-constraint mismatch with your Flutter.)
+name: gate_app
+description: Yeshshree Gate Receiving — demo app shell
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  webview_flutter: ^4.7.0
+
+flutter:
+  uses-material-design: true
