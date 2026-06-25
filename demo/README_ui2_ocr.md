@@ -18,16 +18,27 @@ untouched; this adds a JSON+CORS service (`api.py`) the Flutter app calls.
 ```
 cd demo
 export GVISION_KEY="<your Google Cloud Vision API key>"   # real OCR; omit for sample-only
+export SCANS_DIR="/path/to/scanner/dropbox"               # OPTIONAL — defaults to demo/scans/
 python3 -m uvicorn api:app --port 8900
 # (no local Python deps? one-shot via uv:)
 # uv run --with fastapi --with uvicorn --with openpyxl --with pillow \
 #        --with pypdfium2 --with certifi uvicorn api:app --port 8900
 ```
 
-- **With `GVISION_KEY`** → real Vision OCR on whatever is scanned/uploaded.
+- **With `GVISION_KEY`** → real Vision OCR on whatever is scanned/dropped.
 - **Without it** → the service still runs; the three bundled sample invoices
   (named by PO) match by file name so the whole UI flow is demoable. The app
   shows a `SAMPLE ONLY` badge in this mode.
+
+### Connect the scanner directly (scan-to-folder)
+
+The service runs a **folder watcher**. Point your printer/scanner's
+**Scan-to-Folder** at the watched folder (`SCANS_DIR`, default `demo/scans/`) —
+a local path or a mounted network share. When the watchman scans, the file lands
+there, the service OCRs it, matches the PO, and the ui2 "Scan invoice — live OCR"
+screen (which polls `/ocr/latest`) flips to it automatically. No upload step.
+
+PDF / JPEG / PNG are all accepted; partial files are ignored until fully written.
 
 ## 2. Start the ui2 app (../../yeshshree-ops-2/app)
 
