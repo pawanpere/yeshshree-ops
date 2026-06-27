@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/strings.dart';
 import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../responsive.dart';
+import '../roles.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -19,16 +21,28 @@ import '../widgets/sla.dart';
 /// gate entry" (walk-ins / no-scan) — the app no longer captures with the camera.
 /// Rows are loaded from [Data.gateArrivals]; falls back to clearly-marked DEMO data
 /// when the backend is unreachable or the table is empty.
-class Ui2GateArrivalsScreen extends StatefulWidget {
+///
+/// Role-aware: in the GATE role this is a strict scan-only, READ-ONLY inbox (rows
+/// don't navigate; the only action is the "Scan invoice" button). In the QUALITY
+/// role it is the receiving worklist — tapping an arrival runs match / multi-item
+/// receive → inward QC → GRN, and the scan footer is hidden.
+class Ui2GateArrivalsScreen extends ConsumerStatefulWidget {
   const Ui2GateArrivalsScreen({super.key, required this.nav});
   final PhoneNav nav;
 
   @override
-  State<Ui2GateArrivalsScreen> createState() => _Ui2GateArrivalsScreenState();
+  ConsumerState<Ui2GateArrivalsScreen> createState() =>
+      _Ui2GateArrivalsScreenState();
 }
 
-class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
+class _Ui2GateArrivalsScreenState extends ConsumerState<Ui2GateArrivalsScreen> {
   Loaded<List<Json>>? _data;
+
+  /// GATE role → read-only scan-only inbox; STORE → GRN (count) worklist;
+  /// QUALITY → QA worklist. Both STORE and QUALITY are tappable. Set at the top
+  /// of [build] from the active role.
+  Role? _role;
+  bool _readOnly = false;
   // Stable reference for the GRN countdown, captured once so the deadlines tick
   // down instead of re-anchoring to "now" on every rebuild.
   final DateTime _loadTime = DateTime.now();
@@ -122,6 +136,10 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // GATE → strict scan-only read-only inbox; any other role (QUALITY) → the
+    // tappable receiving worklist. Read before the row/footer builders run.
+    _role = ref.watch(activeRoleProvider);
+    _readOnly = _role == Role.gate;
     return Responsive(
       phone: (_) => _phone(),
       tablet: (_) => _desktop(),
@@ -131,55 +149,62 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
 
   // ---- shared header + footer ----
 
-  ScreenHeader2 _header() => ScreenHeader2(
-        title: S.t('GATE — ARRIVALS', 'गेट — आवक'),
-        onBack: nav.pop,
-        demo: _data?.demo ?? false,
-        trailing: Text('1/4', style: F.mono(12, color: Y2.muted)),
-      );
+  ScreenHeader2 _header() {
+    final (String en, String mr) = switch (_role) {
+      Role.gate => ('GATE — ARRIVALS', 'गेट — आवक'),
+      Role.store => ('STORE — GRN', 'स्टोअर — GRN'),
+      _ => ('QUALITY — QA', 'गुणवत्ता — QA'),
+    };
+    return ScreenHeader2(
+      title: S.t(en, mr),
+      onBack: nav.pop,
+      demo: _data?.demo ?? false,
+      trailing: Text(_readOnly ? '1/4' : '${_data?.data.length ?? 0}',
+          style: F.mono(12, color: Y2.muted)),
+    );
+  }
 
-  Widget _footer() => Container(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
-        decoration: const BoxDecoration(
-          color: Color(0xFFF6F8FB),
-          border: Border(top: BorderSide(color: Y2.line)),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Scanning happens at the gate scanner (the ScanJet folder-watcher
-            // posts entries to the backend); the app no longer captures with the
-            // camera — the operator works the inbox the scanner feeds, and adds a
-            // manual entry only for walk-ins / no-scan arrivals.
-            Row(
-              children: [
-                const Icon(Icons.document_scanner_outlined,
-                    size: 15, color: Y2.muted),
-                const SizedBox(width: 7),
-                Expanded(
-                  child: Text(
-                    S.t('Scanned challans appear here automatically.',
-                        'स्कॅन केलेली चलने इथे आपोआप दिसतात.'),
-                    style: F.hind(11, color: Y2.muted),
-                  ),
+  /// Scan front door — GATE role only. In the QUALITY (receiving) role there is
+  /// no footer: work is started by tapping an arrival row.
+  Widget _footer() {
+    if (!_readOnly) return const SizedBox.shrink();
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+      decoration: const BoxDecoration(
+        color: Color(0xFFF6F8FB),
+        border: Border(top: BorderSide(color: Y2.line)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Scanning happens at the gate scanner (the ScanJet folder-watcher
+          // posts entries to the backend); the operator just works the inbox the
+          // scanner feeds. Receiving the load is the Quality role's job now.
+          Row(
+            children: [
+              const Icon(Icons.document_scanner_outlined,
+                  size: 15, color: Y2.muted),
+              const SizedBox(width: 7),
+              Expanded(
+                child: Text(
+                  S.t('Scanned challans appear here automatically.',
+                      'स्कॅन केलेली चलने इथे आपोआप दिसतात.'),
+                  style: F.hind(11, color: Y2.muted),
                 ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            // Live-OCR front door: scan/upload an invoice, read the PO with Google
-            // Vision, pin the material, and generate the GRN (demo OCR service).
-            PrimaryButton2(
-              label: S.t('Scan invoice — live OCR', 'इनव्हॉइस स्कॅन — लाइव्ह OCR'),
-              onTap: () => nav.go(ScreenId.gateScanOcr),
-            ),
-            const SizedBox(height: 8),
-            OutlineButton2(
-              label: S.t('Add a gate entry', 'गेट नोंद जोडा'),
-              onTap: () => nav.go(ScreenId.offlineGate),
-            ),
-          ],
-        ),
-      );
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Live-OCR front door: scan/upload an invoice, read the PO with Google
+          // Vision, pin the material — the gate operator's one and only action.
+          PrimaryButton2(
+            label: S.t('Scan invoice — live OCR', 'इनव्हॉइस स्कॅन — लाइव्ह OCR'),
+            onTap: () => nav.go(ScreenId.gateScanOcr),
+          ),
+        ],
+      ),
+    );
+  }
 
   EmptyState2 _empty() => EmptyState2(
         icon: I2.truck,
@@ -361,7 +386,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
         plate = '${row['vehicle'] ?? S.t('Unknown vehicle', 'अज्ञात वाहन')}';
         plateStyle = F.mono(14, color: Y2.ink);
         supplierLine =
-            '$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}';
+            '${_gep(row)}$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}';
         typeCell = _fit(_multiPill(items.length), align: Alignment.centerLeft);
         challanText = '—';
         meta = S.t('invoice ${row['invoice'] ?? '—'}',
@@ -381,7 +406,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
         final challan = _fmtNum('${row['challan'] ?? ''}');
         plate = '${row['vehicle'] ?? S.t('Unknown vehicle', 'अज्ञात वाहन')}';
         plateStyle = F.mono(14, color: Y2.ink);
-        supplierLine = '$supplier · $material';
+        supplierLine = '${_gep(row)}$supplier · $material';
         typeCell = _fit(_categoryPill(isComp), align: Alignment.centerLeft);
         challanText = challan.isEmpty ? '—' : '$challan $unit';
         if (isDone) {
@@ -391,16 +416,19 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
           meta = S.t('exp. $eta', 'अपे. $eta');
           metaColor = isNew ? Y2.accent : Y2.muted;
         }
+        // Unified: a single-item arrival opens the same Receive screen as a
+        // one-row invoice (Stores GRN / Quality QA), not the old match wizard.
         onTap = () {
-          _stashEntry(row);
-          nav.go(ScreenId.gateMatch);
+          _stashSingleAsInvoice(row);
+          nav.go(ScreenId.gateReceiveItems);
         };
       }
     }
 
     return Pressable2(
       scale: 0.99,
-      onTap: onTap,
+      // GATE role is read-only: rows display but don't navigate (scan only).
+      onTap: _readOnly ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
@@ -454,9 +482,11 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                   : _fit(SlaCountdown(due, dense: true),
                       align: Alignment.centerLeft),
             ),
-            const SizedBox(
+            SizedBox(
               width: _wChevron,
-              child: Icon(I2.chevronRight, size: 18, color: Y2.muted),
+              child: _readOnly
+                  ? null
+                  : const Icon(I2.chevronRight, size: 18, color: Y2.muted),
             ),
           ],
         ),
@@ -487,7 +517,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
       return _vehicle(
         plate: plate,
         plateStyle: F.mono(14, color: Y2.ink),
-        sub: '$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}',
+        sub: '${_gep(row)}$supplier · ${S.t('${items.length} items', '${items.length} वस्तू')}',
         meta: S.t('invoice ${row['invoice'] ?? '—'}',
             'चलन ${row['invoice'] ?? '—'}'),
         metaColor: Y2.accent,
@@ -522,41 +552,43 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
       plateStyle: F.mono(14, color: Y2.ink),
       // Supplier + the actual material on the truck — this is what makes each
       // entry distinct (RM coil vs a named component) instead of all looking alike.
-      sub: '$supplier · $material',
+      sub: '${_gep(row)}$supplier · $material',
       meta: meta,
       metaColor: isNew ? Y2.accent : Y2.muted,
       // Category chip (raw material vs purchased component) so the kind of arrival
       // reads at a glance and the match/QC steps can branch correctly.
       badge: _categoryPill(isComp),
       slaDue: _dueFor(row),
-      // The arrival came in from the gate scanner; tapping reviews & matches it
-      // to a PO (then on to quality), carrying *this* entry's details forward.
+      // Unified: a single-item arrival opens the same Receive screen as a one-row
+      // invoice (Stores GRN / Quality QA), not the old match wizard.
       onTap: () {
-        _stashEntry(row);
-        nav.go(ScreenId.gateMatch);
+        _stashSingleAsInvoice(row);
+        nav.go(ScreenId.gateReceiveItems);
       },
     );
   }
 
-  /// Stash the tapped entry into the cross-screen flow so the match + inward-QC
-  /// steps show this vehicle's own supplier / material / PO / qty (and weigh vs
-  /// count correctly) instead of a single hard-coded order.
-  void _stashEntry(Json row) {
-    final isComp = '${row['category'] ?? 'rm'}' == 'component';
-    Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
-    Ui2Flow.set('gate.supplier', '${row['supplier'] ?? '—'}');
-    Ui2Flow.set('gate.material', '${row['material'] ?? '—'}');
-    Ui2Flow.set('gate.po', '${row['po'] ?? '—'}');
-    Ui2Flow.set('gate.category', isComp ? 'component' : 'rm');
-    Ui2Flow.set('gate.ordered', '${row['ordered'] ?? ''}');
-    Ui2Flow.set('gate.challan', '${row['challan'] ?? ''}');
+  /// Stash a SINGLE-item arrival as a one-line invoice so it opens the same
+  /// Receive screen as a multi-item challan (unified flow). Wraps the row's own
+  /// material / po / qty / stock fields into a one-element `gate.items` list.
+  void _stashSingleAsInvoice(Json row) {
+    Ui2Flow.set('gate.items', <Json>[
+      {
+        'material': row['material'],
+        'category': row['category'] ?? 'rm',
+        'po': row['po'],
+        'ordered': row['ordered'],
+        'challan': row['challan'],
+        'on_hand': row['on_hand'],
+        'stock_max': row['stock_max'],
+        'stock_min': row['stock_min'],
+      }
+    ]);
     Ui2Flow.set('gate.invoice', '${row['invoice'] ?? ''}');
-    // Stock limits (P-L) + GRN deadline (P-T) for the receive/GRN step.
-    Ui2Flow.set('gate.onHand', '${row['on_hand'] ?? ''}');
-    Ui2Flow.set('gate.stockMax', '${row['stock_max'] ?? ''}');
-    Ui2Flow.set('gate.stockMin', '${row['stock_min'] ?? ''}');
+    Ui2Flow.set('gate.supplier', '${row['supplier'] ?? '—'}');
+    Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
+    Ui2Flow.set('gate.entryNo', '${row['gate_entry_no'] ?? ''}');
     Ui2Flow.set('gate.arrivedHoursAgo', row['arrived_hours_ago']);
-    // A freshly-tapped challan, not a worklist receipt — let the GRN self-create.
     Ui2Flow.set('gate.entryId', null);
   }
 
@@ -568,6 +600,7 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
     Ui2Flow.set('gate.invoice', '${row['invoice'] ?? ''}');
     Ui2Flow.set('gate.supplier', '${row['supplier'] ?? '—'}');
     Ui2Flow.set('gate.vehicle', '${row['vehicle'] ?? ''}');
+    Ui2Flow.set('gate.entryNo', '${row['gate_entry_no'] ?? ''}');
     Ui2Flow.set('gate.arrivedHoursAgo', row['arrived_hours_ago']);
     Ui2Flow.set('gate.entryId', null);
   }
@@ -579,6 +612,13 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
         borderColor: Y2.accent.withValues(alpha: 0.30),
         dot: false,
       );
+
+  /// "GE-26014 · " prefix carrying a row's gate-entry number (blank if none), so
+  /// the gate-entry number is visible right on the inbox line.
+  String _gep(Json row) {
+    final g = '${row['gate_entry_no'] ?? ''}';
+    return g.isEmpty ? '' : '$g · ';
+  }
 
   /// Group thousands in a bare number string ("5860" → "5,860"); passes through
   /// anything that isn't a plain integer.
@@ -615,7 +655,8 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
     required VoidCallback onTap,
   }) {
     return Pressable2(
-      onTap: onTap,
+      // GATE role is read-only: rows display but don't navigate (scan only).
+      onTap: _readOnly ? null : onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
         decoration: BoxDecoration(
@@ -668,8 +709,10 @@ class _Ui2GateArrivalsScreenState extends State<Ui2GateArrivalsScreen> {
                 ],
               ),
             ),
-            const SizedBox(width: 6),
-            const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            if (!_readOnly) ...[
+              const SizedBox(width: 6),
+              const Icon(I2.chevronRight, size: 18, color: Y2.muted),
+            ],
           ],
         ),
       ),

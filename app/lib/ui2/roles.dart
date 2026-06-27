@@ -46,19 +46,21 @@ const Map<Role, RoleSpec> kRoles = {
   Role.gate: RoleSpec(
     shell: ShellKind.phone,
     en: 'Gate', mr: 'गेट', icon: I2.gate,
+    // Strict scan-only: the gate operator works a READ-ONLY arrivals inbox and
+    // scans invoices in — nothing else. All receiving (match · multi-item · QC
+    // · GRN) now lives in the Quality role, so the Review/Unmatched tabs are gone.
     tabs: [
       RoleTab(ScreenId.gateArrivals, I2.inbox, 'Inbox', 'इनबॉक्स'),
-      RoleTab(ScreenId.gateMatch, I2.gate, 'Review', 'तपासणी'),
-      RoleTab(ScreenId.unmatched, I2.warning, 'Unmatched', 'जुळत नाही'),
     ],
   ),
   Role.quality: RoleSpec(
     shell: ShellKind.phone,
     en: 'Quality', mr: 'गुणवत्ता', icon: Icons.verified_outlined,
+    // Everything happens on ONE screen — the Receiving inbox. Tapping an arrival
+    // runs match / multi-item receive → inward QC → GRN (with put-away) inline,
+    // so there are no separate QC or Receipt tabs.
     tabs: [
-      RoleTab(ScreenId.qualityWorklist, I2.tasks, 'Worklist', 'कार्यसूची'),
-      RoleTab(ScreenId.gateQc, Icons.science_outlined, 'Quality', 'गुणवत्ता'),
-      RoleTab(ScreenId.gateGrn, I2.invoice, 'Receipt', 'पावती'),
+      RoleTab(ScreenId.gateArrivals, I2.inbox, 'Receiving', 'आवक'),
     ],
   ),
   Role.production: RoleSpec(
@@ -75,7 +77,10 @@ const Map<Role, RoleSpec> kRoles = {
   Role.store: RoleSpec(
     shell: ShellKind.phone,
     en: 'Store', mr: 'स्टोअर', icon: I2.store,
+    // Stores does the GRN — counts the received qty only (no QC / rejection, no
+    // put-away). Flow is gate entry → GRN (here) → QA (Quality).
     tabs: [
+      RoleTab(ScreenId.gateArrivals, I2.inbox, 'GRN', 'GRN'),
       RoleTab(ScreenId.issueForm, I2.store, 'Issue', 'जारी'),
       RoleTab(ScreenId.dispatchList, I2.truck, 'Dispatch', 'डिस्पॅच'),
       RoleTab(ScreenId.storeStock, Icons.inventory_2_outlined, 'Stock', 'स्टॉक'),

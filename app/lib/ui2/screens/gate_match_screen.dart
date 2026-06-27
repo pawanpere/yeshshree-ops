@@ -195,7 +195,9 @@ class _Ui2GateMatchScreenState extends State<Ui2GateMatchScreen> {
           border: Border(top: BorderSide(color: Y2.line)),
         ),
         child: PrimaryButton2(
-          label: S.t('Send to quality', 'गुणवत्तेकडे पाठवा'),
+          // Receiving now lives inside the Quality role, so this advances within
+          // quality to inward QC rather than handing off to another role.
+          label: S.t('Continue to QC', 'QC कडे चला'),
           onTap: _sendToQuality,
         ),
       );

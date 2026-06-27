@@ -7,6 +7,7 @@ import '../data/api2.dart';
 import '../data/flow.dart';
 import '../nav.dart';
 import '../responsive.dart';
+import '../roles.dart';
 import '../tokens.dart';
 import '../widgets/bits.dart';
 import '../widgets/frame.dart';
@@ -86,17 +87,19 @@ class _ItemEntry {
   bool get atMax => hasMax && cap <= 0;
   bool get belowMin => stockMin > 0 && onHand < stockMin;
 
-  /// A line is ready to post when something was received, the rejected amount
-  /// doesn't exceed it, and it doesn't breach the material's max stock limit.
+  /// A line is ready to post once a received qty is entered and the rejected
+  /// amount doesn't exceed it. Over-max and PO-mismatch DO NOT block — every
+  /// invoice goes through; those conditions surface as visible flags instead.
   bool get valid =>
-      receivedQty > 0 &&
-      rejectedQty >= 0 &&
-      rejectedQty <= receivedQty &&
-      !overMax;
+      receivedQty > 0 && rejectedQty >= 0 && rejectedQty <= receivedQty;
 
   /// Advisory: received exceeds the PO ordered qty (still allowed — the backend
   /// records a soft anomaly; invariant #11 never hard-blocks stock).
   bool get overPo => ordered > 0 && receivedQty > ordered;
+
+  /// Whether this line is tied to a real PO. An empty / "—" PO means the OCR /
+  /// system couldn't match one — allowed through, but flagged.
+  bool get poMatched => po.trim().isNotEmpty && po.trim() != '—';
 
   void dispose() {
     received.dispose();
@@ -119,6 +122,14 @@ class _Ui2GateReceiveItemsScreenState
   bool _queued = false;
   String _grnDoc = 'GR-5572';
 
+  /// STORE role → GRN mode: only Received is editable; Rejected/QC hidden; button
+  /// "Post GRN" (no put-away). Any other role (Quality) → QA mode: Received is
+  /// read-only and Rejected + QC are editable. Set at the top of [build].
+  bool _storesMode = false;
+
+  /// Gate-entry number carried from the arrival, shown on every screen.
+  late String _entryNo;
+
   PhoneNav get nav => widget.nav;
 
   @override
@@ -127,6 +138,7 @@ class _Ui2GateReceiveItemsScreenState
     _invoice = Ui2Flow.get<String>('gate.invoice') ?? 'INV-0000';
     _supplier = Ui2Flow.get<String>('gate.supplier') ?? '—';
     _vehicle = Ui2Flow.get<String>('gate.vehicle') ?? '—';
+    _entryNo = Ui2Flow.get<String>('gate.entryNo') ?? '';
     final raw = (Ui2Flow.raw('gate.items') as List?) ?? const [];
     _items = [
       for (final e in raw)
@@ -149,10 +161,12 @@ class _Ui2GateReceiveItemsScreenState
       _invoice = _invoice == 'INV-0000' ? 'INV-9931002' : _invoice;
       _supplier = _supplier == '—' ? 'Sandhar Steel' : _supplier;
       _vehicle = _vehicle == '—' ? 'MH40 PQ 8833' : _vehicle;
+      if (_entryNo.isEmpty) _entryNo = 'GE-26014';
       _items.addAll([
         _ItemEntry(material: 'CR coil 2.5mm', category: 'rm', po: '77-2291', ordered: 4000, challan: 4000, onHand: 2800, stockMax: 3000, stockMin: 500),
         _ItemEntry(material: 'HR coil 3.0mm', category: 'rm', po: '77-2304', ordered: 6000, challan: 5860, onHand: 1000, stockMax: 12000, stockMin: 800),
-        _ItemEntry(material: 'Mounting bracket 7782', category: 'component', po: '88-4419', ordered: 1500, challan: 1500, onHand: 200, stockMax: 5000, stockMin: 300),
+        // No PO matched on this line — allowed through, shown with a flag.
+        _ItemEntry(material: 'Mounting bracket 7782', category: 'component', po: '', ordered: 1500, challan: 1500, onHand: 200, stockMax: 5000, stockMin: 300),
         _ItemEntry(material: 'Fasteners M8 hex', category: 'component', po: '88-4631', ordered: 8000, challan: 8000, onHand: 7950, stockMax: 8000, stockMin: 1000),
       ]);
     }
@@ -187,6 +201,8 @@ class _Ui2GateReceiveItemsScreenState
   bool get _allValid => _items.isNotEmpty && _items.every((i) => i.valid);
   double get _totalAccepted =>
       _items.fold(0, (s, i) => s + (i.valid ? i.acceptedQty : 0));
+  double get _totalReceived =>
+      _items.fold(0, (s, i) => s + (i.valid ? i.receivedQty : 0));
 
   String _unitOf(_ItemEntry it) =>
       it.isComponent ? S.t('pcs', 'नग') : 'kg';
@@ -236,6 +252,8 @@ class _Ui2GateReceiveItemsScreenState
         'doc_type': 'invoice',
         'vehicle_no': _vehicle,
         'invoice_no': _invoice,
+        'gate_entry_no': _entryNo,
+        'stage': _storesMode ? 'grn' : 'qc',
         'vendor_id': 1,
         'items': [
           for (final it in _items)
@@ -276,6 +294,8 @@ class _Ui2GateReceiveItemsScreenState
 
   @override
   Widget build(BuildContext context) {
+    // STORE → GRN (count only); anything else (Quality) → QA (rejection + QC).
+    _storesMode = ref.watch(activeRoleProvider) == Role.store;
     if (_posted) return _success();
     return Responsive(
       phone: (_) => _phone(),
@@ -316,7 +336,8 @@ class _Ui2GateReceiveItemsScreenState
           Row(
             children: [
               Expanded(
-                child: Text('$_supplier · $_vehicle',
+                child: Text(
+                    '${_entryNo.isEmpty ? '' : '$_entryNo · '}$_supplier · $_vehicle',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: F.hind(12, color: Y2.muted)),
@@ -353,10 +374,16 @@ class _Ui2GateReceiveItemsScreenState
             Expanded(
               child: Text(
                 _allValid
-                    ? S.t('All items ready · accepting ${_fmt(_totalAccepted)}',
-                        'सर्व वस्तू तयार · ${_fmt(_totalAccepted)} स्वीकारत')
-                    : S.t('Enter qty for every item to post',
-                        'नोंदवण्यासाठी प्रत्येक वस्तूचे प्रमाण भरा'),
+                    ? (_storesMode
+                        ? S.t('All counted · receiving ${_fmt(_totalReceived)}',
+                            'सर्व मोजले · ${_fmt(_totalReceived)} स्वीकारत')
+                        : S.t('All items ready · accepting ${_fmt(_totalAccepted)}',
+                            'सर्व वस्तू तयार · ${_fmt(_totalAccepted)} स्वीकारत'))
+                    : (_storesMode
+                        ? S.t('Enter the received count for every item',
+                            'प्रत्येक वस्तूची मोजलेली संख्या भरा')
+                        : S.t('Enter qty for every item to post',
+                            'नोंदवण्यासाठी प्रत्येक वस्तूचे प्रमाण भरा')),
                 style: F.hind(11, color: Y2.muted),
               ),
             ),
@@ -366,8 +393,11 @@ class _Ui2GateReceiveItemsScreenState
               child: PrimaryButton2(
                 label: _posting
                     ? S.t('Posting…', 'नोंदवत आहे…')
-                    : S.t('Post GRN · ${_items.length} items',
-                        '${_items.length} वस्तू नोंदवा'),
+                    : (_storesMode
+                        ? S.t('Post GRN · ${_items.length} items',
+                            '${_items.length} वस्तू नोंदवा')
+                        : S.t('Confirm QC · ${_items.length} items',
+                            'QC पुष्टी · ${_items.length} वस्तू')),
                 busy: _posting,
                 enabled: _allValid,
                 onTap: _post,
@@ -492,12 +522,20 @@ class _Ui2GateReceiveItemsScreenState
                   Text(S.t('PO', 'PO'), style: F.hind(12, color: Y2.muted)),
                   const SizedBox(width: 8),
                   Expanded(
-                    child: Text(it.po,
+                    child: Text(
+                        it.poMatched
+                            ? it.po
+                            : S.t('No PO matched', 'PO जुळले नाही'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: F.mono(13, w: FontWeight.w700, color: Y2.ink)),
+                        style: F.mono(13,
+                            w: FontWeight.w700,
+                            color: it.poMatched ? Y2.ink : Y2.red)),
                   ),
-                  Text(S.t('change', 'बदला'),
+                  Text(
+                      it.poMatched
+                          ? S.t('change', 'बदला')
+                          : S.t('assign', 'नेमा'),
                       style: F.hind(11, w: FontWeight.w600, color: Y2.accent)),
                   const Icon(I2.chevronDown, size: 18, color: Y2.accent),
                 ],
@@ -514,6 +552,8 @@ class _Ui2GateReceiveItemsScreenState
             controller: it.received,
             unit: unit,
             valid: it.valid,
+            // Stores counts (editable); Quality sees the counted figure read-only.
+            readOnly: !_storesMode,
           ),
           if (it.overPo && !it.overMax)
             Padding(
@@ -527,51 +567,55 @@ class _Ui2GateReceiveItemsScreenState
             const SizedBox(height: 8),
             _stockBlock(it, unit),
           ],
-          const SizedBox(height: 10),
-          _fieldRow(
-            label: S.t('Rejected', 'नाकारले'),
-            controller: it.rejected,
-            unit: unit,
-            valid: true,
-          ),
-          const SizedBox(height: 12),
-          // Quality check — own row so the toggle never squeezes the accepted box.
-          Row(
-            children: [
-              Expanded(
-                child: Text(S.t('Quality check', 'गुणवत्ता तपासणी'),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: F.hind(13, color: Y2.ink)),
-              ),
-              const SizedBox(width: 8),
-              _qcToggle(it),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Accepted = received − rejected, full width.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
-            decoration: BoxDecoration(
-              color: Y2.greenTint,
-              borderRadius: BorderRadius.circular(9),
-              border: Border.all(color: Y2.greenLine),
+          // Rejection + QC + accepted are the QUALITY person's job — hidden from
+          // the Stores GRN view (Stores only counts what was received).
+          if (!_storesMode) ...[
+            const SizedBox(height: 10),
+            _fieldRow(
+              label: S.t('Rejected', 'नाकारले'),
+              controller: it.rejected,
+              unit: unit,
+              valid: true,
             ),
-            child: Row(
+            const SizedBox(height: 12),
+            // Quality check — own row so the toggle never squeezes the accepted box.
+            Row(
               children: [
-                Text(S.t('Accepted', 'स्वीकारले'),
-                    style: F.hind(12, w: FontWeight.w600, color: Y2.green)),
-                const Spacer(),
-                Flexible(
-                  child: Text('${_fmt(it.acceptedQty)} $unit',
+                Expanded(
+                  child: Text(S.t('Quality check', 'गुणवत्ता तपासणी'),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                      style: F.mono(14, w: FontWeight.w700, color: Y2.green)),
+                      style: F.hind(13, color: Y2.ink)),
                 ),
+                const SizedBox(width: 8),
+                _qcToggle(it),
               ],
             ),
-          ),
+            const SizedBox(height: 10),
+            // Accepted = received − rejected, full width.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 10),
+              decoration: BoxDecoration(
+                color: Y2.greenTint,
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(color: Y2.greenLine),
+              ),
+              child: Row(
+                children: [
+                  Text(S.t('Accepted', 'स्वीकारले'),
+                      style: F.hind(12, w: FontWeight.w600, color: Y2.green)),
+                  const Spacer(),
+                  Flexible(
+                    child: Text('${_fmt(it.acceptedQty)} $unit',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: F.mono(14, w: FontWeight.w700, color: Y2.green)),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -582,6 +626,7 @@ class _Ui2GateReceiveItemsScreenState
     required TextEditingController controller,
     required String unit,
     required bool valid,
+    bool readOnly = false,
   }) {
     return Row(
       children: [
@@ -591,18 +636,22 @@ class _Ui2GateReceiveItemsScreenState
           width: 110,
           child: TextField(
             controller: controller,
+            readOnly: readOnly,
             textAlign: TextAlign.right,
             keyboardType:
                 const TextInputType.numberWithOptions(decimal: true),
             inputFormatters: _decimal,
-            style: F.mono(15, w: FontWeight.w700, color: valid ? Y2.ink : Y2.red),
+            style: F.mono(15,
+                w: FontWeight.w700,
+                color: readOnly ? Y2.body : (valid ? Y2.ink : Y2.red)),
             cursorColor: Y2.accent,
             decoration: InputDecoration(
               isDense: true,
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
               filled: true,
-              fillColor: Y2.screen,
+              // Read-only (Quality view of the counted figure) reads as a chip.
+              fillColor: readOnly ? Y2.lineSoft : Y2.screen,
               enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide(
@@ -745,8 +794,9 @@ class _Ui2GateReceiveItemsScreenState
   // Column widths shared by header + rows so the cells line up.
   static const _wNum = 30.0;
   static const _wPo = 104.0;
-  static const _wOrd = 104.0;
-  static const _wStock = 120.0;
+  static const _wChallan = 100.0;
+  static const _wOrd = 100.0;
+  static const _wStock = 116.0;
   static const _wRecv = 116.0;
   static const _wRej = 104.0;
   static const _wQc = 128.0;
@@ -773,12 +823,17 @@ class _Ui2GateReceiveItemsScreenState
                 _h(_wNum, '#'),
                 Expanded(child: _h(null, S.t('Material', 'माल'))),
                 _h(_wPo, S.t('PO', 'PO')),
+                _h(_wChallan, S.t('Challan qty', 'चलन संख्या'), right: true),
                 _h(_wOrd, S.t('Ordered', 'ऑर्डर'), right: true),
                 _h(_wStock, S.t('Stock / max', 'स्टॉक / कमाल'), right: true),
                 _h(_wRecv, S.t('Received', 'मिळाले'), right: true),
-                _h(_wRej, S.t('Rejected', 'नाकारले'), right: true),
-                const SizedBox(width: 14),
-                _h(_wQc, S.t('QC', 'QC')),
+                // Rejected + QC are the Quality person's columns — hidden in the
+                // Stores GRN view, which is count-only.
+                if (!_storesMode) ...[
+                  _h(_wRej, S.t('Rejected', 'नाकारले'), right: true),
+                  const SizedBox(width: 14),
+                  _h(_wQc, S.t('QC', 'QC')),
+                ],
               ],
             ),
           ),
@@ -841,7 +896,7 @@ class _Ui2GateReceiveItemsScreenState
               ],
             ),
           ),
-          // PO (tappable).
+          // PO (tappable) — flags "No PO" in red when the line isn't matched.
           SizedBox(
             width: _wPo,
             child: Pressable2(
@@ -850,31 +905,33 @@ class _Ui2GateReceiveItemsScreenState
               child: Row(
                 children: [
                   Flexible(
-                    child: Text(it.po,
+                    child: Text(
+                        it.poMatched ? it.po : S.t('No PO', 'PO नाही'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: F.mono(12, w: FontWeight.w700, color: Y2.accent)),
+                        style: F.mono(12,
+                            w: FontWeight.w700,
+                            color: it.poMatched ? Y2.accent : Y2.red)),
                   ),
-                  const Icon(I2.chevronDown, size: 15, color: Y2.accent),
+                  Icon(I2.chevronDown,
+                      size: 15, color: it.poMatched ? Y2.accent : Y2.red),
                 ],
               ),
             ),
           ),
-          // Ordered / challan.
+          // Challan qty (STATIC — the quantity printed on the invoice/challan).
+          SizedBox(
+            width: _wChallan,
+            child: _fit(Text('${_fmt(it.challan)} $unit',
+                maxLines: 1,
+                style: F.mono(12, w: FontWeight.w600, color: Y2.body))),
+          ),
+          // Ordered (PO qty).
           SizedBox(
             width: _wOrd,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                _fit(Text('${_fmt(it.ordered)} $unit',
-                    maxLines: 1,
-                    style: F.mono(12, w: FontWeight.w600, color: Y2.ink))),
-                _fit(Text(
-                    S.t('chln ${_fmt(it.challan)}', 'चलन ${_fmt(it.challan)}'),
-                    maxLines: 1,
-                    style: F.hind(10, color: Y2.muted))),
-              ],
-            ),
+            child: _fit(Text('${_fmt(it.ordered)} $unit',
+                maxLines: 1,
+                style: F.mono(12, w: FontWeight.w600, color: Y2.ink))),
           ),
           // In stock / max (P-L).
           SizedBox(
@@ -900,20 +957,24 @@ class _Ui2GateReceiveItemsScreenState
               ],
             ),
           ),
-          // Received (field) + accepted.
+          // Received — editable for Stores (count); read-only for Quality. The
+          // caption carries the over-max / over-PO flags (seen by everyone); the
+          // accepted figure shows only in the Quality view.
           SizedBox(
             width: _wRecv,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                _cellField(it.received, valid: it.valid),
+                _cellField(it.received, valid: it.valid, readOnly: !_storesMode),
                 _fit(Text(
                     it.overMax
-                        ? S.t('≤ ${_fmt(it.cap)} max', '≤ ${_fmt(it.cap)} कमाल')
+                        ? S.t('over max', 'कमाल ओलांडले')
                         : it.overPo
                             ? S.t('over PO', 'PO जास्त')
-                            : S.t('acc ${_fmt(it.acceptedQty)}',
-                                'स्वी ${_fmt(it.acceptedQty)}'),
+                            : _storesMode
+                                ? ' '
+                                : S.t('acc ${_fmt(it.acceptedQty)}',
+                                    'स्वी ${_fmt(it.acceptedQty)}'),
                     maxLines: 1,
                     style: F.hind(10,
                         w: FontWeight.w600,
@@ -925,36 +986,55 @@ class _Ui2GateReceiveItemsScreenState
               ],
             ),
           ),
-          // Rejected (field).
-          SizedBox(
-            width: _wRej,
-            child: _cellField(it.rejected, valid: true),
-          ),
-          const SizedBox(width: 14),
-          // QC toggle.
-          SizedBox(
-              width: _wQc,
-              child: _fit(_qcToggle(it), align: Alignment.centerLeft)),
+          // Rejected (field) — mirror the Received cell exactly: a right-aligned
+          // Column of [field, caption line]. The caption is an invisible spacer
+          // line (same style/height as Received's "acc …") so the Rejected box
+          // shares the Received box's width AND vertical baseline instead of
+          // floating lower (it has no caption of its own).
+          // Rejected + QC are QUALITY-only — the Stores GRN view never shows them.
+          if (!_storesMode) ...[
+            SizedBox(
+              width: _wRej,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _cellField(it.rejected, valid: true),
+                  _fit(Text(' ',
+                      maxLines: 1,
+                      style: F.hind(10, w: FontWeight.w600, color: Y2.muted))),
+                ],
+              ),
+            ),
+            const SizedBox(width: 14),
+            SizedBox(
+                width: _wQc,
+                child: _fit(_qcToggle(it), align: Alignment.centerLeft)),
+          ],
         ],
       ),
     );
   }
 
-  Widget _cellField(TextEditingController c, {required bool valid}) => SizedBox(
+  Widget _cellField(TextEditingController c,
+          {required bool valid, bool readOnly = false}) =>
+      SizedBox(
         width: 92,
         child: TextField(
           controller: c,
+          readOnly: readOnly,
           textAlign: TextAlign.right,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
           inputFormatters: _decimal,
-          style: F.mono(13, w: FontWeight.w700, color: valid ? Y2.ink : Y2.red),
+          style: F.mono(13,
+              w: FontWeight.w700,
+              color: readOnly ? Y2.body : (valid ? Y2.ink : Y2.red)),
           cursorColor: Y2.accent,
           decoration: InputDecoration(
             isDense: true,
             contentPadding:
                 const EdgeInsets.symmetric(horizontal: 9, vertical: 8),
             filled: true,
-            fillColor: Y2.screen,
+            fillColor: readOnly ? Y2.lineSoft : Y2.screen,
             enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: valid ? Y2.line : Y2.redLine)),
@@ -1041,7 +1121,9 @@ class _Ui2GateReceiveItemsScreenState
               Text(
                 _queued
                     ? S.t('SAVED · WILL SYNC', 'जतन केले · सिंक होईल')
-                    : S.t('RECEIVED & IN STOCK', 'मिळाले आणि स्टॉकमध्ये'),
+                    : _storesMode
+                        ? S.t('GRN POSTED · IN STOCK', 'GRN नोंदले · स्टॉकमध्ये')
+                        : S.t('QC COMPLETE', 'QC पूर्ण'),
                 textAlign: TextAlign.center,
                 style: F.khand(22, ls: 0.4, color: Y2.ink),
               ),
@@ -1059,13 +1141,30 @@ class _Ui2GateReceiveItemsScreenState
                             ? S.t(
                                 ' queued · ${_items.length} items on invoice $_invoice.',
                                 ' रांगेत · चलन $_invoice वर ${_items.length} वस्तू.')
-                            : S.t(
-                                ' posted · ${_items.length} items on invoice $_invoice.',
-                                ' पोस्ट केले · चलन $_invoice वर ${_items.length} वस्तू.')),
+                            : _storesMode
+                                ? S.t(
+                                    ' posted · ${_items.length} items on invoice $_invoice.',
+                                    ' नोंदले · चलन $_invoice वर ${_items.length} वस्तू.')
+                                : S.t(
+                                    ' QC done · ${_items.length} items on invoice $_invoice.',
+                                    ' QC झाले · चलन $_invoice वर ${_items.length} वस्तू.')),
                   ],
                 ),
                 textAlign: TextAlign.center,
               ),
+              const SizedBox(height: 10),
+              // Gate-entry number — the identifier that follows this load everywhere.
+              if (_entryNo.isNotEmpty)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.confirmation_number_outlined,
+                        size: 15, color: Y2.muted),
+                    const SizedBox(width: 6),
+                    Text(_entryNo,
+                        style: F.mono(12, w: FontWeight.w700, color: Y2.body)),
+                  ],
+                ),
               const SizedBox(height: 18),
               // Per-line summary.
               Card2(
@@ -1085,7 +1184,7 @@ class _Ui2GateReceiveItemsScreenState
                                   style: F.hind(13, color: Y2.ink)),
                             ),
                             Text(
-                                '${_fmt(_items[i].acceptedQty)} ${_unitOf(_items[i])}',
+                                '${_fmt(_storesMode ? _items[i].receivedQty : _items[i].acceptedQty)} ${_unitOf(_items[i])}',
                                 style: F.mono(13,
                                     w: FontWeight.w700, color: Y2.green)),
                           ],

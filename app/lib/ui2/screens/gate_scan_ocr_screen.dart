@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/strings.dart';
 import '../data/ocr2.dart';
@@ -44,16 +43,9 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
   List<Json> _samples = const [];
 
   Json? _entry; // {id, matched, po, fields, error, ocr_mode, image_b64}
-  String? _grnNo;
   String? _banner; // transient inline error/info (no Scaffold for SnackBars)
   bool _busy = false;
-
-  final _received = TextEditingController();
-  final _accepted = TextEditingController();
-  final _rejected = TextEditingController(text: '0.000');
-  final _batch = TextEditingController();
-  final _remarks = TextEditingController();
-  String _qc = 'pass';
+  String? _gateEntryNo; // generated when the arrival is acknowledged
 
   PhoneNav get nav => widget.nav;
 
@@ -67,11 +59,6 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
   @override
   void dispose() {
     _poll?.cancel();
-    _received.dispose();
-    _accepted.dispose();
-    _rejected.dispose();
-    _batch.dispose();
-    _remarks.dispose();
     super.dispose();
   }
 
@@ -121,21 +108,11 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
 
   void _onDecoded(Json e) {
     _seenId = (e['id'] as num?)?.toInt() ?? _seenId;
-    _seedQtyFrom(e['po']);
     setState(() {
       _entry = e;
       _banner = e['error'] as String?;
       _stage = _Stage.review;
     });
-  }
-
-  void _seedQtyFrom(dynamic po) {
-    if (po is Map) {
-      final oq = '${po['open_qty'] ?? ''}';
-      _received.text = oq;
-      _accepted.text = oq;
-      _rejected.text = '0.000';
-    }
   }
 
   Future<void> _pickPoManually() async {
@@ -162,7 +139,6 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
           entry['po'] = p;
           entry['matched'] = p.isNotEmpty;
           _entry = entry;
-          _seedQtyFrom(p);
           _banner = null;
         });
         nav.hideOverlay();
@@ -170,63 +146,25 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
     ));
   }
 
-  Future<void> _confirm() async {
-    final po = _entry?['po'];
-    if (po is! Map) {
-      setState(() => _banner =
-          S.t('Pick a PO first.', 'आधी PO निवडा.'));
-      return;
-    }
-    if ((double.tryParse(_received.text.trim()) ?? 0) <= 0) {
-      setState(() => _banner = S.t('Type the physically counted received qty.',
-          'प्रत्यक्ष मोजलेली प्राप्त संख्या टाका.'));
-      return;
-    }
+  /// The gate only ACKNOWLEDGES the arrival and generates its gate-entry number —
+  /// it does NOT run QC or a GRN. EVERY invoice goes through, even with no PO
+  /// matched: Stores counts it in (GRN), then Quality does the QC. The receipt
+  /// itself happens on the Receiving screen.
+  void _sendToGrn() {
+    // A fresh gate-entry number for this acknowledgement (demo: time-derived).
+    final n = DateTime.now().millisecondsSinceEpoch.remainder(90000) + 10000;
     setState(() {
-      _busy = true;
+      _gateEntryNo = 'GE-$n';
       _banner = null;
+      _stage = _Stage.done;
     });
-    final grn = await Ocr.generateGrn({
-      'po_no': po['po_no'],
-      'received_qty': _received.text.trim(),
-      'accepted_qty': _accepted.text.trim(),
-      'rejected_qty': _rejected.text.trim(),
-      'qc_result': _qc,
-      'batch_no': _batch.text.trim(),
-      'remarks': _remarks.text.trim(),
-      'invoice_no': (_entry?['fields'] as Map?)?['invoice_no'],
-    });
-    if (!mounted) return;
-    setState(() {
-      _busy = false;
-      if (grn == null) {
-        _banner = S.t('Could not generate the GRN — is the OCR service up?',
-            'GRN तयार होऊ शकला नाही — OCR सेवा सुरू आहे का?');
-      } else {
-        _grnNo = grn;
-        _stage = _Stage.done;
-      }
-    });
-  }
-
-  Future<void> _download() async {
-    final no = _grnNo;
-    if (no == null) return;
-    await launchUrl(Uri.parse(Ocr.grnDownloadUrl(no)),
-        webOnlyWindowName: '_blank');
   }
 
   void _nextScan() {
     setState(() {
       _entry = null;
-      _grnNo = null;
       _banner = null;
-      _qc = 'pass';
-      _received.clear();
-      _accepted.clear();
-      _rejected.text = '0.000';
-      _batch.clear();
-      _remarks.clear();
+      _gateEntryNo = null;
       _stage = _Stage.waiting;
     });
   }
@@ -427,11 +365,9 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
       const SizedBox(height: 11),
       _imageCard(),
       const SizedBox(height: 11),
-      if (matched) ...[
-        _poCard(),
-        const SizedBox(height: 11),
-        _qcCard(),
-      ] else
+      if (matched)
+        _poCard()
+      else
         _pickCard(),
     ];
   }
@@ -455,9 +391,7 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
                 flex: 6,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: matched
-                      ? [_poCard(), const SizedBox(height: 12), _qcCard()]
-                      : [_pickCard()],
+                  children: matched ? [_poCard()] : [_pickCard()],
                 ),
               ),
             ],
@@ -614,66 +548,12 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
     );
   }
 
-  Widget _qcCard() {
-    final po = _entry!['po'] as Map;
-    final uom = '${po['uom'] ?? ''}';
-    return Card2(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(S.t('QUALITY & QUANTITY', 'गुणवत्ता आणि संख्या'),
-              style: F.hind(10, w: FontWeight.w700, ls: 0.4, color: Y2.muted)),
-          const SizedBox(height: 10),
-          _qtyField(S.t('Received qty ($uom)', 'प्राप्त ($uom)'), _received),
-          const SizedBox(height: 10),
-          _qtyField(S.t('Accepted qty ($uom)', 'स्वीकृत ($uom)'), _accepted),
-          const SizedBox(height: 10),
-          _qtyField(S.t('Rejected qty ($uom)', 'नाकारलेले ($uom)'), _rejected),
-          const SizedBox(height: 10),
-          _textField(
-              S.t('Batch / Heat no.', 'बॅच / हीट क्र.'), _batch, 'e.g. HT-26A0418'),
-          const SizedBox(height: 12),
-          Text(S.t('Quality result', 'गुणवत्ता निकाल'),
-              style: F.hind(12, color: Y2.body)),
-          const SizedBox(height: 6),
-          Row(children: [
-            Expanded(child: _qcToggle('pass', S.t('OK — Pass', 'ठीक'), Y2.green)),
-            const SizedBox(width: 8),
-            Expanded(
-                child: _qcToggle('fail', S.t('Reject — Fail', 'नापास'), Y2.red)),
-          ]),
-          const SizedBox(height: 12),
-          _textField(S.t('Remarks', 'शेरा'), _remarks,
-              S.t('optional', 'ऐच्छिक')),
-        ],
-      ),
-    );
-  }
-
-  Widget _qcToggle(String value, String label, Color on) {
-    final sel = _qc == value;
-    return Pressable2(
-      onTap: () => setState(() => _qc = value),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 11),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: sel ? on.withValues(alpha: 0.10) : Y2.card,
-          border: Border.all(color: sel ? on : Y2.line, width: sel ? 1.5 : 1),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Text(label,
-            style: F.hind(13,
-                w: FontWeight.w700, color: sel ? on : Y2.muted)),
-      ),
-    );
-  }
-
   // ---- DONE ----
 
   List<Widget> _doneCards() {
-    final po = _entry?['po'] as Map? ?? const {};
-    final uom = '${po['uom'] ?? ''}';
+    final po = _entry?['po'] as Map?;
+    final fields = (_entry?['fields'] as Map?) ?? const {};
+    final matched = po != null;
     return [
       Card2(
         leftBorder: Y2.green,
@@ -684,25 +564,28 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
               const Icon(Icons.check_circle, size: 20, color: Y2.green),
               const SizedBox(width: 8),
               Expanded(
-                child: Text(S.t('GRN generated — $_grnNo', 'GRN तयार — $_grnNo'),
+                child: Text(S.t('Gate entry created', 'गेट नोंद तयार'),
                     style: F.khand(18, color: Y2.ink)),
               ),
             ]),
             const SizedBox(height: 4),
             Text(
-                S.t('SAP-ready goods receipt (movement type 101).',
-                    'SAP-तयार वस्तू पावती (मूव्हमेंट टाइप 101).'),
+                S.t('Arrival logged & sent to GRN. Stores counts it in, then '
+                    'Quality does the QC — on the Receiving screen.',
+                    'आवक नोंदवली व GRN कडे पाठवली. स्टोअर मोजते, मग गुणवत्ता QC करते '
+                    '— Receiving स्क्रीनवर.'),
                 style: F.hind(11, color: Y2.muted)),
             const SizedBox(height: 12),
+            // The gate-entry number that now follows this load everywhere.
+            _kv(S.t('Gate entry no.', 'गेट नोंद क्र.'), _gateEntryNo ?? '—'),
             _kv(S.t('PO / line', 'PO / ओळ'),
-                '${po['po_no'] ?? '—'} / ${po['line'] ?? '—'}'),
-            _kv(S.t('Material', 'माल'), '${po['material_code'] ?? '—'}'),
-            _kv(S.t('Received', 'प्राप्त'), '${_received.text} $uom'),
-            _kv(S.t('Accepted', 'स्वीकृत'), '${_accepted.text} $uom'),
-            _kv(S.t('Rejected', 'नाकारलेले'), '${_rejected.text} $uom'),
-            _kv(S.t('Batch / Heat', 'बॅच / हीट'),
-                _batch.text.isEmpty ? '—' : _batch.text),
-            _kv(S.t('QC', 'QC'), _qc.toUpperCase()),
+                matched ? '${po['po_no']} / ${po['line'] ?? '—'}' : S.t('No PO matched — flagged', 'PO जुळले नाही — फ्लॅग')),
+            _kv(S.t('Material', 'माल'),
+                matched ? '${po['material_code'] ?? '—'}' : '—'),
+            _kv(S.t('Vendor', 'पुरवठादार'),
+                matched ? '${po['vendor_name'] ?? '—'}' : '—'),
+            _kv(S.t('OCR — Invoice', 'OCR — इनव्हॉइस'),
+                '${fields['invoice_no'] ?? '—'}'),
           ],
         ),
       ),
@@ -717,27 +600,15 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
       case _Stage.waiting:
         return const SizedBox.shrink();
       case _Stage.review:
-        if (_entry?['po'] is! Map) return const SizedBox.shrink();
+        // Every invoice goes through — even with no PO matched — so the button is
+        // always available once a scan is on screen.
         action = PrimaryButton2(
-          label: S.t('Confirm & Generate GRN', 'खात्री करा व GRN तयार करा'),
-          color: Y2.green,
-          busy: _busy,
-          onTap: _confirm,
+          label: S.t('Send to GRN', 'GRN कडे पाठवा'),
+          onTap: _sendToGrn,
         );
       case _Stage.done:
-        action = Row(children: [
-          Expanded(
-            child: PrimaryButton2(
-                label: S.t('Download GRN Excel', 'GRN एक्सेल डाउनलोड'),
-                color: Y2.green,
-                onTap: _download),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: OutlineButton2(
-                label: S.t('Next scan', 'पुढील स्कॅन'), onTap: _nextScan),
-          ),
-        ]);
+        action = OutlineButton2(
+            label: S.t('Scan next', 'पुढील स्कॅन'), onTap: _nextScan);
     }
     final bar = Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
@@ -797,44 +668,5 @@ class _Ui2GateScanOcrScreenState extends State<Ui2GateScanOcrScreen> {
             ),
           ],
         ),
-      );
-
-  Widget _qtyField(String label, TextEditingController c) =>
-      _field(label, c, keyboard: const TextInputType.numberWithOptions(decimal: true));
-
-  Widget _textField(String label, TextEditingController c, String hint) =>
-      _field(label, c, hint: hint);
-
-  Widget _field(String label, TextEditingController c,
-          {String? hint, TextInputType? keyboard}) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: F.hind(12, color: Y2.body)),
-          const SizedBox(height: 5),
-          TextField(
-            controller: c,
-            keyboardType: keyboard,
-            style: F.mono(14, color: Y2.ink),
-            cursorColor: Y2.accent,
-            decoration: InputDecoration(
-              isDense: true,
-              hintText: hint,
-              hintStyle: F.hind(13, color: Y2.muted2),
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 11, vertical: 11),
-              filled: true,
-              fillColor: Y2.screen,
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
-                borderSide: const BorderSide(color: Y2.line),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(9),
-                borderSide: const BorderSide(color: Y2.accent, width: 1.4),
-              ),
-            ),
-          ),
-        ],
       );
 }
